@@ -1,0 +1,55 @@
+Prompt for Building Yummy Menu Site
+I need to build a new, standalone "Menu Website" repository. This site will display the public menu for a restaurant by fetching data from our existing backend.
+
+1. Backend Connection
+The backend is hosted at: https://yummy-321287803064.asia-south1.run.app
+
+Please implement the data fetching logic using standard 
+fetch
+ or axios. Key Endpoints to Explore:
+
+GET /products?restaurant_id=<ID> (Most likely)
+GET /menu?restaurant_id=<ID>
+GET /categories?restaurant_id=<ID>
+Note: You may need to inspect the API docs at /docs on the base URL if these standard paths don't work immediately.
+
+2. Core Features
+Restaurant Context: The site should probably work by passing a ?restaurant_id=1 query parameter in the URL, or be hardcoded for a specific restaurant if needed.
+Menu Display:
+Show categories (e.g., Starters, Mains, Drinks).
+Display items grid with Images, Correct Names, and Prices.
+Optionally show a "Sold Out" badge if status is unavailable.
+No Auth Required: This is a public menu view, so it should not require a login token.
+3. Configuration & Security
+.env: Do NOT copy your full backend 
+.env
+ file. This is a public website. The only secret you need is the API base URL.
+NEXT_PUBLIC_API_URL=https://yummy-321287803064.asia-south1.run.app
+CORS: The main backend seems to handle CORS directly (our dashboard hits it without a proxy). If you face CORS errors on localhost, try running chrome with disabled web security for testing, or deploy to Vercel/Netlify which usually work better.
+4. Tech Stack
+Framework: Use simple HTML/JS or Next.js (if you prefer React).
+Styling: TailwindCSS (CDN or installed).
+Design:
+Clean, appetizing, card-based layout.
+Mobile-responsive (mostly used on phones).
+Sticky header for categories.
+4. Implementation Steps for You
+Initialize: Set up the project structure.
+Fetch: Write a script to hit the backend and log the JSON response to understand the structure (fields like name, price, image_url, category_id).
+Render: Build the UI to map this JSON into a beautiful grid.
+Refine: Add a "Search" bar to filter items instantly.
+5. Sample Fetch Code
+const API_URL = 'https://yummy-321287803064.asia-south1.run.app';
+const RESTAURANT_ID = 1; // Replace with dynamic ID
+async function fetchMenu() {
+  try {
+    // Try products first
+    const res = await fetch(`${API_URL}/products?restaurant_id=${RESTAURANT_ID}`);
+    const data = await res.json();
+    console.log("Menu Data:", data);
+    return data;
+  } catch (err) {
+    console.error("Failed to load menu", err);
+  }
+}
+Please generate the full code for this site.
