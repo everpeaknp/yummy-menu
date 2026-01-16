@@ -16,7 +16,7 @@ export const RESTAURANT_SLUGS: Record<string, number> = {
 /**
  * Converts a string to a URL-friendly slug
  */
-function slugify(text: string): string {
+export function slugify(text: string): string {
   return text
     .toLowerCase()
     .trim()
@@ -37,11 +37,10 @@ export async function getRestaurantIdFromSlug(slug: string): Promise<number | nu
   }
 
   // If no static mapping, try to find by fetching restaurants
-  // This attempts common restaurant IDs and checks if their slugified name matches
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://yummy-321287803064.asia-south1.run.app';
   
-  // Try a range of IDs (1-100 to cover more restaurants)
-  for (let id = 1; id <= 100; id++) {
+  // Helper to fetch a single restaurant
+  const checkRestaurant = async (id: number): Promise<number | null> => {
     try {
       const res = await fetch(`${API_URL}/restaurants/${id}`, {
         next: { revalidate: 3600 } // Cache for 1 hour
@@ -59,8 +58,27 @@ export async function getRestaurantIdFromSlug(slug: string): Promise<number | nu
         }
       }
     } catch (error) {
-      // Continue to next ID
-      continue;
+      // Ignore errors for individual fetches
+    }
+    return null;
+  };
+
+  // Batched parallel execution
+  // Search IDs 1 to 500 in batches of 20 to avoid rate limits/browser issues
+  const BATCH_SIZE = 20;
+  const MAX_ID = 500;
+  
+  for (let i = 1; i <= MAX_ID; i += BATCH_SIZE) {
+    const batchPromises = [];
+    for (let j = 0; j < BATCH_SIZE && (i + j) <= MAX_ID; j++) {
+      batchPromises.push(checkRestaurant(i + j));
+    }
+    
+    const results = await Promise.all(batchPromises);
+    const foundId = results.find(id => id !== null);
+    
+    if (foundId) {
+      return foundId;
     }
   }
   

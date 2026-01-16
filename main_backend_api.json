@@ -184,19 +184,19 @@
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/restaurants/",
-            "body": { "mode": "raw", "raw": "{\"name\": \"My Restaurant\", \"address\": \"123 Main St\"}", "options": { "raw": { "language": "json" } } }
+            "body": { "mode": "raw", "raw": "{\"name\": \"My Restaurant\", \"address\": \"123 Main St\", \"profile_picture\": \"https://example.com/logo.png\", \"cover_photo\": \"https://example.com/cover.jpg\"}", "options": { "raw": { "language": "json" } } }
           }
         },
         {
-          "name": "Get Restaurant",
-          "request": { "method": "GET", "url": "{{baseUrl}}/restaurants/{{restaurantId}}" }
+          "name": "Get Restaurant (Public)",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/restaurants/{{restaurantId}}" }
         },
         {
           "name": "Update Restaurant",
           "request": {
             "method": "PUT",
             "url": "{{baseUrl}}/restaurants/{{restaurantId}}",
-            "body": { "mode": "raw", "raw": "{\"name\": \"Updated Restaurant\"}", "options": { "raw": { "language": "json" } } }
+            "body": { "mode": "raw", "raw": "{\"name\": \"Updated Restaurant\", \"profile_picture\": \"https://example.com/new_logo.png\", \"cover_photo\": \"https://example.com/new_cover.jpg\"}", "options": { "raw": { "language": "json" } } }
           }
         },
         {

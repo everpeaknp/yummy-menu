@@ -18,7 +18,8 @@ const getImageUrl = (path?: string) => {
         // Log the transformation for debugging
         // console.log(`[Image] Transforming ${path} -> ${API_URL}${cleanPath}`);
         
-        return `${API_URL}${cleanPath}`;
+        // Encode the path to handle spaces (e.g. "coca cola.webp" -> "coca%20cola.webp")
+        return `${API_URL}${encodeURI(cleanPath)}`;
     }
     return path;
 }
@@ -46,19 +47,29 @@ export interface Restaurant {
   name: string;
   address?: string;
   logo?: string;
+  cover_image?: string;
   phone?: string;
 }
 
 export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
   try {
-    const res = await fetch(`${API_URL}/restaurants/${id}`);
-    if (!res.ok) return null;
+    const url = `${API_URL}/restaurants/${id}`;
+    // console.log(`[DEBUG] Fetching restaurant from: ${url}`);
+    const res = await fetch(url);
+    // console.log(`[DEBUG] Response status: ${res.status}`);
+    
+    if (!res.ok) {
+        console.error(`[DEBUG] Fetch failed: ${res.statusText}`);
+        return null; 
+    }
     const json = await res.json();
     const data = json.data || json;
+    // console.log(`[DEBUG] Restaurant data:`, data);
     
     return {
         ...data,
-        logo: getImageUrl(data.logo)
+        logo: getImageUrl(data.profile_picture || data.logo),
+        cover_image: getImageUrl(data.cover_photo)
     };
   } catch (error) {
     console.error("Failed to fetch restaurant", error);
