@@ -70,6 +70,26 @@ export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
 };
 
 
+// function to get all restaurants
+export const getAllRestaurants = async (): Promise<Restaurant[]> => {
+    try {
+        const res = await fetch(`${API_URL}/restaurants`);
+        if (!res.ok) return [];
+        const json = await res.json();
+        const data = json.data || json;
+        if (!Array.isArray(data)) return [];
+        
+        return data.map((item: any) => ({
+            ...item,
+            logo: getImageUrl(item.profile_picture || item.logo),
+            cover_image: getImageUrl(item.cover_photo)
+        }));
+    } catch (error) {
+        console.error("Failed to fetch restaurants", error);
+        return [];
+    }
+}
+
 interface ItemCategory {
     id: number;
     name: string;
