@@ -12,13 +12,13 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
   return (
     <div className="group relative flex flex-col items-center bg-transparent p-4 transition-all duration-300 hover:-translate-y-2">
       {/* Image Section - Large & Rounded */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-3xl shadow-md transition-shadow duration-300 group-hover:shadow-2xl">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-gray-50 shadow-md transition-shadow duration-300 group-hover:shadow-xl">
         {item.image ? (
           <Image
             src={item.image}
             alt={item.name}
             fill
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            className="object-contain p-4 transition-transform duration-700 group-hover:scale-110"
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
           />
         ) : (
@@ -46,23 +46,31 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
       </div>
 
       {/* Content Section - Centered */}
-      <div className="mt-5 text-center w-full">
-        <h3 className="text-xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors mb-1">
+      <div className="mt-4 text-center w-full px-2">
+        {/* Chips / Tags (Real API Data) */}
+        {item.category_type && (
+            <div className="mb-2 flex justify-center">
+                <span className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-medium text-primary-700 capitalize">
+                    {item.category_type}
+                </span>
+            </div>
+        )}
+
+        <h3 className="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-1">
           {item.name}
         </h3>
         
-        {/* Mock Ratings for Premium Feel */}
-        <div className="flex items-center justify-center gap-1 my-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} size={14} className="fill-yellow-400 text-yellow-400" />
-            ))}
-            <span className="text-xs text-gray-400 ml-1">(12 reviews)</span>
-        </div>
+        {/* Description (Only show if valid) */}
+        {item.description && (
+            <p className="mt-1 text-xs text-gray-500 line-clamp-2 px-2">
+                {item.description}
+            </p>
+        )}
 
-        <div className="flex items-center justify-center gap-2">
-             <span className="text-sm text-gray-500 font-medium">From</span>
-             <span className="text-lg font-bold text-gray-900">
-                Rs {item.price.toFixed(0)}
+        <div className="mt-3 flex items-baseline justify-center gap-1">
+             <span className="text-xs text-gray-400 font-medium">NPR</span>
+             <span className="text-xl font-extrabold text-gray-900 tracking-tight">
+                {item.price.toFixed(0)}
              </span>
         </div>
       </div>

@@ -1,25 +1,16 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://yummy-321287803064.asia-south1.run.app';
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nrrfumuslekbdjvgklqp.supabase.co';
+// Debug log to trace what path is coming in
 const getImageUrl = (path?: string) => {
+    // console.log(`[Image Debug] Input: ${path}`);
     if (!path) return undefined;
     if (path.startsWith('http')) return path;
     if (path.startsWith('asset:')) {
-        // Remove 'asset:' and prepend API_URL. 
-        // Attempting direct mapping first.
         const navPath = path.replace('asset:', '');
-        
-        // FIX: Try prepending 'static' if simple mapping failed (404s).
-        // If the backend is serving from a static folder, it might be /static/menu_gallery/...
-        // But for now, let's assume the issue is encoding or missing leading slash.
-        
-        // Ensure leading slash if missing
         const cleanPath = navPath.startsWith('/') ? navPath : `/${navPath}`;
-        
-        // Log the transformation for debugging
-        // console.log(`[Image] Transforming ${path} -> ${API_URL}${cleanPath}`);
-        
-        // Encode the path to handle spaces (e.g. "coca cola.webp" -> "coca%20cola.webp")
-        return `${API_URL}${encodeURI(cleanPath)}`;
+        // console.log(`[Image Debug] Output (Local): ${cleanPath}`);
+        return cleanPath;
     }
     return path;
 }
@@ -40,6 +31,7 @@ export interface MenuItem {
   image?: string;
   is_available: boolean;
   dietary_info?: string[]; // e.g., 'veg', 'non-veg', 'gluten-free'
+  category_type?: string; // e.g. 'kitchen', 'bar', 'cafe'
 }
 
 export interface Restaurant {
@@ -149,7 +141,8 @@ export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategory
                 ...item,
                 id: Number(item.id),
                 image: getImageUrl(item.image),
-                price: Number(item.price || 0)
+                price: Number(item.price || 0),
+                category_type: item.category_type // Map this field
             })) : []
         };
     }).filter(g => g.items.length > 0); // Only show categories with items
