@@ -1,0 +1,180 @@
+.button {
+    --primary: #ff6929;
+    --primary-dark: #e0551a;
+    --primary-darkest: #c04010;
+    --text: #ffffff;
+    --text-opacity: 1;
+    --success: #ff6929;
+    --success-scale: 0.2;
+    --success-opacity: 0;
+    
+    /* Initial Geometry (Rectangle) */
+    /* Left Wing (Top-Left Triangle) */
+    --left-wing-first-x: 0; --left-wing-first-y: 0;
+    --left-wing-second-x: 50; --left-wing-second-y: 0;
+    --left-wing-third-x: 0; --left-wing-third-y: 100;
+    
+    /* Left Body (Bottom-Right Triangle of Left side) */
+    --left-body-first-x: 50; --left-body-first-y: 0;
+    --left-body-second-x: 50; --left-body-second-y: 100;
+    --left-body-third-x: 0; --left-body-third-y: 100;
+    
+    /* Right Wing (Top-Right Triangle) */
+    --right-wing-first-x: 50; --right-wing-first-y: 0;
+    --right-wing-second-x: 100; --right-wing-second-y: 0;
+    --right-wing-third-x: 100; --right-wing-third-y: 100;
+    
+    /* Right Body (Bottom-Left Triangle of Right side) */
+    --right-body-first-x: 50; --right-body-first-y: 0;
+    --right-body-second-x: 50; --right-body-second-y: 100;
+    --right-body-third-x: 100; --right-body-third-y: 100;
+
+    /* Animation State Vars */
+    --rotate: 0;
+    --plane-x: 0;
+    --plane-y: 0;
+    --plane-opacity: 1;
+    
+    --left-wing-background: var(--primary);
+    --left-body-background: var(--primary);
+    --right-wing-background: var(--primary);
+    --right-body-background: var(--primary);
+
+    position: relative;
+    display: block;
+    cursor: pointer;
+    border: 0;
+    padding: 12px 24px;
+    min-width: 200px;
+    user-select: none;
+    background: transparent; /* Shapes provide the background */
+    color: var(--text);
+    transition: transform 0.25s;
+    font-weight: 600;
+    font-size: 16px;
+    font-family: var(--font-display, sans-serif);
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Hover Effect (Scale the whole button slightly) */
+.button:hover {
+    transform: translateY(-2px);
+}
+.button:active {
+    transform: translateY(0);
+}
+
+/* Text */
+.button span.default {
+    display: block;
+    position: relative;
+    z-index: 4;
+    opacity: var(--text-opacity);
+    transition: opacity 0.3s;
+}
+
+/* Success Text/Icon */
+.button span.success {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(var(--success-scale));
+    opacity: var(--success-opacity);
+    z-index: 2;
+    color: var(--success);
+    font-weight: bold;
+    width: 100%;
+    text-align: center;
+}
+
+/* Left and Right Containers */
+.button .left,
+.button .right {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1; /* Behind text */
+    /* Ensure containers don't clip unless needed */
+    overflow: visible; 
+}
+
+/* 
+   We use ::before for Wings and ::after for Bodies 
+   This matches the "4 separate divs" logical requirement using the 2 available DOM nodes.
+*/
+
+/* --- LEFT SIDE --- */
+.button .left::before { /* Left Wing */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--left-wing-background);
+    clip-path: polygon(
+        calc(var(--left-wing-first-x) * 1%) calc(var(--left-wing-first-y) * 1%),
+        calc(var(--left-wing-second-x) * 1%) calc(var(--left-wing-second-y) * 1%),
+        calc(var(--left-wing-third-x) * 1%) calc(var(--left-wing-third-y) * 1%)
+    );
+    transform-origin: 50% 50%;
+}
+.button .left::after { /* Left Body */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--left-body-background);
+    clip-path: polygon(
+        calc(var(--left-body-first-x) * 1%) calc(var(--left-body-first-y) * 1%),
+        calc(var(--left-body-second-x) * 1%) calc(var(--left-body-second-y) * 1%),
+        calc(var(--left-body-third-x) * 1%) calc(var(--left-body-third-y) * 1%)
+    );
+    transform-origin: 50% 50%;
+}
+
+/* --- RIGHT SIDE --- */
+.button .right::before { /* Right Wing */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--right-wing-background);
+    clip-path: polygon(
+        calc(var(--right-wing-first-x) * 1%) calc(var(--right-wing-first-y) * 1%),
+        calc(var(--right-wing-second-x) * 1%) calc(var(--right-wing-second-y) * 1%),
+        calc(var(--right-wing-third-x) * 1%) calc(var(--right-wing-third-y) * 1%)
+    );
+    transform-origin: 50% 50%;
+}
+.button .right::after { /* Right Body */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--right-body-background);
+    clip-path: polygon(
+        calc(var(--right-body-first-x) * 1%) calc(var(--right-body-first-y) * 1%),
+        calc(var(--right-body-second-x) * 1%) calc(var(--right-body-second-y) * 1%),
+        calc(var(--right-body-third-x) * 1%) calc(var(--right-body-third-y) * 1%)
+    );
+    transform-origin: 50% 50%;
+}
+
+/* --- ACTIVE STATE (Flying) --- */
+.active {
+    /* Hide Text */
+    --text-opacity: 0;
+    /* Ensure the button container itself doesn't have a background/shadow to interfere */
+    background: transparent !important;
+    box-shadow: none !important;
+    /* Allow the parts to fly out of bounds (though usually button size constrains, translate helps) */
+    overflow: visible; 
+}
+
+/* Move the Left/Right planes during flight */
+.active .left,
+.active .right {
+    opacity: var(--plane-opacity);
+    z-index: 10; /* Bring to front above everything */
+    transform: translate(calc(var(--plane-x) * 1px), calc(var(--plane-y) * 1px)) rotate(calc(var(--rotate) * 1deg));
+    transition: opacity 0.2s; 
+    /* The individual wing/body shapes are animated via the CSS vars in their clip-paths */
+}
