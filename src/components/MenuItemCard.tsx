@@ -20,6 +20,7 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
             src={item.image}
             alt={item.name}
             fill
+            unoptimized={item.image.startsWith('/')}
             className="object-contain p-1 sm:object-contain sm:p-4 sm:transition-transform sm:duration-700 sm:group-hover:scale-110"
             sizes="(max-width: 640px) 96px, (max-width: 768px) 50vw, 33vw"
           />

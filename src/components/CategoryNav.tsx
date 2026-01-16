@@ -30,7 +30,7 @@ export default function CategoryNav({ categories }: CategoryNavProps) {
     <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-gray-100/50 supports-[backdrop-filter]:bg-white/60">
       <div 
         ref={navRef}
-        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-4 overflow-x-auto py-4 scrollbar-hide"
+        className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center gap-3 overflow-x-auto py-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
         {categories.map((category) => (
           <button
