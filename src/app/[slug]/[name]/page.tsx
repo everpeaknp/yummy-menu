@@ -83,15 +83,15 @@ export default async function RestaurantIdPage({ params }: PageProps) {
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
 
             <div className="absolute bottom-0 left-0 w-full p-4 sm:p-6 lg:p-8">
-                 <div className="mx-auto max-w-7xl flex items-end gap-4">
+                 <div className="mx-auto max-w-7xl flex items-center gap-4">
                     {/* Logo */}
-                    <div className="h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-xl border-4 border-white bg-white shadow-lg shrink-0 flex items-center justify-center">
+                    <div className="h-24 w-24 sm:h-28 sm:w-28 overflow-hidden rounded-xl border-4 border-white bg-white shadow-lg shrink-0 flex items-center justify-center">
                          {restaurant.logo ? (
                             <Image 
                                 src={restaurant.logo} 
                                 alt={restaurant.name} 
-                                width={96} 
-                                height={96} 
+                                width={112} 
+                                height={112} 
                                 className="h-full w-full object-cover"
                             />
                          ) : (
@@ -103,22 +103,22 @@ export default async function RestaurantIdPage({ params }: PageProps) {
                     
                     {/* Info */}
                     <div className="flex-1 pb-1 text-white">
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white shadow-sm">
+                        <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white shadow-sm leading-tight">
                             {restaurant.name}
                         </h1>
-                        <p className="text-sm font-medium text-white/80 mt-1 tracking-wide">
+                        <p className="text-xs font-medium text-white/80 mt-1 tracking-wide uppercase">
                             Menu
                         </p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-200 font-medium mt-3">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-y-1 sm:gap-x-4 text-xs text-gray-200 font-medium mt-2">
                             {restaurant.address && (
                                 <div className="flex items-center gap-1">
-                                    <MapPin size={14} className="text-primary-400" />
-                                    <span>{restaurant.address}</span>
+                                    <MapPin size={12} className="text-primary-400 shrink-0" />
+                                    <span className="line-clamp-1">{restaurant.address}</span>
                                 </div>
                             )}
                             {restaurant.phone && (
                                 <div className="flex items-center gap-1">
-                                    <Phone size={14} className="text-primary-400" />
+                                    <Phone size={12} className="text-primary-400 shrink-0" />
                                     <span>{restaurant.phone}</span>
                                 </div>
                             )}
