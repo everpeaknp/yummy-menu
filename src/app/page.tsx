@@ -26,7 +26,7 @@ export default async function Home() {
                         unoptimized
                     />
                  </div>
-                 <span className="text-2xl font-bold tracking-tight text-dark-900 font-display">Yummy Ever Menu</span>
+                 <span className="text-2xl font-bold tracking-tight text-dark-900 font-display">Yummyever Menu</span>
             </div>
             
             <a 
