@@ -1,6 +1,6 @@
 
 import MenuGrid from "@/components/MenuGrid";
-import { getGroupedMenu, getRestaurant } from "@/services/api";
+import { getGroupedMenu, getRestaurant, getImageUrl } from "@/services/api";
 import { slugify } from "@/config/restaurants";
 import Image from "next/image";
 import { MapPin, Phone, Utensils } from "lucide-react";
@@ -111,7 +111,7 @@ export default async function RestaurantIdPage({ params }: PageProps) {
             <div 
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ 
-                    backgroundImage: restaurant.cover_image ? `url('${restaurant.cover_image}')` : undefined,
+                    backgroundImage: restaurant.cover_image ? `url('${getImageUrl(restaurant.cover_image)}')` : undefined,
                     opacity: 0.6
                 }} 
             />
@@ -124,7 +124,7 @@ export default async function RestaurantIdPage({ params }: PageProps) {
                     <div className="h-24 w-24 sm:h-28 sm:w-28 overflow-hidden rounded-xl border-4 border-white bg-white shadow-lg shrink-0 flex items-center justify-center">
                          {restaurant.logo ? (
                             <Image 
-                                src={restaurant.logo} 
+                                src={getImageUrl(restaurant.logo)!} 
                                 alt={restaurant.name} 
                                 width={112} 
                                 height={112} 
@@ -164,7 +164,7 @@ export default async function RestaurantIdPage({ params }: PageProps) {
             </div>
         </div>
 
-        <MenuGrid categories={categories} />
+        <MenuGrid initialCategories={categories} restaurantId={id} />
     </main>
   );
 }

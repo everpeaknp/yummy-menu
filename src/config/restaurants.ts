@@ -30,6 +30,12 @@ export function slugify(text: string): string {
  * First checks static mapping, then tries to fetch by name
  */
 export async function getRestaurantIdFromSlug(slug: string): Promise<number | null> {
+  // NEW optimization: If the slug is already an ID (numeric), return it immediately
+  // to avoid scanning when we already have the information.
+  if (/^\d+$/.test(slug)) {
+    return parseInt(slug, 10);
+  }
+
   // First, check static mapping
   const staticId = RESTAURANT_SLUGS[slug.toLowerCase()];
   if (staticId) {
@@ -42,9 +48,16 @@ export async function getRestaurantIdFromSlug(slug: string): Promise<number | nu
   // Helper to fetch a single restaurant
   const checkRestaurant = async (id: number): Promise<number | null> => {
     try {
-      const res = await fetch(`${API_URL}/restaurants/${id}`, {
-        next: { revalidate: 3600 } // Cache for 1 hour
+      // Create an AbortController for a 5 second timeout per probe
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const res = await fetch(`${API_URL}/restaurants/${id}/`, {
+        next: { revalidate: 3600 }, // Cache for 1 hour
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (res.ok) {
         const json = await res.json();
@@ -64,9 +77,9 @@ export async function getRestaurantIdFromSlug(slug: string): Promise<number | nu
   };
 
   // Batched parallel execution
-  // Search IDs 1 to 500 in batches of 20 to avoid rate limits/browser issues
-  const BATCH_SIZE = 20;
-  const MAX_ID = 500;
+  // Search IDs 1 to 200 (reduced range) in batches to find dynamic matches
+  const BATCH_SIZE = 15;
+  const MAX_ID = 200; 
   
   for (let i = 1; i <= MAX_ID; i += BATCH_SIZE) {
     const batchPromises = [];

@@ -3,35 +3,59 @@
 import { MenuCategoryGroup } from "@/services/api";
 import CategoryNav from "./CategoryNav";
 import MenuItemCard from "./MenuItemCard";
+import FloatingCart from "./FloatingCart";
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
+import useSWR from "swr";
+import { getGroupedMenu, getModifierGroups } from "@/services/api";
 
 interface MenuGridProps {
-  categories: MenuCategoryGroup[];
+  initialCategories: MenuCategoryGroup[];
+  restaurantId: string;
 }
 
-export default function MenuGrid({ categories }: MenuGridProps) {
+export default function MenuGrid({ initialCategories, restaurantId }: MenuGridProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: categories = initialCategories } = useSWR(
+    restaurantId ? `menu-${restaurantId}` : null,
+    () => getGroupedMenu(restaurantId),
+    {
+      fallbackData: initialCategories,
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // 1 minute
+    }
+  );
+  
+  const { data: modifierGroups = [] } = useSWR(
+    restaurantId ? `modifiers-${restaurantId}` : null,
+    () => getModifierGroups(restaurantId),
+    {
+        revalidateOnFocus: false,
+        dedupingInterval: 60000,
+    }
+  );
+
   const filteredCategories = useMemo(() => {
-    if (!searchQuery) return categories;
+    const dataSource = categories || initialCategories;
+    if (!searchQuery) return dataSource;
     const lowerQuery = searchQuery.toLowerCase();
     
-    return categories.map(cat => ({
+    return dataSource.map(cat => ({
       ...cat,
       items: cat.items.filter(item => 
         item.name.toLowerCase().includes(lowerQuery) || 
         item.description?.toLowerCase().includes(lowerQuery)
       )
     })).filter(cat => cat.items.length > 0);
-  }, [categories, searchQuery]);
+  }, [categories, initialCategories, searchQuery]);
 
-  if (!categories || categories.length === 0) {
+  if (!initialCategories || initialCategories.length === 0) {
       return (
           <div className="flex min-h-[50vh] items-center justify-center">
               <p className="text-gray-500">No menu items available.</p>
           </div>
-      )
+      );
   }
 
   return (
@@ -83,18 +107,26 @@ export default function MenuGrid({ categories }: MenuGridProps) {
 
                 <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {category.items.map((item) => (
-                    <MenuItemCard key={item.id} item={item} />
+                    <MenuItemCard 
+                        key={item.id} 
+                        item={item} 
+                        modifierGroups={modifierGroups}
+                        restaurantId={restaurantId}
+                    />
                     ))}
                 </div>
                 </section>
             ))
           ) : (
-              <div className="text-center py-12">
-                  <p className="text-gray-500">No items found for &quot;{searchQuery}&quot;</p>
-              </div>
+            <div className="text-center py-12">
+              <p className="text-gray-500">No items found for &quot;{searchQuery}&quot;</p>
+            </div>
           )}
         </div>
       </div>
+      
+      {/* Floating Cart UI */}
+      <FloatingCart />
     </div>
   );
 }

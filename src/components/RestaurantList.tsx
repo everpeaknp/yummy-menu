@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, MapPin, Phone, Search, Utensils } from "lucide-react";
-import { Restaurant } from "@/services/api";
+import { Restaurant, getImageUrl } from "@/services/api";
 import { slugify } from "@/config/restaurants";
 
 interface RestaurantListProps {
@@ -81,7 +81,7 @@ export default function RestaurantList({ initialRestaurants }: RestaurantListPro
                         <div className="relative h-52 w-full overflow-hidden bg-gray-100">
                             {restaurant.cover_image ? (
                                 <Image
-                                    src={restaurant.cover_image}
+                                    src={getImageUrl(restaurant.cover_image)!}
                                     alt={restaurant.name}
                                     fill
                                     className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -98,7 +98,7 @@ export default function RestaurantList({ initialRestaurants }: RestaurantListPro
                                 <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-white bg-white shadow-lg z-10">
                                      {restaurant.logo ? (
                                         <Image
-                                            src={restaurant.logo}
+                                            src={getImageUrl(restaurant.logo)!}
                                             alt="Logo"
                                             width={48}
                                             height={48}

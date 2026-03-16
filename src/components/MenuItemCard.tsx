@@ -1,23 +1,55 @@
 "use client";
 
-import { MenuItem } from "@/services/api";
+import { MenuItem, getImageUrl } from "@/services/api";
 import Image from "next/image";
-import { Plus, Star } from "lucide-react";
+import { Plus, Star, Check } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { useState } from "react";
+
+import ItemCustomizationDrawer from "./ItemCustomizationDrawer";
 
 interface MenuItemCardProps {
   item: MenuItem;
+  modifierGroups?: any[];
+  restaurantId: string;
 }
 
-export default function MenuItemCard({ item }: MenuItemCardProps) {
+export default function MenuItemCard({ item, modifierGroups = [], restaurantId }: MenuItemCardProps) {
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const hasModifiers = item.modifier_group_ids && item.modifier_group_ids.length > 0;
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasModifiers) {
+      setIsDrawerOpen(true);
+    } else {
+      addToCart(item);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 2000);
+    }
+  };
+
+  const handleCustomAddToCart = (item: MenuItem, notes: string, selectedModifiers: any[]) => {
+    addToCart(item, notes, selectedModifiers);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
   return (
-    <div className="group relative flex w-full cursor-pointer flex-row items-center gap-4 rounded-xl bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-md sm:h-full sm:flex-col sm:justify-between sm:gap-0 sm:p-4">
+    <div 
+        className="group relative flex w-full cursor-pointer flex-row items-center gap-4 rounded-xl bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-md sm:h-full sm:flex-col sm:justify-between sm:gap-0 sm:p-4"
+        onClick={handleAdd}
+    >
       
       {/* Image Section */}
       {/* Mobile: Fixed small square (w-24 h-24). Desktop: Full width aspect 4:3 */}
       <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-50 sm:aspect-[4/3] sm:h-auto sm:w-full sm:rounded-2xl">
         {item.image ? (
           <Image
-            src={item.image}
+            src={getImageUrl(item.image)!}
             alt={item.name}
             fill
             unoptimized={item.image.startsWith('/')}
@@ -66,13 +98,22 @@ export default function MenuItemCard({ item }: MenuItemCardProps) {
             
             {/* Mobile Add Button (Visible on mobile right side, hidden on desktop maybe? or kept) */}
             <button 
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white shadow-md transition-transform active:scale-95 sm:absolute sm:bottom-4 sm:right-4 sm:h-10 sm:w-10 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
+                onClick={handleAdd}
+                className={`flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all active:scale-95 sm:absolute sm:bottom-4 sm:right-4 sm:h-10 sm:w-10 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 ${added ? 'bg-green-500 text-white' : 'bg-black text-white'}`}
                 aria-label="Add to cart"
             >
-                <Plus size={16} strokeWidth={2.5} className="sm:h-5 sm:w-5" />
+                {added ? <Check size={16} strokeWidth={3} /> : <Plus size={16} strokeWidth={2.5} className="sm:h-5 sm:w-5" />}
             </button>
         </div>
       </div>
+
+      <ItemCustomizationDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        item={item}
+        modifierGroups={modifierGroups}
+        onAddToCart={handleCustomAddToCart}
+      />
     </div>
   );
 }
