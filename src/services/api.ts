@@ -43,6 +43,16 @@ export interface Restaurant {
   phone?: string;
 }
 
+export interface QrVerifyResult {
+  restaurant_id: number;
+  restaurant_name?: string;
+  table_id: number;
+  table_name?: string;
+  token: string;
+  local_pos_ip?: string | null;
+  cloud_url?: string;
+}
+
 export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
   try {
     const url = `${API_URL}/restaurants/${id}`;
@@ -170,5 +180,20 @@ export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategory
   } catch (error) {
     console.error("Failed to fetch grouped menu", error);
     return [];
+  }
+};
+
+export const verifyQrToken = async (token: string): Promise<QrVerifyResult | null> => {
+  try {
+    const url = `${API_URL}/qr/verify/${token}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const data = json?.data || json;
+    if (!data?.restaurant_id) return null;
+    return data as QrVerifyResult;
+  } catch (error) {
+    console.error("Failed to verify QR token", error);
+    return null;
   }
 };
