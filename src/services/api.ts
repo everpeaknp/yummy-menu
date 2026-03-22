@@ -1,18 +1,49 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://yummy-321287803064.asia-south1.run.app';
+import axios from 'axios';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nrrfumuslekbdjvgklqp.supabase.co';
-// Debug log to trace what path is coming in
-const getImageUrl = (path?: string) => {
-    // console.log(`[Image Debug] Input: ${path}`);
+const getInitialBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const persisted = localStorage.getItem('yummy_api_url');
+    if (persisted) return persisted;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'https://yummy-321287803064.asia-south1.run.app';
+};
+
+const INITIAL_API_URL = getInitialBaseUrl();
+console.log(`[API] Initial Base URL: ${INITIAL_API_URL}`);
+
+// Centralized Axios Instance
+export const apiClient = axios.create({
+  baseURL: INITIAL_API_URL,
+  timeout: 300000, // 5 minutes (increased for extremely slow backend/recovery)
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const setBaseUrl = (url: string) => {
+  console.log(`[API] Switching Base URL to: ${url}`);
+  apiClient.defaults.baseURL = url;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('yummy_api_url', url);
+  }
+};
+
+// Request interceptor for debug logging
+apiClient.interceptors.request.use(config => {
+  console.log(`[API_START] ${config.method?.toUpperCase()} ${config.url}`);
+  return config;
+});
+
+export const getImageUrl = (path?: string) => {
     if (!path) return undefined;
     if (path.startsWith('http')) return path;
     if (path.startsWith('asset:')) {
         const navPath = path.replace('asset:', '');
         const cleanPath = navPath.startsWith('/') ? navPath : `/${navPath}`;
-        // console.log(`[Image Debug] Output (Local): ${cleanPath}`);
         return cleanPath;
     }
-    return path;
+    // Ensure relative paths start with a leading slash for next/image
+    return path.startsWith('/') ? path : `/${path}`;
 }
 
 export interface MenuCategoryGroup {
@@ -30,8 +61,10 @@ export interface MenuItem {
   price: number;
   image?: string;
   is_available: boolean;
-  dietary_info?: string[]; // e.g., 'veg', 'non-veg', 'gluten-free'
-  category_type?: string; // e.g. 'kitchen', 'bar', 'cafe'
+  dietary_info?: string[];
+  category_type?: string;
+  modifier_group_ids?: number[];
+  category_name?: string;
 }
 
 export interface Restaurant {
@@ -51,22 +84,20 @@ export interface QrVerifyResult {
   token: string;
   local_pos_ip?: string | null;
   cloud_url?: string;
+  ordered_items?: {
+    id: number;
+    menu_item_id: number;
+    name: string;
+    quantity: number;
+    status: string;
+    image?: string;
+  }[];
 }
 
 export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
   try {
-    const url = `${API_URL}/restaurants/${id}`;
-    // console.log(`[DEBUG] Fetching restaurant from: ${url}`);
-    const res = await fetch(url);
-    // console.log(`[DEBUG] Response status: ${res.status}`);
-    
-    if (!res.ok) {
-        console.error(`[DEBUG] Fetch failed: ${res.statusText}`);
-        return null; 
-    }
-    const json = await res.json();
-    const data = json.data || json;
-    // console.log(`[DEBUG] Restaurant data:`, data);
+    const response = await apiClient.get(`/restaurants/${id}/`);
+    const data = response.data.data || response.data;
     
     return {
         ...data,
@@ -79,14 +110,10 @@ export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
   }
 };
 
-
-// function to get all restaurants
 export const getAllRestaurants = async (): Promise<Restaurant[]> => {
     try {
-        const res = await fetch(`${API_URL}/restaurants`);
-        if (!res.ok) return [];
-        const json = await res.json();
-        const data = json.data || json;
+        const response = await apiClient.get('/restaurants/');
+        const data = response.data.data || response.data;
         if (!Array.isArray(data)) return [];
         
         return data.map((item: any) => ({
@@ -100,82 +127,29 @@ export const getAllRestaurants = async (): Promise<Restaurant[]> => {
     }
 }
 
-interface ItemCategory {
-    id: number;
-    name: string;
-    description?: string;
-    image?: string;
-}
-
-export const getItemCategories = async (restaurantId: string): Promise<ItemCategory[]> => {
-    try {
-        const url = `${API_URL}/item-categories/restaurant/${restaurantId}`;
-        console.log(`[API_DEBUG] 1. Fetching categories URL: ${url}`);
-        
-        const res = await fetch(url);
-        console.log(`[API_DEBUG] 2. Categories Response Status: ${res.status}`);
-        
-        if (!res.ok) {
-            console.error(`[API_DEBUG] Categories Failed: ${res.status} ${res.statusText}`);
-            return [];
-        }
-        
-        const json = await res.json();
-        const data = json.data || json;
-        console.log(`[API_DEBUG] 3. Categories Parsed Data Length: ${Array.isArray(data) ? data.length : 'Not Array'}`);
-        if(Array.isArray(data) && data.length > 0) {
-             console.log(`[API_DEBUG] Sample category: ID=${data[0].id} Name=${data[0].name}`);
-        }
-        return data;
-    } catch (error) {
-        console.error("Failed to fetch categories", error);
-        return [];
-    }
-}
-
 export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategoryGroup[]> => {
   try {
     console.log(`[API] Fetching grouped menu for Restaurant ${restaurantId}`);
+    const response = await apiClient.get(`/menus/restaurant/${restaurantId}/grouped`);
+    const rawData = response.data.data || response.data;
     
-    // Use the grouped endpoint as it is the intended public API
-    const res = await fetch(`${API_URL}/menus/restaurant/${restaurantId}/grouped`);
-    
-    if (!res.ok) {
-        console.error(`[API] Grouped fetch failed: ${res.status}`);
-        return [];
-    }
+    if (!Array.isArray(rawData)) return [];
 
-    const json = await res.json();
-    const rawData = json.data || json;
-    
-    if (!Array.isArray(rawData) || rawData.length === 0) {
-        console.warn("[API] Grouped data is empty or not an array");
-        return [];
-    }
-
-    console.log(`[API] Received ${rawData.length} groups. First item keys: ${Object.keys(rawData[0]).join(', ')}`);
-
-    // Map the response to our internal structure
-    return rawData.map((group: any) => {
-        // Smart field mapping
-        const name = group.name || group.category_name || group.title || "Uncategorized";
-        const items = group.items || group.menu_items || group.dishes || [];
-        const image = group.image || group.category_image;
-
-        return {
-            id: Number(group.id || group.category_id || Math.random()), 
-            name: name,
-            description: group.description,
-            image: getImageUrl(image),
-            items: Array.isArray(items) ? items.map((item: any) => ({
-                ...item,
-                id: Number(item.id),
-                image: getImageUrl(item.image),
-                price: Number(item.price || 0),
-                category_type: item.category_type // Map this field
-            })) : []
-        };
-    }).filter(g => g.items.length > 0); // Only show categories with items
+    return rawData.map((group: any) => ({
+        id: Number(group.id || group.category_id || Math.random()), 
+        name: group.name || group.category_name || "Uncategorized",
+        description: group.description,
+        image: getImageUrl(group.image || group.category_image),
+        items: Array.isArray(group.items) ? group.items.map((item: any) => ({
+            ...item,
+            id: Number(item.id),
+            image: getImageUrl(item.image),
+            price: Number(item.price || 0),
+            category_type: item.category_type,
+            modifier_group_ids: item.modifier_group_ids || [],
+            category_name: group.category_name || group.name || "Uncategorized"
+        })) : []
+    })).filter(g => g.items.length > 0);
 
   } catch (error) {
     console.error("Failed to fetch grouped menu", error);
@@ -183,17 +157,72 @@ export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategory
   }
 };
 
-export const verifyQrToken = async (token: string): Promise<QrVerifyResult | null> => {
+export const getModifierGroups = async (restaurantId: string): Promise<any[]> => {
   try {
-    const url = `${API_URL}/qr/verify/${token}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-    const json = await res.json();
-    const data = json?.data || json;
-    if (!data?.restaurant_id) return null;
-    return data as QrVerifyResult;
+    const response = await apiClient.get(`/modifiers/groups?restaurant_id=${restaurantId}`);
+    return response.data.data.groups || [];
+  } catch (error) {
+    console.error("Failed to fetch modifier groups", error);
+    return [];
+  }
+};
+
+/**
+ * QR Table Context used by the verification page
+ */
+export interface QRTableContext extends QrVerifyResult {}
+
+export const verifyQRToken = async (token: string): Promise<QRTableContext | null> => {
+  try {
+    const response = await apiClient.get(`/qr/verify/${token}`);
+    const data = response.data;
+    
+    // Map image URLs for ordered items
+    if (data.ordered_items && Array.isArray(data.ordered_items)) {
+        data.ordered_items = data.ordered_items.map((item: any) => ({
+            ...item,
+            image: getImageUrl(item.image)
+        }));
+    }
+    
+    return data;
   } catch (error) {
     console.error("Failed to verify QR token", error);
     return null;
+  }
+};
+
+// Add an alias for compatibility if needed, but the project seems to prefer verifyQRToken
+export const verifyQrToken = verifyQRToken;
+
+export const requestOrder = async (
+  restaurantId: number,
+  tableId: number,
+  qrToken: string,
+  items: { 
+    menu_item_id: number; 
+    qty: number; 
+    notes?: string; 
+    modifiers?: {
+      modifier_id: number;
+      modifier_name_snapshot: string;
+      price_adjustment_snapshot: number;
+    }[];
+  }[]
+) => {
+  try {
+    const response = await apiClient.post('/qr/orders/request', {
+        restaurant_id: restaurantId,
+        table_id: tableId,
+        qr_token: qrToken,
+        items
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("Failed to request order", error);
+    return { 
+      error: "Request failed", 
+      detail: error.response?.data?.detail || error.message 
+    };
   }
 };
