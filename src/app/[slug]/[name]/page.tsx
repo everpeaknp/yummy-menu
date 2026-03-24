@@ -1,5 +1,6 @@
 
 import MenuGrid from "@/components/MenuGrid";
+import TableBanner from "@/components/TableBanner";
 import { getGroupedMenu, getRestaurant, getImageUrl } from "@/services/api";
 import { slugify } from "@/config/restaurants";
 import Image from "next/image";
@@ -105,6 +106,7 @@ export default async function RestaurantIdPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-white">
+        <TableBanner />
         {/* Hero Header */}
         <div className="relative h-48 w-full bg-gray-900 sm:h-64 overflow-hidden">
             {/* Background Image / Pattern */}
