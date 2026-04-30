@@ -124,7 +124,7 @@ export default async function RestaurantMenuPage({ params }: PageProps) {
             </div>
         </div>
 
-        <MenuGrid categories={categories} />
+        <MenuGrid initialCategories={categories} restaurantId={restaurantId.toString()} />
     </main>
   );
 }
