@@ -2,9 +2,9 @@
 
 import { MenuItem, getImageUrl } from "@/services/api";
 import Image from "next/image";
-import { Plus, Star, Check } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import ItemCustomizationDrawer from "./ItemCustomizationDrawer";
 
@@ -15,33 +15,55 @@ interface MenuItemCardProps {
 }
 
 export default function MenuItemCard({ item, modifierGroups = [], restaurantId }: MenuItemCardProps) {
-  const { addToCart } = useCart();
-  const [added, setAdded] = useState(false);
+  const { addToCart, updateQuantity, cart } = useCart();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const hasModifiers = item.modifier_group_ids && item.modifier_group_ids.length > 0;
 
-  const handleAdd = (e: React.MouseEvent) => {
+  const itemQty = useMemo(
+    () => cart.filter((c) => c.id === item.id).reduce((sum, c) => sum + c.quantity, 0),
+    [cart, item.id]
+  );
+
+  const handleIncrement = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     e.stopPropagation();
     if (hasModifiers) {
       setIsDrawerOpen(true);
+      return;
+    }
+    if (itemQty > 0) {
+      updateQuantity(item.id, 1);
     } else {
       addToCart(item);
-      setAdded(true);
-      setTimeout(() => setAdded(false), 2000);
+    }
+  };
+
+  const handleDecrement = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (itemQty <= 0) return;
+    updateQuantity(item.id, -1);
+  };
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Ignore clicks from interactive controls; let their own handlers run.
+    if (target.closest("button,a,input,textarea,select,label")) return;
+    // For modifier items, tapping card opens customization.
+    if (hasModifiers) {
+      setIsDrawerOpen(true);
     }
   };
 
   const handleCustomAddToCart = (item: MenuItem, notes: string, selectedModifiers: any[]) => {
     addToCart(item, notes, selectedModifiers);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
     <div 
         className="group relative flex w-full cursor-pointer flex-row items-center gap-4 rounded-xl bg-white p-3 shadow-sm transition-all duration-300 hover:shadow-md sm:h-full sm:flex-col sm:justify-between sm:gap-0 sm:p-4"
-        onClick={handleAdd}
+        onClick={handleCardClick}
     >
       
       {/* Image Section */}
@@ -96,14 +118,52 @@ export default function MenuItemCard({ item, modifierGroups = [], restaurantId }
                 </span>
             </div>
             
-            {/* Mobile Add Button (Visible on mobile right side, hidden on desktop maybe? or kept) */}
-            <button 
-                onClick={handleAdd}
-                className={`flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all active:scale-95 sm:absolute sm:bottom-4 sm:right-4 sm:h-10 sm:w-10 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 ${added ? 'bg-green-500 text-white' : 'bg-black text-white'}`}
+            {hasModifiers ? (
+              <div className="flex items-center gap-2 sm:absolute sm:bottom-4 sm:right-4">
+                {itemQty > 0 && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-800">
+                    {itemQty}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleIncrement}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white shadow-md transition-all active:scale-95 sm:h-10 sm:w-10"
+                  aria-label="Customize and add"
+                >
+                  <Plus size={16} strokeWidth={2.5} className="sm:h-5 sm:w-5" />
+                </button>
+              </div>
+            ) : itemQty === 0 ? (
+              <button
+                type="button"
+                onClick={handleIncrement}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white shadow-md transition-all active:scale-95 sm:absolute sm:bottom-4 sm:right-4 sm:h-10 sm:w-10 sm:translate-y-4 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100"
                 aria-label="Add to cart"
-            >
-                {added ? <Check size={16} strokeWidth={3} /> : <Plus size={16} strokeWidth={2.5} className="sm:h-5 sm:w-5" />}
-            </button>
+              >
+                <Plus size={16} strokeWidth={2.5} className="sm:h-5 sm:w-5" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1 shadow-sm sm:absolute sm:bottom-4 sm:right-4">
+                <button
+                  type="button"
+                  onClick={handleDecrement}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-700"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="min-w-5 text-center text-sm font-bold text-slate-900">{itemQty}</span>
+                <button
+                  type="button"
+                  onClick={handleIncrement}
+                  className="flex h-7 w-7 items-center justify-center rounded-full bg-black text-white"
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            )}
         </div>
       </div>
 

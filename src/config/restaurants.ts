@@ -43,7 +43,7 @@ export async function getRestaurantIdFromSlug(slug: string): Promise<number | nu
   }
 
   // If no static mapping, try to find by fetching restaurants
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://yummy-321287803064.asia-south1.run.app';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
   
   // Helper to fetch a single restaurant
   const checkRestaurant = async (id: number): Promise<number | null> => {
@@ -52,7 +52,7 @@ export async function getRestaurantIdFromSlug(slug: string): Promise<number | nu
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const res = await fetch(`${API_URL}/restaurants/${id}/`, {
+      const res = await fetch(`${API_URL}/restaurants/public/${id}/`, {
         next: { revalidate: 3600 }, // Cache for 1 hour
         signal: controller.signal
       });

@@ -55,6 +55,13 @@ export default function QRVerifyPage() {
         }
 
         // Store session info
+        const activeOrderTotal = Array.isArray(context.active_orders)
+          ? context.active_orders.reduce(
+              (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
+              0
+            )
+          : 0;
+
         const sessionData = {
           restaurantId: context.restaurant_id,
           restaurantName: context.restaurant_name,
@@ -62,10 +69,12 @@ export default function QRVerifyPage() {
           tableName: context.table_name,
           qrToken: context.token,
           orderedItems: context.ordered_items,
+          activeOrderTotal,
           startTime: new Date().getTime()
         };
         
         localStorage.setItem("yummy_qr_session", JSON.stringify(sessionData));
+        window.dispatchEvent(new Event("yummy_qr_session_updated"));
         console.log("[QR] Session saved:", sessionData);
 
         // Redirect to menu with small delay to ensure storage flush
@@ -113,9 +122,11 @@ export default function QRVerifyPage() {
                   tableId: 1, // Default to a valid ID
                   tableName: "DEBUG-TABLE",
                   qrToken: token as string || "manual-test",
+                  activeOrderTotal: 0,
                   startTime: new Date().getTime()
                 };
                 localStorage.setItem("yummy_qr_session", JSON.stringify(sessionData));
+                window.dispatchEvent(new Event("yummy_qr_session_updated"));
                 const { slugify } = await import("@/config/restaurants");
                 router.push(`/52/${slugify("Yummyi")}`);
               }}

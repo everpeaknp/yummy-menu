@@ -26,9 +26,12 @@ interface QRSession {
     name: string;
     quantity: number;
     status: string;
+    unit_price?: number;
+    line_total?: number;
     notes?: string;
     image?: string;
   }[];
+  activeOrderTotal?: number;
 }
 
 interface CartContextType {
@@ -69,7 +72,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     
     // Sync if localStorage changes in another tab
     window.addEventListener("storage", syncSession);
-    return () => window.removeEventListener("storage", syncSession);
+    // Sync if session is updated within same tab (custom event)
+    window.addEventListener("yummy_qr_session_updated", syncSession as EventListener);
+    return () => {
+      window.removeEventListener("storage", syncSession);
+      window.removeEventListener("yummy_qr_session_updated", syncSession as EventListener);
+    };
   }, []);
 
   const addToCart = (item: MenuItem, notes?: string, modifiers?: CartItem['modifiers']) => {
@@ -120,6 +128,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const resetSession = () => {
     localStorage.removeItem("yummy_qr_session");
     setSession(null);
+    window.dispatchEvent(new Event("yummy_qr_session_updated"));
   };
 
   const refreshSession = async () => {
@@ -128,12 +137,30 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const { verifyQRToken } = await import("@/services/api");
       const context = await verifyQRToken(session.qrToken);
       if (context) {
+        const totalFromActiveOrders = Array.isArray(context.active_orders)
+          ? context.active_orders.reduce(
+              (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
+              0
+            )
+          : 0;
+
+        const totalFromOrderedItems = Array.isArray(context.ordered_items)
+          ? context.ordered_items.reduce((sum, item: any) => {
+              const itemLineTotal = Number(item.line_total ?? 0);
+              if (itemLineTotal > 0) return sum + itemLineTotal;
+              const itemUnitPrice = Number(item.unit_price ?? 0);
+              return sum + (itemUnitPrice * Number(item.quantity ?? 0));
+            }, 0)
+          : 0;
+
         const updatedSession = {
           ...session,
-          orderedItems: context.ordered_items
+          orderedItems: context.ordered_items,
+          activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems
         };
         localStorage.setItem("yummy_qr_session", JSON.stringify(updatedSession));
         setSession(updatedSession);
+        window.dispatchEvent(new Event("yummy_qr_session_updated"));
       }
     } catch (err) {
       console.error("[CartContext] Refresh session failed (token likely invalid):", err);
