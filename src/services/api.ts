@@ -5,7 +5,7 @@ const getInitialBaseUrl = () => {
     const persisted = localStorage.getItem('yummy_api_url');
     if (persisted) return persisted;
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'https://yummy-321287803064.asia-south1.run.app';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
 };
 
 const INITIAL_API_URL = getInitialBaseUrl();
@@ -130,7 +130,7 @@ export const getAllRestaurants = async (): Promise<Restaurant[]> => {
 export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategoryGroup[]> => {
   try {
     console.log(`[API] Fetching grouped menu for Restaurant ${restaurantId}`);
-    const response = await apiClient.get(`/menus/restaurant/${restaurantId}/grouped`);
+    const response = await apiClient.get(`/menus/public/restaurant/${restaurantId}/grouped`);
     const rawData = response.data.data || response.data;
     
     if (!Array.isArray(rawData)) return [];
@@ -159,7 +159,7 @@ export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategory
 
 export const getModifierGroups = async (restaurantId: string): Promise<any[]> => {
   try {
-    const response = await apiClient.get(`/modifiers/groups?restaurant_id=${restaurantId}`);
+    const response = await apiClient.get(`/public/modifiers/groups?restaurant_id=${restaurantId}`);
     return response.data.data.groups || [];
   } catch (error) {
     console.error("Failed to fetch modifier groups", error);
@@ -167,10 +167,31 @@ export const getModifierGroups = async (restaurantId: string): Promise<any[]> =>
   }
 };
 
-/**
- * QR Table Context used by the verification page
- */
-export interface QRTableContext extends QrVerifyResult {}
+export interface QRTableContext {
+  restaurant_id: number;
+  restaurant_name: string;
+  table_id: number;
+  table_name: string;
+  token: string;
+  local_pos_ip?: string | null;
+  cloud_url?: string;
+  ordered_items?: {
+    id: number;
+    menu_item_id: number;
+    name: string;
+    quantity: number;
+    status: string;
+    unit_price?: number;
+    line_total?: number;
+    image?: string;
+  }[];
+  active_orders?: {
+    id: number;
+    status: string;
+    grand_total?: number;
+    total?: number;
+  }[];
+}
 
 export const verifyQRToken = async (token: string): Promise<QRTableContext | null> => {
   try {
@@ -183,6 +204,13 @@ export const verifyQRToken = async (token: string): Promise<QRTableContext | nul
             ...item,
             image: getImageUrl(item.image)
         }));
+    }
+
+    if (data.active_orders && Array.isArray(data.active_orders)) {
+      data.active_orders = data.active_orders.map((order: any) => ({
+        ...order,
+        grand_total: Number(order.grand_total ?? order.total ?? 0)
+      }));
     }
     
     return data;

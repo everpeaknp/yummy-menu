@@ -50,7 +50,9 @@ export default function MenuGrid({ initialCategories, restaurantId }: MenuGridPr
     })).filter(cat => cat.items.length > 0);
   }, [categories, initialCategories, searchQuery]);
 
-  if (!initialCategories || initialCategories.length === 0) {
+  const hasAnyCategories = Array.isArray(filteredCategories) && filteredCategories.length > 0;
+
+  if (!hasAnyCategories && !searchQuery) {
       return (
           <div className="flex min-h-[50vh] items-center justify-center">
               <p className="text-gray-500">No menu items available.</p>
@@ -85,7 +87,7 @@ export default function MenuGrid({ initialCategories, restaurantId }: MenuGridPr
         </div>
 
         <div className="space-y-20 pb-24">
-          {filteredCategories.length > 0 ? (
+          {hasAnyCategories ? (
             filteredCategories.map((category) => (
                 <section 
                     key={category.id} 

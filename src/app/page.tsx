@@ -22,6 +22,7 @@ export default async function Home() {
                         src="/logos/yummy_logo.png" 
                         alt="Yummy Logo" 
                         fill 
+                        sizes="40px"
                         className="object-contain" 
                         unoptimized
                     />

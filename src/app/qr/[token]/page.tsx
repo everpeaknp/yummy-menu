@@ -53,6 +53,13 @@ export default function QRVerifyPage() {
         }
 
         // Store session info
+        const activeOrderTotal = Array.isArray(context.active_orders)
+          ? context.active_orders.reduce(
+              (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
+              0
+            )
+          : 0;
+
         const sessionData = {
           restaurantId: context.restaurant_id,
           restaurantName: context.restaurant_name,
@@ -60,10 +67,12 @@ export default function QRVerifyPage() {
           tableName: context.table_name,
           qrToken: context.token,
           orderedItems: context.ordered_items,
+          activeOrderTotal,
           startTime: new Date().getTime()
         };
         
         localStorage.setItem("yummy_qr_session", JSON.stringify(sessionData));
+        window.dispatchEvent(new Event("yummy_qr_session_updated"));
         console.log("[QR] Session saved:", sessionData);
 
         // Redirect to menu
@@ -90,13 +99,41 @@ export default function QRVerifyPage() {
           </svg>
         </div>
         <h1 className="text-xl font-bold text-gray-900">Verification Failed</h1>
-        <p className="mt-2 text-gray-500">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-8 rounded-lg bg-black px-6 py-3 text-white font-bold"
-        >
-          Try Again
-        </button>
+        <p className="mt-2 max-w-xs text-gray-500">{error}</p>
+        
+        <div className="mt-8 space-y-3 w-full max-w-xs">
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full rounded-lg bg-black px-6 py-3 text-white shadow-md active:scale-95 font-bold"
+          >
+            Try Again
+          </button>
+
+          <div className="pt-4 border-t border-gray-200">
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-2">Internal Testing Only</p>
+            <button 
+              onClick={async () => {
+                // Manual debug bypass for testing
+                const sessionData = {
+                  restaurantId: 52,
+                  restaurantName: "Yummyi",
+                  tableId: 1, // Default to a valid ID
+                  tableName: "DEBUG-TABLE",
+                  qrToken: token as string || "manual-test",
+                  activeOrderTotal: 0,
+                  startTime: new Date().getTime()
+                };
+                localStorage.setItem("yummy_qr_session", JSON.stringify(sessionData));
+                window.dispatchEvent(new Event("yummy_qr_session_updated"));
+                const { slugify } = await import("@/config/restaurants");
+                router.push(`/52/${slugify("Yummyi")}`);
+              }}
+              className="w-full rounded-lg border-2 border-dashed border-gray-300 px-6 py-2 text-gray-500 hover:bg-gray-100 active:scale-95 text-sm"
+            >
+              Skip Verification & Load Menu
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
