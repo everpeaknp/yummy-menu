@@ -130,7 +130,7 @@ export const getAllRestaurants = async (): Promise<Restaurant[]> => {
 export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategoryGroup[]> => {
   try {
     console.log(`[API] Fetching grouped menu for Restaurant ${restaurantId}`);
-    const response = await apiClient.get(`/menus/public/restaurant/${restaurantId}/grouped`);
+    const response = await apiClient.get(`/menus/restaurant/${restaurantId}/grouped`);
     const rawData = response.data.data || response.data;
     
     if (!Array.isArray(rawData)) return [];
@@ -159,7 +159,7 @@ export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategory
 
 export const getModifierGroups = async (restaurantId: string): Promise<any[]> => {
   try {
-    const response = await apiClient.get(`/public/modifiers/groups?restaurant_id=${restaurantId}`);
+    const response = await apiClient.get(`/modifiers/groups/all/${restaurantId}`);
     return response.data.data.groups || [];
   } catch (error) {
     console.error("Failed to fetch modifier groups", error);
