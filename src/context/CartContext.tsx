@@ -137,6 +137,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const { verifyQRToken } = await import("@/services/api");
       const context = await verifyQRToken(session.qrToken);
       if (context) {
+        const hadActiveBefore =
+          Number(session.activeOrderTotal ?? 0) > 0 ||
+          (Array.isArray(session.orderedItems) && session.orderedItems.length > 0);
+        const hasActiveNow = Array.isArray(context.active_orders) && context.active_orders.length > 0;
+        const hasOrderedItemsNow = Array.isArray(context.ordered_items) && context.ordered_items.length > 0;
+
+        // If this device had an active/ordered session before but server now reports none,
+        // the table session has ended (order completed/table freed). Force re-scan.
+        if (hadActiveBefore && !hasActiveNow && !hasOrderedItemsNow) {
+          resetSession();
+          return;
+        }
+
         const totalFromActiveOrders = Array.isArray(context.active_orders)
           ? context.active_orders.reduce(
               (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),

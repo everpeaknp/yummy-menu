@@ -7,7 +7,7 @@ import { requestOrder, getImageUrl, getGroupedMenu } from "@/services/api";
 import Image from "next/image";
 
 export default function FloatingCart() {
-  const { cart, totalItems, totalPrice, updateQuantity, updateNotes, session, clearCart, refreshSession } = useCart();
+  const { cart, totalItems, totalPrice, updateQuantity, updateNotes, session, clearCart, refreshSession, resetSession } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -74,6 +74,15 @@ export default function FloatingCart() {
   const draftTotal = totalPrice;
   const grandTotal = orderedTotal + draftTotal;
 
+  useEffect(() => {
+    if (!isOpen || !session) return;
+    refreshSession();
+    const timer = setInterval(() => {
+      refreshSession();
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [isOpen, session, refreshSession]);
+
   if (totalItems === 0 && !orderSuccess && (!session?.orderedItems || session.orderedItems.length === 0)) return null;
 
   const handleCheckout = async () => {
@@ -111,6 +120,17 @@ export default function FloatingCart() {
         }, 5000);
       } else {
         const errorMsg = response.detail || response.error || "Unknown error";
+        const statusCode = Number(response.statusCode || 0);
+        if (
+          statusCode === 404 ||
+          statusCode === 401 ||
+          /not found|invalid|expired|session ended|not authenticated/i.test(String(errorMsg))
+        ) {
+          resetSession();
+          clearCart();
+          alert("This table session has ended. Please scan the table QR code again.");
+          return;
+        }
         console.error("Order failed details:", response);
         alert("Failed to place order: " + errorMsg);
       }
