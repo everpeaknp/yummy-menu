@@ -5,7 +5,8 @@ import { getAllRestaurants } from "@/services/api";
 import PaperPlaneButton from "@/components/PaperPlaneButton";
 import RestaurantList from "@/components/RestaurantList";
 
-export const revalidate = 60; // Revalidate list every minute
+export const dynamic = 'force-dynamic';
+export const revalidate = 0; // Disable static cache, always fetch fresh data
 
 export default async function Home() {
   const restaurants = await getAllRestaurants();
