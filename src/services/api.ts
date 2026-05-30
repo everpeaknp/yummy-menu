@@ -74,6 +74,8 @@ export interface Restaurant {
   logo?: string;
   cover_image?: string;
   phone?: string;
+  billing_mode?: string;
+  plan_state?: string;
 }
 
 export interface QrVerifyResult {
@@ -116,11 +118,22 @@ export const getAllRestaurants = async (): Promise<Restaurant[]> => {
         const data = response.data.data || response.data;
         if (!Array.isArray(data)) return [];
         
-        return data.map((item: any) => ({
+        return data
+          .map((item: any) => ({
             ...item,
             logo: getImageUrl(item.profile_picture || item.logo),
             cover_image: getImageUrl(item.cover_photo)
-        }));
+          }))
+          .filter((item: any) => {
+            // Only show paid users, or users currently in an active trial
+            if (item.billing_mode === 'paid') return true;
+            if (item.billing_mode === 'trial' && item.plan_state === 'trialing') return true;
+            
+            // If they don't have these fields (legacy data), optionally include them
+            // or return false if we want strict enforcement.
+            // Strict enforcement as per user instructions:
+            return false;
+          });
     } catch (error) {
         console.error("Failed to fetch restaurants", error);
         return [];
