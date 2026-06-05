@@ -56,27 +56,90 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Load session from localStorage on mount and stay in sync
   useEffect(() => {
-    const syncSession = () => {
+    let isMounted = true;
+
+    const initSession = async () => {
       const savedSession = localStorage.getItem("yummy_qr_session");
-      if (savedSession) {
-        const parsed = JSON.parse(savedSession);
-        console.log("[CartContext] QR Session active:", parsed.tableName, "(Token:", parsed.qrToken, ")");
-        setSession(parsed);
-      } else {
-        console.log("[CartContext] No QR Session found in localStorage.");
+      if (!savedSession) {
         setSession(null);
+        return;
+      }
+
+      const parsed = JSON.parse(savedSession);
+      setSession(parsed);
+      console.log("[CartContext] QR Session loaded locally:", parsed.tableName);
+
+      // Verify with server in background
+      try {
+        const { verifyQRToken } = await import("@/services/api");
+        const context = await verifyQRToken(parsed.qrToken);
+        if (!context) throw new Error("Invalid token");
+
+        const hadActiveBefore =
+          Number(parsed.activeOrderTotal ?? 0) > 0 ||
+          (Array.isArray(parsed.orderedItems) && parsed.orderedItems.length > 0);
+        const hasActiveNow = Array.isArray(context.active_orders) && context.active_orders.length > 0;
+        const hasOrderedItemsNow = Array.isArray(context.ordered_items) && context.ordered_items.length > 0;
+
+        if (hadActiveBefore && !hasActiveNow && !hasOrderedItemsNow) {
+          console.log("[CartContext] Table cleared by server. Resetting session.");
+          if (isMounted) {
+            localStorage.removeItem("yummy_qr_session");
+            setSession(null);
+          }
+        } else {
+          // Update with fresh items
+          const totalFromActiveOrders = Array.isArray(context.active_orders)
+            ? context.active_orders.reduce(
+                (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
+                0
+              )
+            : 0;
+
+          const totalFromOrderedItems = Array.isArray(context.ordered_items)
+            ? context.ordered_items.reduce((sum, item: any) => {
+                const itemLineTotal = Number(item.line_total ?? 0);
+                if (itemLineTotal > 0) return sum + itemLineTotal;
+                const itemUnitPrice = Number(item.unit_price ?? 0);
+                return sum + (itemUnitPrice * Number(item.quantity ?? 0));
+              }, 0)
+            : 0;
+
+          const updatedSession = {
+            ...parsed,
+            orderedItems: context.ordered_items,
+            activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems
+          };
+
+          if (isMounted) {
+            localStorage.setItem("yummy_qr_session", JSON.stringify(updatedSession));
+            setSession(updatedSession);
+          }
+        }
+      } catch (error) {
+        console.error("[CartContext] Background verification failed:", error);
+        if (isMounted) {
+          localStorage.removeItem("yummy_qr_session");
+          setSession(null);
+        }
       }
     };
 
-    syncSession();
+    initSession();
+
+    const onStorageChange = () => {
+      const saved = localStorage.getItem("yummy_qr_session");
+      if (saved) setSession(JSON.parse(saved));
+      else setSession(null);
+    };
+
+    window.addEventListener("storage", onStorageChange);
+    window.addEventListener("yummy_qr_session_updated", onStorageChange as EventListener);
     
-    // Sync if localStorage changes in another tab
-    window.addEventListener("storage", syncSession);
-    // Sync if session is updated within same tab (custom event)
-    window.addEventListener("yummy_qr_session_updated", syncSession as EventListener);
     return () => {
-      window.removeEventListener("storage", syncSession);
-      window.removeEventListener("yummy_qr_session_updated", syncSession as EventListener);
+      isMounted = false;
+      window.removeEventListener("storage", onStorageChange);
+      window.removeEventListener("yummy_qr_session_updated", onStorageChange as EventListener);
     };
   }, []);
 
