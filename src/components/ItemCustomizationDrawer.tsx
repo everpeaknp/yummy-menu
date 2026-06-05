@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MenuItem } from "@/services/api";
-import { X, Plus, Check, Info } from "lucide-react";
-import gsap from "gsap";
+import { X, Check } from "lucide-react";
 
 interface ItemCustomizationDrawerProps {
   isOpen: boolean;
@@ -22,35 +21,27 @@ export default function ItemCustomizationDrawer({
 }: ItemCustomizationDrawerProps) {
   const [selectedModifiers, setSelectedModifiers] = useState<Record<number, any[]>>({});
   const [notes, setNotes] = useState("");
+  // Local state to manage the mount status for animation
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedModifiers({});
       setNotes("");
-      
-      // Animate in
-      gsap.to(".drawer-overlay", { opacity: 1, duration: 0.3 });
-      gsap.to(".drawer-content", { y: 0, duration: 0.4, ease: "power2.out" });
+      setIsMounted(true);
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
+      // Delay unmounting to let the slide-down animation play out
+      const timer = setTimeout(() => setIsMounted(false), 400);
+      return () => clearTimeout(timer);
     }
   }, [isOpen]);
 
-  const handleClose = () => {
-    gsap.to(".drawer-overlay", { opacity: 0, duration: 0.3 });
-    gsap.to(".drawer-content", { 
-      y: "100%", 
-      duration: 0.3, 
-      ease: "power2.in",
-      onComplete: onClose 
-    });
-  };
-
-  if (!item) return null;
+  if (!item && !isMounted) return null;
 
   const itemGroups = modifierGroups.filter(g => 
-    item.modifier_group_ids?.includes(g.id)
+    item?.modifier_group_ids?.includes(g.id)
   ).sort((a,b) => (a.display_order || 0) - (b.display_order || 0));
 
   const handleToggle = (groupId: number, modifier: any, max: number | null) => {
@@ -71,13 +62,14 @@ export default function ItemCustomizationDrawer({
   };
 
   const handleConfirm = () => {
+    if (!item) return;
     const flatModifiers = Object.values(selectedModifiers).flat().map(m => ({
         modifier_id: m.id,
         modifier_name_snapshot: m.name,
         price_adjustment_snapshot: parseFloat(m.price_adjustment || 0)
     }));
     onAddToCart(item, notes, flatModifiers);
-    handleClose();
+    onClose();
   };
 
   // Basic validation for required groups
@@ -96,102 +88,109 @@ export default function ItemCustomizationDrawer({
 
   return (
     <div 
-        className={`fixed inset-0 z-[100] flex items-end justify-center ${isOpen ? 'visible' : 'invisible'}`}
-        style={{ pointerEvents: isOpen ? 'auto' : 'none' }}
+        className={`fixed inset-0 z-[100] flex items-end justify-center transition-all duration-400 ${isOpen ? 'visible' : 'invisible delay-400'}`}
     >
       {/* Overlay */}
       <div 
-        className="drawer-overlay absolute inset-0 bg-black/40 opacity-0 backdrop-blur-sm"
-        onClick={handleClose}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-400 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        onClick={onClose}
       />
       
       {/* Content */}
-      <div className="drawer-content relative w-full max-w-xl translate-y-full rounded-t-[2.5rem] bg-white p-6 shadow-2xl transition-transform dark:bg-gray-900">
-        <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-200 dark:bg-gray-700" />
+      <div 
+        className={`relative w-full max-w-xl rounded-t-[32px] bg-white p-6 pt-4 pb-8 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-transform duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+      >
+        <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-200" />
         
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{item.name}</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">NPR {item.price}</p>
-          </div>
-          <button 
-            onClick={handleClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="mt-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
-          {itemGroups.map(group => (
-            <div key={group.id} className="mb-8">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900 dark:text-white">
-                    {group.name}
-                    {group.is_required && <span className="ml-1 text-red-500">*</span>}
-                </h3>
-                {group.is_required && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600 bg-primary-50 px-2 py-0.5 rounded">
-                        Required
-                    </span>
-                )}
+        {item && (
+          <div className="flex flex-col h-full max-h-[85vh]">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4 shrink-0">
+              <div>
+                <h2 className="text-[24px] font-bold tracking-tight text-gray-900">{item.name}</h2>
+                <p className="mt-1 text-[15px] font-semibold text-gray-500">NPR {item.price}</p>
               </div>
-              
-              <div className="space-y-3">
-                {group.modifiers?.map((mod: any) => {
-                  const isSelected = (selectedModifiers[group.id] || []).some(m => m.id === mod.id);
-                  return (
-                    <button
-                      key={mod.id}
-                      onClick={() => handleToggle(group.id, mod, group.max_selections)}
-                      className={`flex w-full items-center justify-between rounded-2xl border-2 p-4 transition-all ${
-                        isSelected 
-                          ? 'border-black bg-black text-white' 
-                          : 'border-gray-100 bg-gray-50 text-gray-900 hover:border-gray-200'
-                      }`}
-                    >
-                      <span className="font-semibold text-sm">{mod.name}</span>
-                      <div className="flex items-center gap-3">
-                        {parseFloat(mod.price_adjustment) > 0 && (
-                          <span className={`text-xs font-bold ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
-                            +NPR {mod.price_adjustment}
-                          </span>
-                        )}
-                        <div className={`flex h-5 w-5 items-center justify-center rounded-full border ${isSelected ? 'border-white bg-white text-black' : 'border-gray-300 bg-white'}`}>
-                          {isSelected && <Check size={12} strokeWidth={4} />}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
+              <button 
+                onClick={onClose}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto pr-1 pb-4 no-scrollbar flex-1">
+              {itemGroups.map(group => (
+                <div key={group.id} className="mb-6">
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-[17px] font-bold text-gray-900 flex items-center">
+                        {group.name}
+                        {group.is_required && <span className="text-red-500 ml-1.5 text-lg leading-none">*</span>}
+                    </h3>
+                    {group.is_required && (
+                        <span className="text-[10px] font-bold tracking-widest text-red-600 bg-red-50 px-2 py-0.5 rounded-md">
+                            REQUIRED
+                        </span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {group.modifiers?.map((mod: any) => {
+                      const isSelected = (selectedModifiers[group.id] || []).some(m => m.id === mod.id);
+                      return (
+                        <button
+                          key={mod.id}
+                          onClick={() => handleToggle(group.id, mod, group.max_selections)}
+                          className={`flex w-full items-center justify-between rounded-2xl py-4 px-5 bg-white transition-all active:scale-[0.98] select-none border-2 ${
+                            isSelected ? 'border-black shadow-sm' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className="font-bold text-[16px] text-gray-900 tracking-tight">{mod.name}</span>
+                          <div className="flex items-center gap-3">
+                            {parseFloat(mod.price_adjustment) > 0 && (
+                              <span className={`text-[14px] font-bold ${isSelected ? 'text-gray-900' : 'text-gray-500'}`}>
+                                +NPR {mod.price_adjustment}
+                              </span>
+                            )}
+                            <div className={`flex h-[22px] w-[22px] items-center justify-center rounded-full transition-all ${
+                              isSelected ? 'border-[6.5px] border-black bg-white' : 'border-2 border-gray-300 bg-white'
+                            }`}>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {/* Notes Input */}
+              <div className="mt-8 mb-2">
+                  <h3 className="mb-3 text-[16px] font-bold text-gray-900">Special Instructions</h3>
+                  <textarea
+                    placeholder="Ex: No onions, extra spicy, etc."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="w-full rounded-[20px] border border-gray-200 bg-gray-50 p-5 text-[15px] text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black resize-none transition-colors"
+                    rows={3}
+                  />
               </div>
             </div>
-          ))}
 
-          {/* Notes Input */}
-          <div className="mt-4">
-              <h3 className="mb-3 font-bold text-gray-900 dark:text-white">Special Instructions</h3>
-              <textarea
-                placeholder="Ex: No onions, extra spicy, etc."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50 p-4 text-sm focus:border-black focus:outline-none dark:border-gray-800 dark:bg-gray-800"
-                rows={3}
-              />
+            <div className="mt-6 shrink-0 pt-2 border-t border-gray-100">
+                <button
+                  onClick={handleConfirm}
+                  disabled={!isValid}
+                  className="flex w-full items-center justify-between rounded-full bg-black px-8 py-5 text-white transition-all hover:bg-gray-900 active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400"
+                >
+                  <span className="text-[17px] font-bold tracking-tight">Add to Cart</span>
+                  <span className="text-[17px] font-bold tracking-tight">NPR {item.price + additivePrice}</span>
+                </button>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-8">
-            <button
-              onClick={handleConfirm}
-              disabled={!isValid}
-              className="flex w-full items-center justify-between rounded-full bg-black px-8 py-5 text-white shadow-xl transition-transform active:scale-95 disabled:bg-gray-300"
-            >
-              <span className="font-bold">Add to Cart</span>
-              <span className="font-bold">NPR {item.price + additivePrice}</span>
-            </button>
-        </div>
+        )}
       </div>
     </div>
   );
 }
+

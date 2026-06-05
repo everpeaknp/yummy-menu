@@ -1,16 +1,18 @@
 "use client";
 
 import { useCart } from "@/context/CartContext";
-import { ShoppingBag, X, Minus, Plus, Utensils, Send, Loader2, ShoppingCart } from "lucide-react";
+import { ShoppingBag, X, Minus, Plus, Utensils, Send, Loader2, ShoppingCart, Receipt } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { requestOrder, getImageUrl, getGroupedMenu } from "@/services/api";
 import Image from "next/image";
+import ReceiptModal from "./ReceiptModal";
 
 export default function FloatingCart() {
   const { cart, totalItems, totalPrice, updateQuantity, updateNotes, session, clearCart, refreshSession, resetSession } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [orderedTotalFromMenuFallback, setOrderedTotalFromMenuFallback] = useState(0);
   const [orderedMenuPriceMap, setOrderedMenuPriceMap] = useState<Record<number, number>>({});
 
@@ -266,10 +268,19 @@ export default function FloatingCart() {
                            <Utensils size={14} className="text-amber-500" />
                            <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-600/80">Ordered</h3>
                         </div>
-                        <span className="flex items-center gap-1.5 rounded-full border border-emerald-100/50 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
-                          <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
-                          Active
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => setIsReceiptOpen(true)}
+                            className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-700 hover:bg-gray-50 hover:text-black shadow-sm transition-all active:scale-95"
+                          >
+                            <Receipt size={12} strokeWidth={2.5} />
+                            Receipt
+                          </button>
+                          <span className="flex items-center gap-1.5 rounded-full border border-emerald-100/50 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
+                            <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                            Active
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-3">
@@ -383,6 +394,13 @@ export default function FloatingCart() {
           </div>
         </div>
       )}
+
+      {/* Render the local Receipt Modal independently from the drawer */}
+      <ReceiptModal 
+        isOpen={isReceiptOpen} 
+        onClose={() => setIsReceiptOpen(false)} 
+        session={session} 
+      />
     </>
   );
 }
