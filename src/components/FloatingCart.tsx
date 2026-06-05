@@ -287,24 +287,26 @@ export default function FloatingCart() {
                         {session.orderedItems.map((item, idx) => (
                           <div key={`${item.id}-${idx}`} className="flex items-center gap-4 bg-white/50 p-3 rounded-2xl border border-gray-100/60 shadow-sm">
                             {/* Premium Quantity + Image Container */}
-                            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-white">
-                              {item.image ? (
-                                <Image
-                                  src={getImageUrl(item.image)!}
-                                  alt={item.name}
-                                  fill
-                                  sizes="56px"
-                                  unoptimized={item.image.startsWith('/')}
-                                  className="object-contain p-1"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-emerald-600/30">
-                                  <Utensils size={20} strokeWidth={1.5} />
-                                </div>
-                              )}
+                            <div className="relative h-14 w-14 shrink-0">
+                              <div className="h-full w-full overflow-hidden rounded-xl border border-gray-100 bg-white">
+                                {item.image ? (
+                                  <Image
+                                    src={getImageUrl(item.image)!}
+                                    alt={item.name}
+                                    fill
+                                    sizes="56px"
+                                    unoptimized={item.image.startsWith('/')}
+                                    className="object-contain p-1"
+                                  />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-emerald-600/30">
+                                    <Utensils size={20} strokeWidth={1.5} />
+                                  </div>
+                                )}
+                              </div>
                               
                               {/* Perfectly Stylized Badge */}
-                              <div className="absolute -top-1 -right-1 flex h-6.5 w-6.5 items-center justify-center rounded-full bg-black text-[10px] font-black text-white shadow-lg border-2 border-white ring-1 ring-black/5">
+                              <div className="absolute -top-1.5 -right-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black text-[11px] font-black text-white shadow-md ring-2 ring-white z-10">
                                 {item.quantity}
                               </div>
                             </div>
