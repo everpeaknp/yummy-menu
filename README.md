@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment
+
+Copy `.env.example` to `.env.local` and set the deployment-specific values.
+Firebase browser configuration must come from environment variables; the
+application does not contain fallback credentials.
+
 ## Getting Started
 
 First, run the development server:

@@ -1,89 +1,70 @@
-import Link from "next/link";
 import Image from "next/image";
-import { UserRound, Utensils } from "lucide-react";
-import { getAllRestaurants } from "@/services/api";
-import PaperPlaneButton from "@/components/PaperPlaneButton";
+import Link from "next/link";
+import { ArrowDown, UserRound } from "lucide-react";
+import CustomerProfile from "@/components/CustomerProfile";
 import RestaurantList from "@/components/RestaurantList";
+import { getAllRestaurants } from "@/services/api";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0; // Disable static cache, always fetch fresh data
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function Home() {
   const restaurants = await getAllRestaurants();
 
   return (
-    <main className="min-h-screen bg-gray-50 font-body text-slate-600">
-      {/* Navigation / Header */}
-      <nav className="fixed top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-2">
-                 {/* Logo from public/logos/yummy_logo.png */}
-                 <div className="relative h-8 w-8 overflow-hidden rounded-md sm:h-10 sm:w-10">
-                    <Image 
-                        src="/logos/yummy_logo.png" 
-                        alt="Yummy Logo" 
-                        fill 
-                        sizes="40px"
-                        className="object-contain" 
-                        unoptimized
-                    />
-                 </div>
-                 <span className="text-2xl font-bold tracking-tight text-dark-900 font-display">Yummyever Menu</span>
-            </div>
-            
-            <div className="flex items-center gap-2"><Link href="/profile" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-dark-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"><UserRound className="h-4 w-4" aria-hidden="true" />Profile</Link><a href="https://www.yummyever.com/" target="_blank" rel="noopener noreferrer" className="hidden min-h-11 items-center rounded-full border border-gray-200 px-5 text-sm font-medium text-dark-900 hover:border-primary-500 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:inline-flex">Website</a></div>
+    <main id="main-content" className="min-h-[100dvh] bg-[#f6f6f3] font-body text-stone-950">
+      <a href="#customer-home" className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-full bg-white px-5 py-3 text-sm font-semibold shadow-lg transition-transform focus:translate-y-0 focus:outline-none focus:ring-2 focus:ring-orange-500">
+        Skip to your account
+      </a>
+
+      <header className="border-b border-stone-200 bg-white">
+        <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" aria-label="Yummy home" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+            <Image src="/logos/yummy_logo.png" alt="" width={40} height={40} className="h-9 w-9 object-contain" priority unoptimized />
+            <span className="font-display text-xl font-semibold tracking-[-0.03em]">Yummy</span>
+          </Link>
+          <nav className="flex items-center gap-2" aria-label="Main navigation">
+            <a href="#discover" className="hidden min-h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold text-stone-600 hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:inline-flex">
+              Find restaurants <ArrowDown className="h-4 w-4" aria-hidden="true" />
+            </a>
+            <Link href="/profile" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2">
+              <UserRound className="h-4 w-4" aria-hidden="true" /> Account
+            </Link>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white pt-32 pb-16 sm:pt-44 sm:pb-24">
-         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-            <div className="inline-flex items-center rounded-full bg-primary-50 px-3 py-1 text-xs font-bold text-primary-600 ring-1 ring-inset ring-primary-500/10 mb-8 uppercase tracking-wider">
-                <Utensils size={14} className="mr-1.5 text-primary-500" /> Our Menu Directory 
+      <section id="customer-home" aria-label="Your Yummy account" className="scroll-mt-4 border-b border-stone-200 bg-[#f6f6f3]">
+        <CustomerProfile />
+      </section>
+
+      <section id="discover" aria-labelledby="discover-title" className="scroll-mt-4 bg-white py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-6 border-b border-stone-200 pb-8 md:grid-cols-[1fr_0.8fr] md:items-end">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-700">Restaurant network</p>
+              <h2 id="discover-title" className="mt-4 max-w-2xl text-balance font-display text-4xl font-semibold leading-[1.02] tracking-[-0.045em] sm:text-5xl">
+                Add another place to your Yummy life.
+              </h2>
             </div>
-            
-            <h1 className="mx-auto max-w-5xl text-5xl font-extrabold tracking-tight text-dark-900 sm:text-7xl lg:text-8xl font-display leading-[1.1]">
-                All Your Favorite <br className="hidden sm:block" />
-                Menus, <span className="text-primary-500">One Place.</span>
-            </h1>
-            
-            <p className="mx-auto mt-8 max-w-2xl text-lg leading-8 text-slate-600 font-light">
-                Browse digital menus from top restaurants in Nepal. 
-                <br />
-                Find what you crave, check prices, and visit your favorite spots.
+            <p className="max-w-lg text-sm leading-7 text-stone-600 md:justify-self-end">
+              Open a restaurant to browse, order from a signed table QR, or follow it for updates. Your account travels with you.
             </p>
-
-            {/* CTA Button */}
-            <div className="mt-12 flex items-center justify-center">
-                 <PaperPlaneButton targetId="restaurant-grid" text="See All Restaurants" successText="Flying there..." />
-            </div>
-         </div>
+          </div>
+          <RestaurantList initialRestaurants={restaurants} />
+        </div>
       </section>
 
-      {/* Restaurant Grid Section */}
-      <section id="restaurant-grid" className="py-20 sm:py-32 bg-slate-50">
-         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row items-end justify-between mb-12 gap-4">
-                <div>
-                     <h2 className="text-3xl font-bold tracking-tight text-dark-900 sm:text-4xl font-display">Our Restaurants</h2>
-                     <p className="mt-2 text-slate-500">Explore the best dining spots in town.</p>
-                </div>
-            </div>
-
-            <RestaurantList initialRestaurants={restaurants} />
-         </div>
-      </section>
-      
-      {/* Footer Simple */}
-      <footer className="bg-white border-t border-gray-100 py-12">
-            <div className="mx-auto max-w-7xl px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <p className="text-slate-400 text-sm">&copy; 2026 Yummy Ever. All rights reserved.</p>
-                <div className="flex gap-6 text-sm font-medium text-slate-500">
-                    <a href="https://www.yummyever.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition-colors">Privacy</a>
-                    <a href="https://www.yummyever.com/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition-colors">Terms</a>
-                    <a href="https://www.yummyever.com/contact" target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 transition-colors">Contact</a>
-                </div>
-            </div>
+      <footer className="border-t border-stone-800 bg-stone-950 text-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-9 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+          <div className="flex items-center gap-2.5"><Image src="/logos/yummy_logo.png" alt="" width={32} height={32} className="h-8 w-8 object-contain" unoptimized /><span className="font-display text-lg font-semibold">Yummy</span></div>
+          <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/55">
+            <a href="https://www.yummyever.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="rounded-sm hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Privacy</a>
+            <a href="https://www.yummyever.com/terms-and-conditions" target="_blank" rel="noopener noreferrer" className="rounded-sm hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Terms</a>
+            <a href="https://www.yummyever.com/contact" target="_blank" rel="noopener noreferrer" className="rounded-sm hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Contact</a>
+            <span>© 2026 Yummy Ever</span>
+          </div>
+        </div>
       </footer>
     </main>
   );

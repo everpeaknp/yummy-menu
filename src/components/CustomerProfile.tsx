@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, Check, ChevronRight, Gift, History, Loader2, LogOut, Mail,
-  MessageSquareText, ReceiptText, Sparkles, Store, Tag, UserRound, X,
+  MessageSquareText, ReceiptText, ScanLine, Sparkles, Store, Tag, UserRound, X,
 } from "lucide-react";
 import {
   CustomerAccount, CustomerEmailPreference, CustomerMarketingPreferences,
@@ -16,6 +16,7 @@ import {
   verifyCustomerEmailChange, storeCustomerToken,
 } from "@/services/api";
 import { getGoogleIdToken } from "@/lib/firebase";
+import TableQrScanner from "@/components/TableQrScanner";
 
 const currency = new Intl.NumberFormat("en-NP", { style: "currency", currency: "NPR", maximumFractionDigits: 0 });
 const shortDate = new Intl.DateTimeFormat("en-NP", { dateStyle: "medium" });
@@ -37,6 +38,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [emailChoice, setEmailChoice] = useState<boolean | null>(null);
   const [smsChoice, setSmsChoice] = useState<boolean | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -241,8 +243,8 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   return <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
     <header className="flex flex-col gap-6 border-b border-stone-300 pb-7 sm:flex-row sm:items-end sm:justify-between">
-      <div><p className="text-sm font-semibold text-orange-700">{scopedRestaurantId ? membership?.restaurant_name || "Restaurant account" : "Yummy account"}</p><h1 className="mt-1 font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">Your profile</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">Orders, rewards and restaurant memberships in one place.</p></div>
-      <div className="flex min-w-0 items-center gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-stone-950 font-display font-semibold text-white">{account?.name?.trim().charAt(0).toUpperCase() || "Y"}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-stone-950">{account?.name}</p><p className="truncate text-xs text-stone-500">{account?.email}</p></div><button type="button" onClick={signOut} className="ml-auto inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:border-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:ml-5"><LogOut className="h-4 w-4" aria-hidden="true" /> <span className="hidden sm:inline">Sign out</span></button></div>
+      <div><p className="text-sm font-semibold text-orange-700">{scopedRestaurantId ? membership?.restaurant_name || "Restaurant account" : "Your Yummy"}</p><h1 className="mt-1 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">{scopedRestaurantId ? "Your profile" : `Good to see you, ${account?.name?.trim().split(" ")[0] || "there"}.`}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">Orders, rewards and your restaurant relationships—ready when you are.</p></div>
+      <div className="flex min-w-0 flex-wrap items-center gap-3"><button type="button" onClick={() => setScannerOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"><ScanLine className="h-4 w-4" aria-hidden="true" /> Scan table QR</button><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-stone-950 font-display font-semibold text-white">{account?.name?.trim().charAt(0).toUpperCase() || "Y"}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-stone-950">{account?.name}</p><p className="truncate text-xs text-stone-500">{account?.email}</p></div><button type="button" onClick={signOut} aria-label="Sign out" className="ml-auto grid h-11 w-11 place-items-center rounded-full border border-stone-300 bg-white text-stone-600 hover:border-stone-500 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><LogOut className="h-4 w-4" aria-hidden="true" /></button></div>
     </header>
 
     {account?.restaurants.length ? <div className="mt-8 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
@@ -263,6 +265,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
       </div>
     </div> : account ? <div className="mx-auto mt-8 max-w-2xl"><AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} /><EmptyProfile /></div> : <EmptyProfile />}
     {selectedOrder && <OrderReceipt order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
+    <TableQrScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
   </main>;
 }
 
