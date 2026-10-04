@@ -148,13 +148,13 @@ export default function FloatingCart() {
     <>
       {/* Floating Button */}
       <button
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-2xl transition-transform hover:scale-105 active:scale-95"
+        aria-label={`Open order, ${totalItems} items, NPR ${grandTotal}`}
+        className="fixed bottom-24 right-4 z-50 flex min-h-14 items-center gap-3 rounded-full bg-stone-950 px-5 text-white shadow-[0_14px_35px_rgba(16,19,26,0.28)] hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 active:scale-[0.98] lg:bottom-6 lg:right-6"
       >
-        <ShoppingBag size={24} />
-        <span className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-black border-2 border-white">
-          {totalItems}
-        </span>
+        <ShoppingBag size={20} aria-hidden="true" />
+        <span className="text-sm font-semibold">{totalItems ? `${totalItems} · NPR ${grandTotal}` : "View order"}</span>
       </button>
 
       {/* Cart Drawer Overlay */}

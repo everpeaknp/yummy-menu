@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Utensils } from "lucide-react";
+import { UserRound, Utensils } from "lucide-react";
 import { getAllRestaurants } from "@/services/api";
 import PaperPlaneButton from "@/components/PaperPlaneButton";
 import RestaurantList from "@/components/RestaurantList";
@@ -31,14 +31,7 @@ export default async function Home() {
                  <span className="text-2xl font-bold tracking-tight text-dark-900 font-display">Yummyever Menu</span>
             </div>
             
-            <a 
-                href="https://www.yummyever.com/" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full bg-dark-900 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-primary-600 hover:shadow-lg hover:shadow-primary-500/20"
-            >
-                Website
-            </a>
+            <div className="flex items-center gap-2"><Link href="/profile" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-dark-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"><UserRound className="h-4 w-4" aria-hidden="true" />Profile</Link><a href="https://www.yummyever.com/" target="_blank" rel="noopener noreferrer" className="hidden min-h-11 items-center rounded-full border border-gray-200 px-5 text-sm font-medium text-dark-900 hover:border-primary-500 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 sm:inline-flex">Website</a></div>
         </div>
       </nav>
 

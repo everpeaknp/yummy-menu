@@ -257,7 +257,7 @@ export const requestOrder = async (
         table_id: tableId,
         qr_token: qrToken,
         items
-    });
+    }, { headers: customerHeaders() });
     return response.data;
   } catch (error: any) {
     console.error("Failed to request order", error);
@@ -267,4 +267,265 @@ export const requestOrder = async (
       statusCode: error.response?.status
     };
   }
+};
+
+export interface CustomerRestaurantMembership {
+  restaurant_id: number;
+  restaurant_name: string;
+  customer_id: number;
+  loyalty_points: number;
+  total_orders: number;
+  total_spent: number;
+  relationship_status: "subscriber" | "verified_customer";
+}
+
+export interface CustomerAccount {
+  id: number;
+  email: string;
+  name: string;
+  phone?: string;
+  restaurants: CustomerRestaurantMembership[];
+}
+
+export interface CustomerOrder {
+  id: number;
+  restaurant_id: number;
+  restaurant_name: string;
+  status: string;
+  grand_total: number;
+  loyalty_points_redeemed: number;
+  created_at: string;
+  items: { name: string; quantity: number; line_total: number }[];
+}
+
+export interface CustomerEmailPreference {
+  restaurant_id: number;
+  available: boolean;
+  opted_in: boolean;
+  policy_version?: string;
+  consent_text?: string;
+}
+
+export interface CustomerMarketingPreferences {
+  restaurant_id: number;
+  decision_required: boolean;
+  email_decision_required: boolean;
+  sms_decision_required: boolean;
+  email_available: boolean;
+  sms_available: boolean;
+  email_opted_in: boolean;
+  sms_opted_in: boolean;
+  phone?: string;
+  policy_version?: string;
+  consent_text?: string;
+}
+
+export interface CustomerOffer {
+  recipient_id: number;
+  name: string;
+  discount_type: "fixed" | "percentage";
+  value: number;
+  minimum_order_value: number;
+  percentage_cap?: number;
+  valid_until: string;
+}
+
+export interface TableServiceRequest {
+  id: number;
+  restaurant_id: number;
+  table_id: number;
+  table_name: string;
+  request_type: string;
+  note?: string;
+  status: "pending" | "acknowledged" | "completed";
+  created_at: string;
+  acknowledged_at?: string;
+}
+
+const CUSTOMER_TOKEN_KEY = "yummy_customer_token";
+
+export const getStoredCustomerToken = () => {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem(CUSTOMER_TOKEN_KEY) || sessionStorage.getItem(CUSTOMER_TOKEN_KEY);
+  if (token && !localStorage.getItem(CUSTOMER_TOKEN_KEY)) localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
+  return token;
+};
+
+export const storeCustomerToken = (token: string) => {
+  localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
+  sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
+};
+
+export const clearStoredCustomerToken = () => {
+  localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+  sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
+};
+
+const customerHeaders = () => {
+  const token = getStoredCustomerToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const unwrap = <T,>(response: { data: { data?: T } | T }): T => {
+  const body = response.data as { data?: T };
+  return body.data === undefined ? response.data as T : body.data;
+};
+
+export const requestCustomerCode = async (email: string) => {
+  await apiClient.post("/public/customer/auth/request-code", { email });
+};
+
+export const verifyCustomerCode = async (email: string, code: string) => {
+  const response = await apiClient.post("/public/customer/auth/verify-code", { email, code }, { withCredentials: true });
+  return unwrap<{ access_token: string }>(response).access_token;
+};
+
+export const verifyCustomerGoogleToken = async (idToken: string) => {
+  const response = await apiClient.post("/public/customer/auth/firebase/google", { id_token: idToken }, { withCredentials: true });
+  return unwrap<{ access_token: string }>(response).access_token;
+};
+
+let customerRefreshPromise: Promise<string> | null = null;
+
+export const refreshCustomerSession = async () => {
+  const observedToken = getStoredCustomerToken();
+  const refresh = async () => {
+    const currentToken = getStoredCustomerToken();
+    if (currentToken && observedToken && currentToken !== observedToken) return currentToken;
+    const response = await apiClient.post("/public/customer/auth/refresh", {}, { withCredentials: true });
+    const token = unwrap<{ access_token: string }>(response).access_token;
+    storeCustomerToken(token);
+    return token;
+  };
+  if (typeof navigator !== "undefined" && navigator.locks) {
+    return navigator.locks.request("yummy-customer-session-refresh", refresh);
+  }
+  if (!customerRefreshPromise) customerRefreshPromise = refresh().finally(() => { customerRefreshPromise = null; });
+  return customerRefreshPromise;
+};
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config as (typeof error.config & { _customerRefreshAttempted?: boolean }) | undefined;
+    const isCustomerRequest = typeof config?.url === "string" && config.url.startsWith("/public/customer/");
+    const isAuthRequest = typeof config?.url === "string" && config.url.startsWith("/public/customer/auth/");
+    if (error.response?.status !== 401 || !config || !isCustomerRequest || isAuthRequest || config._customerRefreshAttempted) {
+      return Promise.reject(error);
+    }
+    config._customerRefreshAttempted = true;
+    const token = await refreshCustomerSession();
+    config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
+    return apiClient(config);
+  },
+);
+
+export const logoutCustomer = async () => {
+  try {
+    await apiClient.post("/public/customer/auth/logout", {}, { withCredentials: true });
+  } finally {
+    clearStoredCustomerToken();
+  }
+};
+
+export const getCustomerAccount = async () => {
+  const response = await apiClient.get("/public/customer/me", { headers: customerHeaders() });
+  return unwrap<CustomerAccount>(response);
+};
+
+export const updateCustomerAccount = async (payload: { name: string; phone?: string }) => {
+  const response = await apiClient.put("/public/customer/me", payload, { headers: customerHeaders() });
+  return unwrap<CustomerAccount>(response);
+};
+
+export const requestCustomerEmailChange = async (email: string) => {
+  await apiClient.post("/public/customer/me/email/request-code", { email }, { headers: customerHeaders() });
+};
+
+export const verifyCustomerEmailChange = async (email: string, code: string) => {
+  const response = await apiClient.post("/public/customer/me/email/verify-code", { email, code }, { headers: customerHeaders() });
+  return unwrap<CustomerAccount>(response);
+};
+
+export const joinCustomerRestaurant = async (restaurantId: number, name?: string) => {
+  const response = await apiClient.post(
+    `/public/customer/restaurants/${restaurantId}/join`,
+    { name },
+    { headers: customerHeaders() },
+  );
+  return unwrap<CustomerRestaurantMembership>(response);
+};
+
+export const getCustomerOrders = async (restaurantId: number) => {
+  const response = await apiClient.get("/public/customer/me/orders", {
+    params: { restaurant_id: restaurantId },
+    headers: customerHeaders(),
+  });
+  return unwrap<CustomerOrder[]>(response);
+};
+
+export const getCustomerEmailPreference = async (restaurantId: number) => {
+  const response = await apiClient.get("/public/customer/me/email-preference", {
+    params: { restaurant_id: restaurantId }, headers: customerHeaders(),
+  });
+  return unwrap<CustomerEmailPreference>(response);
+};
+
+export const getCustomerEmailOfferConfig = async (restaurantId: number) => {
+  const response = await apiClient.get(`/public/customer/restaurants/${restaurantId}/email-offers`);
+  return unwrap<CustomerEmailPreference>(response);
+};
+
+export const setCustomerEmailPreference = async (restaurantId: number, optedIn: boolean) => {
+  const response = await apiClient.put(
+    "/public/customer/me/email-preference", { opted_in: optedIn },
+    { params: { restaurant_id: restaurantId }, headers: customerHeaders() },
+  );
+  return unwrap<CustomerEmailPreference>(response);
+};
+
+export const getCustomerMarketingPreferences = async (restaurantId: number) => {
+  const response = await apiClient.get("/public/customer/me/marketing-preferences", {
+    params: { restaurant_id: restaurantId }, headers: customerHeaders(),
+  });
+  return unwrap<CustomerMarketingPreferences>(response);
+};
+
+export const setCustomerMarketingPreferences = async (
+  restaurantId: number,
+  payload: { email_opted_in: boolean; sms_opted_in: boolean; phone?: string },
+) => {
+  const response = await apiClient.put(
+    "/public/customer/me/marketing-preferences", payload,
+    { params: { restaurant_id: restaurantId }, headers: customerHeaders() },
+  );
+  return unwrap<CustomerMarketingPreferences>(response);
+};
+
+export const getCustomerOffers = async (restaurantId: number) => {
+  const response = await apiClient.get("/public/customer/me/offers", {
+    params: { restaurant_id: restaurantId }, headers: customerHeaders(),
+  });
+  return unwrap<CustomerOffer[]>(response);
+};
+
+export const applyCustomerOffer = async (restaurantId: number, recipientId: number, orderId: number) => {
+  const response = await apiClient.post(
+    "/public/customer/me/offers/apply", { recipient_id: recipientId, order_id: orderId },
+    { params: { restaurant_id: restaurantId }, headers: customerHeaders() },
+  );
+  return unwrap<{ valid: boolean; message: string; discount_amount: number; projected_grand_total: number }>(response);
+};
+
+export const createTableServiceRequest = async (qrToken: string, requestType: string) => {
+  const response = await apiClient.post(
+    "/public/table-service/requests", { qr_token: qrToken, request_type: requestType },
+    { headers: customerHeaders() },
+  );
+  return unwrap<TableServiceRequest>(response);
+};
+
+export const getTableServiceRequests = async (qrToken: string) => {
+  const response = await apiClient.get("/public/table-service/requests", { params: { qr_token: qrToken } });
+  return unwrap<TableServiceRequest[]>(response);
 };

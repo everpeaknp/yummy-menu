@@ -32,6 +32,7 @@ interface QRSession {
     image?: string;
   }[];
   activeOrderTotal?: number;
+  activeOrderIds?: number[];
 }
 
 interface CartContextType {
@@ -108,7 +109,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           const updatedSession = {
             ...parsed,
             orderedItems: context.ordered_items,
-            activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems
+            activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems,
+            activeOrderIds: (context.active_orders || []).map((order) => order.id),
           };
 
           if (isMounted) {
@@ -232,7 +234,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const updatedSession = {
           ...session,
           orderedItems: context.ordered_items,
-          activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems
+          activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems,
+          activeOrderIds: (context.active_orders || []).map((order) => order.id),
         };
         localStorage.setItem("yummy_qr_session", JSON.stringify(updatedSession));
         setSession(updatedSession);

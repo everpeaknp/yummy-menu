@@ -1,0 +1,480 @@
+
+> yummy-menu@0.1.0 dev
+> next dev -p 3003
+
+  ▲ Next.js 14.2.3
+  - Local:        http://localhost:3003
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1935ms
+ ○ Compiling /[slug]/[name] ...
+ ✓ Compiled /[slug]/[name] in 14.6s (956 modules)
+ ✓ Compiled in 234ms (375 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=rewards 200 in 1611ms
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=rewards 200 in 127ms
+[API] Initial Base URL: http://localhost:8007
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1170ms (927 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 1253ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 30ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip 200 in 215ms
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 49ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 37ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 47ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 81ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 55ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 54ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 42ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 77ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 65ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 39ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 30ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 43ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 52ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 37ms
+ ✓ Compiled in 516ms (938 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ ✓ Compiled /_not-found in 115ms (927 modules)
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 205ms
+ ✓ Compiled in 432ms (941 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 46ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 394ms (941 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 50ms
+ ✓ Compiled in 440ms (941 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 65ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip 200 in 230ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=rewards 200 in 165ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 27ms
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 49ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 50ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 56ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 68ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 43ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 53ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 45ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 68ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 60ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 50ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 43ms
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=rewards 200 in 124ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 17ms
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 47ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 41ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 52ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 63ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 48ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 55ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 58ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 28ms
+ ✓ Compiled in 694ms (941 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 89ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=rewards 200 in 236ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 25ms
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 22ms
+ ✓ Compiled in 395ms (938 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ ✓ Compiled /_not-found in 120ms (927 modules)
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 197ms
+ ✓ Compiled in 317ms (941 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=rewards 200 in 154ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 547ms (938 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled /_not-found in 156ms (927 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 255ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 65ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 31ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 18ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 37ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 59ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 59ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 62ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 55ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 76ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 43ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 34ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 42ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 45ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 71ms
+ ✓ Compiled in 579ms (938 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled /_not-found in 109ms (927 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 178ms
+ ○ Compiling / ...
+ ✓ Compiled / in 820ms (1013 modules)
+[API] Initial Base URL: http://localhost:8007
+[API_START] GET /restaurants/
+ GET / 200 in 1585ms
+[API_START] GET /restaurants/
+[API] Initial Base URL: http://localhost:8007
+ GET / 200 in 5059ms
+ ✓ Compiled in 289ms (1017 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled /_not-found in 122ms (1006 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 189ms
+ ✓ Compiled in 265ms (1020 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 40ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 294ms (1020 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 46ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 366ms (971 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 58ms
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=menu 200 in 232ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu 200 in 178ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 402ms (968 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled /_not-found in 112ms (957 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 194ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=menu 200 in 202ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu&review=3 200 in 209ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 279ms (971 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 58ms
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=menu&review=4 200 in 113ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu&review=4 200 in 180ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu 200 in 143ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 930ms (968 modules)
+ ✓ Compiled in 163ms (405 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[API] Initial Base URL: http://localhost:8007
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ ✓ Compiled /_not-found in 131ms (957 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 227ms
+ ✓ Compiled in 485ms (965 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 59ms
+ ✓ Compiled in 224ms (965 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 56ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=menu&review=5 200 in 202ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu&review=5 200 in 147ms
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled in 412ms (962 modules)
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ ✓ Compiled /_not-found in 106ms (951 modules)
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 182ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+[API] Initial Base URL: http://localhost:8007
+ GET /114/cafe-de-sip?view=menu&review=6 200 in 182ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu&review=6 200 in 183ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu 200 in 330ms
+[API] Initial Base URL: http://localhost:8007
+[API] Fetching grouped menu for Restaurant 114
+[API_START] GET /restaurants/114/
+[API_START] GET /menus/public/restaurant/114/grouped
+[API_START] GET /restaurants/114/
+[Page Debug] Restaurant: Cafe De Sip, Cover Image: None (Using Fallback)
+ GET /114/cafe-de-sip?view=menu 200 in 188ms
+[API] Initial Base URL: http://localhost:8007
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 51ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 52ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 53ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 74ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 42ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 55ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 60ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 68ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 43ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 44ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 70ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 40ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 60ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 53ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 27ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 61ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 51ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 57ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 42ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 23ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 66ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 59ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 60ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 63ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 64ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 45ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 71ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 29ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 54ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 55ms
+[?25h

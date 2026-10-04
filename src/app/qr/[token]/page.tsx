@@ -68,6 +68,7 @@ export default function QRVerifyPage() {
           qrToken: context.token,
           orderedItems: context.ordered_items,
           activeOrderTotal,
+          activeOrderIds: Array.isArray(context.active_orders) ? context.active_orders.map((order) => order.id) : [],
           startTime: new Date().getTime()
         };
         

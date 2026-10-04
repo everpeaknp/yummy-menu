@@ -1,0 +1,418 @@
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+(node:144580) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+ ⨯ Internal error: TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at eval (./node_modules/next/dist/client/image-component.js:245:47)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:44746)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50067)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+digest: "2584210275"
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+ ⨯ TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7) {
+  page: '/'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+ ⨯ Internal error: TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at eval (./node_modules/next/dist/client/image-component.js:245:47)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:44746)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50067)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+digest: "2584210275"
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+ ⨯ TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7) {
+  page: '/'
+}
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+ ⨯ Internal error: TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at eval (./node_modules/next/dist/client/image-component.js:245:47)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:44746)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50067)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+digest: "2584210275"
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+ ⨯ TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7) {
+  page: '/'
+}
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+ ⨯ Internal error: TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at eval (./node_modules/next/dist/client/image-component.js:245:47)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:44746)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at aC (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:52874)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50095)
+    at aj (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:53793)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42336
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:42822)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:50067)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+digest: "2584210275"
+Warning: Invalid hook call. Hooks can only be called inside of the body of a function component. This could happen for one of the following reasons:
+1. You might have mismatching versions of React and the renderer (such as React DOM)
+2. You might be breaking the Rules of Hooks
+3. You might have more than one copy of React in the same app
+See https://reactjs.org/link/invalid-hook-call for tips about how to debug and fix this problem.
+TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+ ⨯ TypeError: Cannot read properties of null (reading 'useContext')
+    at t.useContext (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:162241)
+    at usePathname (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/navigation.js:121:34)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:159:50)
+    at au (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:10446)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:15122
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:46505)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at ab (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:11808)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16871
+    at aw (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:16908)
+    at a_ (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:49776)
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:58612
+    at C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59270
+    at aN (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:59278)
+    at Timeout._onTimeout (C:\Users\PREDATOR\OneDrive\Desktop\yummy-menu\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:6939)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7) {
+  page: '/'
+}

@@ -1,0 +1,47 @@
+
+> yummy-menu@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.3
+  - Local:        http://localhost:3002
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.8s (931 modules)
+[API] Initial Base URL: http://localhost:8007
+[API_START] GET /restaurants/
+ ✓ Compiled in 671ms (890 modules)
+ GET / 200 in 9468ms
+ GET /_next/static/webpack/8094cd3b452067c4.webpack.hot-update.json 404 in 9616ms
+[API] Initial Base URL: http://localhost:8007
+[API_START] GET /restaurants/
+[API_START] GET /restaurants/
+ ○ Compiling /_error ...
+ GET / 200 in 13214ms
+ ✓ Compiled /_error in 1732ms (1113 modules)
+[API] Initial Base URL: http://localhost:8007
+[API_START] GET /restaurants/
+ GET /_next/static/webpack/8094cd3b452067c4.webpack.hot-update.json 404 in 1164ms
+ GET / 500 in 26754ms
+ ○ Compiling /profile ...
+ ✓ Compiled /profile in 1199ms (1176 modules)
+[API] Initial Base URL: http://localhost:8007
+ GET /profile 200 in 1420ms
+ GET /_next/static/webpack/8094cd3b452067c4.webpack.hot-update.json 404 in 270ms
+ GET / 200 in 22360ms
+[API] Initial Base URL: http://localhost:8007
+[API_START] GET /restaurants/
+ GET / 200 in 21158ms
+[API_START] GET /restaurants/
+ GET / 200 in 9892ms
+[API_START] GET /restaurants/
+ GET / 200 in 10189ms
+[API_START] GET /restaurants/
+ GET / 200 in 10429ms
+[API_START] GET /restaurants/
+ GET / 200 in 11114ms
+[API_START] GET /restaurants/
+ GET / 200 in 10131ms
+[?25h
