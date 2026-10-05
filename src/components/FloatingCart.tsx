@@ -15,6 +15,7 @@ export default function FloatingCart() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [orderedTotalFromMenuFallback, setOrderedTotalFromMenuFallback] = useState(0);
   const [orderedMenuPriceMap, setOrderedMenuPriceMap] = useState<Record<number, number>>({});
+  const sessionToken = session?.qrToken;
 
   const orderedTotalFromItems = useMemo(() => (session?.orderedItems || []).reduce((sum, item) => {
     const lineTotal = Number((item as any).line_total ?? 0);
@@ -77,13 +78,13 @@ export default function FloatingCart() {
   const grandTotal = orderedTotal + draftTotal;
 
   useEffect(() => {
-    if (!isOpen || !session) return;
+    if (!isOpen || !sessionToken) return;
     refreshSession();
     const timer = setInterval(() => {
       refreshSession();
     }, 10000);
     return () => clearInterval(timer);
-  }, [isOpen, session, refreshSession]);
+  }, [isOpen, sessionToken, refreshSession]);
 
   if (totalItems === 0 && !orderSuccess && (!session?.orderedItems || session.orderedItems.length === 0)) return null;
 
@@ -99,6 +100,7 @@ export default function FloatingCart() {
         menu_item_id: item.id,
         qty: item.quantity,
         notes: item.notes,
+        modifiers: item.modifiers,
       }));
 
       const response = await requestOrder(

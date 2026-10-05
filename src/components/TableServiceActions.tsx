@@ -20,13 +20,13 @@ export default function TableServiceActions() {
   const [now, setNow] = useState(() => Date.now());
   const [lastSentAt, setLastSentAt] = useState<Record<string, number>>({});
   const requestInFlight = useRef(false);
+  const pollInFlight = useRef(false);
 
   useEffect(() => {
     const load = () => {
       const raw = localStorage.getItem("yummy_qr_session");
       const nextToken = raw ? JSON.parse(raw).qrToken as string | undefined : undefined;
       setToken(nextToken || null);
-      if (nextToken) getTableServiceRequests(nextToken).then(setRequests).catch(() => undefined);
     };
     load();
     window.addEventListener("yummy_qr_session_updated", load);
@@ -35,10 +35,27 @@ export default function TableServiceActions() {
 
   useEffect(() => {
     if (!token) return;
+    let cancelled = false;
+    const refresh = async () => {
+      if (pollInFlight.current || document.visibilityState !== "visible") return;
+      pollInFlight.current = true;
+      try {
+        const nextRequests = await getTableServiceRequests(token);
+        if (!cancelled) setRequests(nextRequests);
+      } catch {
+        // Keep the last successful state while polling.
+      } finally {
+        pollInFlight.current = false;
+      }
+    };
+    void refresh();
     const timer = window.setInterval(() => {
-      getTableServiceRequests(token).then(setRequests).catch(() => undefined);
+      void refresh();
     }, 10000);
-    return () => window.clearInterval(timer);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [token]);
 
   useEffect(() => {

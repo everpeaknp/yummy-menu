@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useCallback, useContext, useState, useEffect } from "react";
 import { MenuItem } from "@/services/api";
 
 interface CartItem extends MenuItem {
@@ -190,21 +190,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => setCart([]);
 
-  const resetSession = () => {
+  const resetSession = useCallback(() => {
     localStorage.removeItem("yummy_qr_session");
     setSession(null);
     window.dispatchEvent(new Event("yummy_qr_session_updated"));
-  };
+  }, []);
 
-  const refreshSession = async () => {
-    if (!session?.qrToken) return;
+  const refreshSession = useCallback(async () => {
+    const savedSession = localStorage.getItem("yummy_qr_session");
+    if (!savedSession) return;
+    const currentSession: QRSession = JSON.parse(savedSession);
+    if (!currentSession.qrToken) return;
     try {
       const { verifyQRToken } = await import("@/services/api");
-      const context = await verifyQRToken(session.qrToken);
+      const context = await verifyQRToken(currentSession.qrToken);
       if (context) {
         const hadActiveBefore =
-          Number(session.activeOrderTotal ?? 0) > 0 ||
-          (Array.isArray(session.orderedItems) && session.orderedItems.length > 0);
+          Number(currentSession.activeOrderTotal ?? 0) > 0 ||
+          (Array.isArray(currentSession.orderedItems) && currentSession.orderedItems.length > 0);
         const hasActiveNow = Array.isArray(context.active_orders) && context.active_orders.length > 0;
         const hasOrderedItemsNow = Array.isArray(context.ordered_items) && context.ordered_items.length > 0;
 
@@ -232,14 +235,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           : 0;
 
         const updatedSession = {
-          ...session,
+          ...currentSession,
           orderedItems: context.ordered_items,
           activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems,
           activeOrderIds: (context.active_orders || []).map((order) => order.id),
         };
         localStorage.setItem("yummy_qr_session", JSON.stringify(updatedSession));
         setSession(updatedSession);
-        window.dispatchEvent(new Event("yummy_qr_session_updated"));
       }
     } catch (err) {
       console.error("[CartContext] Refresh session failed (token likely invalid):", err);
@@ -247,7 +249,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Clear session to prevent further ordering attempts.
       resetSession();
     }
-  };
+  }, [resetSession]);
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
