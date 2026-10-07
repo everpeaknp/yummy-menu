@@ -4,30 +4,39 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight, Check, ChevronRight, Gift, History, Loader2, LogOut, Mail,
-  MessageSquareText, ReceiptText, ScanLine, Sparkles, Store, Tag, UserRound, X,
+  MessageSquareText, Phone, ReceiptText, ScanLine, Sparkles, Store, Tag, UserRound, X,
 } from "lucide-react";
 import {
-  CustomerAccount, CustomerEmailPreference, CustomerMarketingPreferences,
+  CustomerAccount, CustomerEmailPreference, CustomerMarketingPreferences, CustomerRestaurantInvitation,
   CustomerOffer, CustomerOrder, CustomerRestaurantMembership, applyCustomerOffer,
   clearStoredCustomerToken, getCustomerAccount, getCustomerEmailPreference, getCustomerMarketingPreferences,
-  getCustomerOffers, getCustomerOrders, joinCustomerRestaurant, logoutCustomer,
-  getStoredCustomerToken, refreshCustomerSession, requestCustomerCode, requestCustomerEmailChange, setCustomerEmailPreference,
-  setCustomerMarketingPreferences, updateCustomerAccount, verifyCustomerCode, verifyCustomerGoogleToken,
-  verifyCustomerEmailChange, storeCustomerToken,
+  acceptCustomerRestaurantInvitation, getCustomerOffers, getCustomerOrders, getCustomerRestaurantInvitation, joinCustomerRestaurant, loginCustomerWithPassword, logoutCustomer,
+  getStoredCustomerToken, refreshCustomerSession, requestCustomerCode, setCustomerEmailPreference,
+  requestCustomerContactCode, setCustomerMarketingPreferences, setCustomerPassword, updateCustomerAccount, verifyCustomerCode, verifyCustomerContactCode, verifyCustomerGoogleToken,
+  storeCustomerToken,
 } from "@/services/api";
 import { getGoogleIdToken } from "@/lib/firebase";
 import TableQrScanner from "@/components/TableQrScanner";
 
 const currency = new Intl.NumberFormat("en-NP", { style: "currency", currency: "NPR", maximumFractionDigits: 0 });
 const shortDate = new Intl.DateTimeFormat("en-NP", { dateStyle: "medium" });
+const apiErrorMessage = (error: any, fallback: string) => {
+  const payload = error?.response?.data;
+  return (typeof payload?.message === "string" && payload.message)
+    || (typeof payload?.detail === "string" && payload.detail)
+    || (typeof payload?.detail?.message === "string" && payload.detail.message)
+    || fallback;
+};
 type Section = "overview" | "orders" | "rewards" | "communication" | "account";
-type Step = "loading" | "email" | "code" | "enroll" | "preferences" | "account";
+type Step = "loading" | "expired" | "identifier" | "code" | "enroll" | "preferences" | "account";
 
 export default function CustomerProfile({ restaurantId, restaurantName, initialSection = "overview" }: { restaurantId?: string; restaurantName?: string; initialSection?: Section }) {
   const scopedRestaurantId = restaurantId ? Number(restaurantId) : null;
   const [step, setStep] = useState<Step>("loading");
   const [section, setSection] = useState<Section>(initialSection);
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [usePassword, setUsePassword] = useState(false);
   const [code, setCode] = useState("");
   const [account, setAccount] = useState<CustomerAccount | null>(null);
   const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(scopedRestaurantId);
@@ -42,6 +51,8 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [invitation, setInvitation] = useState<CustomerRestaurantInvitation | null>(null);
+  const [invitationToken, setInvitationToken] = useState("");
 
   const membership = useMemo(
     () => account?.restaurants.find((item) => item.restaurant_id === activeRestaurantId) ?? null,
@@ -69,15 +80,20 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     setStep(requireDecision && nextMarketing.decision_required ? "preferences" : "account");
   };
 
-  const loadAccount = async () => {
+  const loadAccount = async (requestedRestaurantId: number | null = scopedRestaurantId, confirmInvitation = false) => {
     const current = await getCustomerAccount();
     setAccount(current);
-    if (scopedRestaurantId && !current.restaurants.some((item) => item.restaurant_id === scopedRestaurantId)) {
-      setActiveRestaurantId(scopedRestaurantId);
+    if (requestedRestaurantId && confirmInvitation) {
+      setActiveRestaurantId(requestedRestaurantId);
       setStep("enroll");
       return;
     }
-    const nextId = scopedRestaurantId ?? activeRestaurantId ?? current.restaurants[0]?.restaurant_id ?? null;
+    if (requestedRestaurantId && !current.restaurants.some((item) => item.restaurant_id === requestedRestaurantId)) {
+      setActiveRestaurantId(requestedRestaurantId);
+      setStep("enroll");
+      return;
+    }
+    const nextId = requestedRestaurantId ?? activeRestaurantId ?? current.restaurants[0]?.restaurant_id ?? null;
     setActiveRestaurantId(nextId);
     if (nextId) await loadRestaurant(nextId, Boolean(scopedRestaurantId));
     else setStep("account");
@@ -87,19 +103,39 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     const requestedSection = new URLSearchParams(window.location.search).get("section");
     if (requestedSection === "overview" || requestedSection === "orders" || requestedSection === "rewards" || requestedSection === "communication" || requestedSection === "account") setSection(requestedSection);
     const restore = async () => {
+      let requestedRestaurantId = scopedRestaurantId;
+      const token = new URLSearchParams(window.location.search).get("invite") || "";
+      if (token) {
+        try {
+          const resolved = await getCustomerRestaurantInvitation(token);
+          setInvitation(resolved);
+          requestedRestaurantId = resolved.restaurant_id;
+          setActiveRestaurantId(resolved.restaurant_id);
+          if (resolved.expired) {
+            setInvitationToken("");
+            setStep("expired");
+            return;
+          }
+          setInvitationToken(token);
+        } catch (requestError: any) {
+          setError(apiErrorMessage(requestError, "This invitation is invalid or expired."));
+          setStep("identifier");
+          return;
+        }
+      }
       if (!getStoredCustomerToken()) {
         try { await refreshCustomerSession(); }
         catch {
           clearStoredCustomerToken();
-          setStep("email");
+          setStep("identifier");
           return;
         }
       }
-      try { await loadAccount(); }
+      try { await loadAccount(requestedRestaurantId, Boolean(token)); }
       catch (requestError: any) {
         if (requestError.response?.status === 401) {
           clearStoredCustomerToken();
-          setStep("email");
+          setStep("identifier");
         } else {
           setError(requestError.response?.data?.detail || "We could not load your profile. Refresh and try again.");
           setStep("account");
@@ -110,10 +146,10 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     const syncSession = (event: StorageEvent) => {
       if (event.key !== "yummy_customer_token") return;
       if (!event.newValue) {
-        setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setStep("email");
+        setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setStep("identifier");
       } else {
         setStep("loading");
-        void loadAccount().catch(() => { setError("We could not load your profile. Refresh and try again."); setStep("email"); });
+        void loadAccount().catch(() => { setError("We could not load your profile. Refresh and try again."); setStep("identifier"); });
       }
     };
     window.addEventListener("storage", syncSession);
@@ -131,23 +167,39 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   const sendCode = async () => {
     setBusy(true); setError("");
-    try { await requestCustomerCode(email); setStep("code"); }
-    catch (requestError: any) { setError(requestError.response?.data?.detail || "We could not send the code. Check your email and try again."); }
+    try { await requestCustomerCode(identifier); setStep("code"); }
+    catch (requestError: any) { setError(apiErrorMessage(requestError, "We could not send the code. Try again.")); }
     finally { setBusy(false); }
   };
 
-  const signIn = async () => {
+  const signIn = async (name?: string) => {
     setBusy(true); setError("");
     try {
-      const token = await verifyCustomerCode(email, code);
+      const token = await verifyCustomerCode(identifier, code, password, name);
       storeCustomerToken(token);
     } catch (requestError: any) {
-      setError(requestError.response?.data?.detail || "That code is invalid or expired.");
+      setError(apiErrorMessage(requestError, "That code is invalid or expired."));
       setBusy(false);
       return;
     }
-    try { await loadAccount(); openSection("account"); }
+    try { await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken)); openSection("account"); }
     catch (requestError: any) { setError(requestError.response?.data?.detail || "You are signed in, but we could not load your profile. Try again."); }
+    finally { setBusy(false); }
+  };
+
+  const signInWithPassword = async () => {
+    setBusy(true); setError("");
+    try {
+      storeCustomerToken(await loginCustomerWithPassword(identifier, password));
+      await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken));
+      openSection("account");
+    } catch (requestError: any) {
+      if (requestError?.response?.status === 401) {
+        setError(identifier.includes("@") ? "Email address or password is incorrect." : "Mobile number or password is incorrect.");
+      } else {
+        setError(apiErrorMessage(requestError, "We could not sign you in. Try again."));
+      }
+    }
     finally { setBusy(false); }
   };
 
@@ -156,7 +208,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     try {
       const idToken = await getGoogleIdToken();
       storeCustomerToken(await verifyCustomerGoogleToken(idToken));
-      await loadAccount();
+      await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken));
       openSection("account");
     } catch (requestError: any) {
       setError(requestError.response?.data?.detail || requestError.message || "Google sign-in could not be completed.");
@@ -165,21 +217,24 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   const signOut = async () => {
     await logoutCustomer();
-    setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setCode(""); setStep("email");
+    setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setCode(""); setPassword(""); setStep("identifier");
   };
 
   const enroll = async () => {
-    if (!scopedRestaurantId || !account || busy) return;
+    const restaurantToJoin = invitation?.restaurant_id ?? scopedRestaurantId;
+    if (!restaurantToJoin || !account || busy) return;
     setBusy(true); setError("");
     try {
-      const joined = await joinCustomerRestaurant(scopedRestaurantId, account.name);
+      const joined = invitationToken
+        ? await acceptCustomerRestaurantInvitation(invitationToken)
+        : await joinCustomerRestaurant(restaurantToJoin, account.name);
       setAccount({ ...account, restaurants: [...account.restaurants, joined] });
-      setActiveRestaurantId(scopedRestaurantId);
-      await loadRestaurant(scopedRestaurantId, true);
+      setActiveRestaurantId(restaurantToJoin);
+      await loadRestaurant(restaurantToJoin, true);
     } catch (requestError: any) {
       if (requestError.response?.status === 401) {
         clearStoredCustomerToken();
-        setStep("email");
+        setStep("identifier");
       } else setError(requestError.response?.data?.detail || "We could not follow this restaurant. Try again.");
     } finally { setBusy(false); }
   };
@@ -237,8 +292,9 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   };
 
   if (step === "loading") return <ProfileSkeleton />;
-  if (step === "email" || step === "code") return <SignIn step={step} email={email} code={code} busy={busy} error={error} setEmail={setEmail} setCode={setCode} sendCode={sendCode} signIn={signIn} signInWithGoogle={signInWithGoogle} />;
-  if (step === "enroll") return <EnrollmentPrompt restaurantName={restaurantName || "this restaurant"} busy={busy} error={error} onEnroll={enroll} onSignOut={signOut} />;
+  if (step === "expired" && invitation) return <ExpiredInvitation invitation={invitation} onContinue={() => setStep("identifier")} />;
+  if (step === "identifier" || step === "code") return <SignIn invitation={invitation} step={step} identifier={identifier} password={password} usePassword={usePassword} code={code} busy={busy} error={error} setIdentifier={setIdentifier} setPassword={setPassword} setUsePassword={setUsePassword} setCode={setCode} sendCode={sendCode} signIn={signIn} signInWithPassword={signInWithPassword} signInWithGoogle={signInWithGoogle} />;
+  if (step === "enroll") return <EnrollmentPrompt restaurantName={invitation?.restaurant_name || restaurantName || "this restaurant"} invited={Boolean(invitation)} busy={busy} error={error} onEnroll={enroll} onSignOut={signOut} />;
   if (step === "preferences" && marketing) return <PreferenceGate membership={membership} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account?.phone} busy={busy} error={error} setEmailChoice={setEmailChoice} setSmsChoice={setSmsChoice} save={saveMarketingChoices} />;
 
   return <main className="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
@@ -246,6 +302,8 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
       <div><p className="text-sm font-semibold text-orange-700">{scopedRestaurantId ? membership?.restaurant_name || "Restaurant account" : "Your Yummy"}</p><h1 className="mt-1 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">{scopedRestaurantId ? "Your profile" : `Good to see you, ${account?.name?.trim().split(" ")[0] || "there"}.`}</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">Orders, rewards and your restaurant relationships—ready when you are.</p></div>
       <div className="flex min-w-0 flex-wrap items-center gap-3"><button type="button" onClick={() => setScannerOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"><ScanLine className="h-4 w-4" aria-hidden="true" /> Scan table QR</button><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-stone-950 font-display font-semibold text-white">{account?.name?.trim().charAt(0).toUpperCase() || "Y"}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-stone-950">{account?.name}</p><p className="truncate text-xs text-stone-500">{account?.email}</p></div><button type="button" onClick={signOut} aria-label="Sign out" className="ml-auto grid h-11 w-11 place-items-center rounded-full border border-stone-300 bg-white text-stone-600 hover:border-stone-500 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><LogOut className="h-4 w-4" aria-hidden="true" /></button></div>
     </header>
+
+    {(notice || error) && <div role={error ? "alert" : "status"} aria-live="polite" className={`mt-6 rounded-xl border px-4 py-3 text-sm font-medium ${error ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>{error || notice}</div>}
 
     {account?.restaurants.length ? <div className="mt-8 grid gap-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside>
@@ -260,17 +318,20 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
           {section === "rewards" && <Rewards membership={membership} offers={offers} preference={preference} busy={busy} onToggle={toggleOffers} onApply={applyOffer} />}
           {section === "communication" && <CommunicationPreferences restaurantName={membership?.restaurant_name || "this restaurant"} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account?.phone} busy={busy} onEmailChoice={setEmailChoice} onSmsChoice={setSmsChoice} onAccount={() => openSection("account")} onSave={saveMarketingChoices} />}
           {section === "account" && account && <AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} />}
-          {(notice || error) && <div className="mt-6 border-l-2 border-orange-600 bg-orange-50 px-4 py-3 text-sm text-stone-800" aria-live="polite">{error || notice}</div>}
         </div>}
       </div>
-    </div> : account ? <div className="mx-auto mt-8 max-w-2xl"><AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} /><EmptyProfile /></div> : <EmptyProfile />}
+    </div> : account ? <div className="customer-account-workspace mx-auto mt-10 grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,.55fr)] lg:items-start"><AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} /><EmptyProfile /></div> : <EmptyProfile />}
     {selectedOrder && <OrderReceipt order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
     <TableQrScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
   </main>;
 }
 
-function EnrollmentPrompt({ restaurantName, busy, error, onEnroll, onSignOut }: { restaurantName: string; busy: boolean; error: string; onEnroll: () => void; onSignOut: () => void }) {
-  return <main className="mx-auto grid min-h-[68dvh] max-w-5xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_26rem] md:px-8"><div className="max-w-xl"><Store className="h-10 w-10 text-orange-600" aria-hidden="true" /><p className="mt-7 text-sm font-semibold text-orange-700">Discover a restaurant</p><h1 className="mt-2 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">Follow {restaurantName}?</h1><p className="mt-4 max-w-lg leading-7 text-stone-600">Following saves this restaurant to your Yummy profile and lets you choose email and SMS offers. It does not mark you as a restaurant customer.</p></div><section className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.08)] sm:p-8"><h2 className="font-display text-2xl font-semibold text-stone-950">Stay connected</h2><p className="mt-2 text-sm leading-6 text-stone-600">You become a verified customer only after using this restaurant&apos;s signed table QR and placing an order.</p>{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<button type="button" disabled={busy} onClick={onEnroll} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Following restaurant" /> : <>Follow restaurant <ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button><button type="button" onClick={onSignOut} className="mt-3 min-h-11 w-full text-sm font-medium text-stone-600 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Use another account</button></section></main>;
+function ExpiredInvitation({ invitation, onContinue }: { invitation: CustomerRestaurantInvitation; onContinue: () => void }) {
+  return <main className="mx-auto grid min-h-[68dvh] max-w-5xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_27rem] md:px-8"><div className="max-w-xl"><Store className="h-10 w-10 text-orange-600" aria-hidden="true" /><p className="mt-7 text-sm font-semibold text-orange-700">Invitation expired</p><h1 className="mt-2 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">You can still follow {invitation.restaurant_name}.</h1><p className="mt-4 max-w-lg leading-7 text-stone-600">Only the secure invitation link expired. Your restaurant customer record, points and visit history are still available.</p></div><section className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.08)] sm:p-8"><h2 className="font-display text-2xl font-semibold text-stone-950">Choose what to do</h2><p className="mt-2 text-sm leading-6 text-stone-600">Sign in or create an account with the saved email address or mobile number. Yummy will then match you through the normal secure follow flow.</p><button type="button" onClick={onContinue} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2">Sign In to Find Restaurant <ArrowRight className="h-4 w-4" aria-hidden="true" /></button>{invitation.restaurant_phone && <a href={`tel:${invitation.restaurant_phone}`} className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-stone-300 px-4 font-semibold text-stone-800 hover:border-stone-500 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><Phone className="h-4 w-4" aria-hidden="true" />Ask Restaurant to Resend</a>}<p className="mt-5 text-xs leading-5 text-stone-500">An expired invitation cannot be reopened or automatically renewed.</p></section></main>;
+}
+
+function EnrollmentPrompt({ restaurantName, invited, busy, error, onEnroll, onSignOut }: { restaurantName: string; invited: boolean; busy: boolean; error: string; onEnroll: () => void; onSignOut: () => void }) {
+  return <main className="mx-auto grid min-h-[68dvh] max-w-5xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_26rem] md:px-8"><div className="max-w-xl"><Store className="h-10 w-10 text-orange-600" aria-hidden="true" /><p className="mt-7 text-sm font-semibold text-orange-700">{invited ? "Restaurant invitation" : "Discover a restaurant"}</p><h1 className="mt-2 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-5xl">Follow {restaurantName}?</h1><p className="mt-4 max-w-lg leading-7 text-stone-600">{invited ? "Confirm this restaurant relationship to bring your saved visits, points and offers into your Yummy profile." : "Following saves this restaurant to your Yummy profile and lets you choose email and SMS offers."}</p></div><section className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.08)] sm:p-8"><h2 className="font-display text-2xl font-semibold text-stone-950">{invited ? "Confirm your connection" : "Stay connected"}</h2><p className="mt-2 text-sm leading-6 text-stone-600">{invited ? "Yummy will verify that this account owns the email address or mobile number saved by the restaurant. Marketing messages remain off until you choose them." : "Your communication choices remain under your control."}</p>{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<button type="button" disabled={busy} onClick={onEnroll} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Following restaurant" /> : <>Follow restaurant <ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button><button type="button" onClick={onSignOut} className="mt-3 min-h-11 w-full text-sm font-medium text-stone-600 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Use another account</button></section></main>;
 }
 
 function RestaurantRail({ memberships, activeId, onSelect }: { memberships: CustomerRestaurantMembership[]; activeId: number | null; onSelect: (id: number) => void }) {
@@ -293,31 +354,44 @@ function OrderHistory({ orders, onOpen }: { orders: CustomerOrder[]; onOpen: (or
 function CommunicationPreferences({ restaurantName, marketing, emailChoice, smsChoice, phone, busy, onEmailChoice, onSmsChoice, onAccount, onSave }: { restaurantName: string; marketing: CustomerMarketingPreferences | null; emailChoice: boolean | null; smsChoice: boolean | null; phone?: string; busy: boolean; onEmailChoice: (value: boolean) => void; onSmsChoice: (value: boolean) => void; onAccount: () => void; onSave: () => void }) {
   if (!marketing) return <Empty icon={<MessageSquareText />} title="Preferences unavailable" text="Campaign preferences could not be loaded. Refresh and try again." />;
   const smsEnabled = smsChoice ?? marketing.sms_opted_in;
-  return <section><h2 className="font-display text-2xl font-semibold text-stone-950">Communication</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">Choose whether {restaurantName} can send campaign offers to your saved contact details.</p><form onSubmit={(event) => { event.preventDefault(); void onSave(); }} className="mt-7 max-w-2xl overflow-hidden rounded-2xl border border-stone-200 bg-white"><div className="divide-y divide-stone-200 px-6 sm:px-8">{marketing.email_available ? <ChannelChoice icon={<Mail className="h-5 w-5" aria-hidden="true" />} legend="Email campaigns" name="profile-email-marketing" value={emailChoice ?? marketing.email_opted_in} onChange={onEmailChoice} /> : <UnavailableChannel label="Email campaigns" />}{marketing.sms_available ? <div className="py-5"><ChannelChoice icon={<MessageSquareText className="h-5 w-5" aria-hidden="true" />} legend="SMS campaigns" name="profile-sms-marketing" value={smsEnabled} onChange={onSmsChoice} compact />{smsEnabled && !phone && <p className="mt-3 text-sm text-amber-800">Add a mobile number in <button type="button" onClick={onAccount} className="font-semibold underline underline-offset-2">Account details</button> before enabling SMS.</p>}</div> : <UnavailableChannel label="SMS campaigns" />}</div><div className="flex flex-col gap-3 border-t border-stone-200 bg-stone-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8"><p className="text-xs leading-5 text-stone-500">Contact details are managed separately in Account.</p><button type="submit" disabled={busy || (smsEnabled && !phone)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-label="Saving" /> : <><Check className="h-4 w-4" aria-hidden="true" />Save preferences</>}</button></div></form></section>;
+  return <section><h2 className="font-display text-2xl font-semibold text-stone-950">Communication</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-stone-600">Choose whether {restaurantName} can send campaign offers to your saved contact details.</p><form onSubmit={(event) => { event.preventDefault(); void onSave(); }} className="mt-7 max-w-2xl overflow-hidden rounded-2xl border border-stone-200 bg-white"><div className="divide-y divide-stone-200 px-6 sm:px-8">{marketing.email_available || marketing.email_opted_in ? <ChannelChoice icon={<Mail className="h-5 w-5" aria-hidden="true" />} legend="Email campaigns" name="profile-email-marketing" value={emailChoice ?? marketing.email_opted_in} onChange={onEmailChoice} disableYes={!marketing.email_available} /> : <UnavailableChannel label="Email campaigns" />}{marketing.sms_available || marketing.sms_opted_in ? <div className="py-5"><ChannelChoice icon={<MessageSquareText className="h-5 w-5" aria-hidden="true" />} legend="SMS campaigns" name="profile-sms-marketing" value={smsEnabled} onChange={onSmsChoice} compact disableYes={!marketing.sms_available} />{smsEnabled && !phone && <p className="mt-3 text-sm text-amber-800">Add a mobile number in <button type="button" onClick={onAccount} className="font-semibold underline underline-offset-2">Account details</button> before enabling SMS.</p>}</div> : <UnavailableChannel label="SMS campaigns" />}</div><div className="flex flex-col gap-3 border-t border-stone-200 bg-stone-50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8"><p className="text-xs leading-5 text-stone-500">Contact details are managed separately in Account.</p><button type="submit" disabled={busy || (smsEnabled && !phone)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-label="Saving" /> : <><Check className="h-4 w-4" aria-hidden="true" />Save preferences</>}</button></div></form></section>;
 }
 
 function AccountDetails({ account, busy, onBusy, onSaved, onNotice, onError }: { account: CustomerAccount; busy: boolean; onBusy: (value: boolean) => void; onSaved: (account: CustomerAccount) => void; onNotice: (message: string) => void; onError: (message: string) => void }) {
   const [profileName, setProfileName] = useState(account.name);
-  const [phone, setPhone] = useState(account.phone || "");
-  const [newEmail, setNewEmail] = useState(account.email);
-  const [emailCode, setEmailCode] = useState("");
-  const [emailStep, setEmailStep] = useState<"idle" | "code">("idle");
-  useEffect(() => { setProfileName(account.name); setPhone(account.phone || ""); setNewEmail(account.email); setEmailCode(""); setEmailStep("idle"); }, [account]);
+  const [contactType, setContactType] = useState<"email" | "phone" | null>(null);
+  const [contact, setContact] = useState("");
+  const [contactCode, setContactCode] = useState("");
+  const [contactStep, setContactStep] = useState<"idle" | "code">("idle");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  useEffect(() => { setProfileName(account.name); setContactType(null); setContact(""); setContactCode(""); setContactStep("idle"); }, [account]);
   const save = async () => {
     onBusy(true); onError(""); onNotice("");
-    try { onSaved(await updateCustomerAccount({ name: profileName, phone: phone.trim() || undefined })); onNotice("Account details saved."); }
+    try { onSaved(await updateCustomerAccount({ name: profileName, phone: account.phone })); onNotice("Account details saved."); }
     catch (requestError: any) { onError(requestError.response?.data?.detail || "We could not save your account details."); }
     finally { onBusy(false); }
   };
-  const changeEmail = async () => {
+  const verifyContact = async () => {
     onBusy(true); onError(""); onNotice("");
     try {
-      if (emailStep === "idle") { await requestCustomerEmailChange(newEmail); setEmailStep("code"); onNotice(`Verification code sent to ${newEmail}.`); }
-      else { onSaved(await verifyCustomerEmailChange(newEmail, emailCode)); onNotice("Sign-in email updated."); }
-    } catch (requestError: any) { onError(requestError.response?.data?.detail || "We could not update your email."); }
+      if (contactStep === "idle") { await requestCustomerContactCode(contact); setContactStep("code"); onNotice(`Verification code sent to ${contact}.`); }
+      else { onSaved(await verifyCustomerContactCode(contact, contactCode)); setContactType(null); setContact(""); setContactCode(""); setContactStep("idle"); onNotice("Contact verified successfully."); }
+    } catch (requestError: any) {
+      if (requestError?.response?.status === 409) { setContactStep("idle"); setContactCode(""); }
+      onError(apiErrorMessage(requestError, "We could not verify that contact."));
+    }
     finally { onBusy(false); }
   };
-  return <section><h2 className="font-display text-2xl font-semibold text-stone-950">Account details</h2><p className="mt-1 text-sm leading-6 text-stone-600">These details belong to your Yummy account and are reused across restaurants.</p><div className="mt-7 max-w-2xl overflow-hidden rounded-2xl border border-stone-200 bg-white"><form onSubmit={(event) => { event.preventDefault(); void save(); }} className="space-y-5 p-6 sm:p-8"><Field label="Name"><input name="name" autoComplete="name" required value={profileName} onChange={(event) => setProfileName(event.target.value)} className="profile-input" /></Field><Field label="Mobile number"><input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} className="profile-input" placeholder="+977 98XXXXXXXX" /></Field><button type="submit" disabled={busy || !profileName.trim()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-label="Saving account" /> : <><Check className="h-4 w-4" aria-hidden="true" />Save account</>}</button></form><form onSubmit={(event) => { event.preventDefault(); void changeEmail(); }} className="space-y-4 border-t border-stone-200 bg-stone-50 p-6 sm:p-8"><div><h3 className="font-display text-lg font-semibold text-stone-950">Sign-in email</h3><p className="mt-1 text-xs leading-5 text-stone-500">A verification code is required before your account email changes.</p></div><Field label="New email address"><input name="new-email" type="email" autoComplete="email" spellCheck={false} required value={newEmail} onChange={(event) => { setNewEmail(event.target.value); setEmailStep("idle"); setEmailCode(""); }} className="profile-input" /></Field>{emailStep === "code" && <Field label="Verification code"><input name="email-code" inputMode="numeric" autoComplete="one-time-code" spellCheck={false} pattern="[0-9]{6}" maxLength={6} required value={emailCode} onChange={(event) => setEmailCode(event.target.value.replace(/\D/g, ""))} className="profile-input text-center font-display text-xl tracking-[0.25em]" /></Field>}<button type="submit" disabled={busy || newEmail.trim().toLowerCase() === account.email.toLowerCase() || (emailStep === "code" && emailCode.length !== 6)} className="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-950 hover:border-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">{emailStep === "idle" ? "Verify new email" : "Confirm email change"}</button></form></div></section>;
+  const savePassword = async () => {
+    onBusy(true); onError(""); onNotice("");
+    try { await setCustomerPassword(newPassword, currentPassword); setCurrentPassword(""); setNewPassword(""); onNotice("Password saved."); }
+    catch (requestError: any) { onError(requestError.response?.data?.detail || "We could not save your password."); }
+    finally { onBusy(false); }
+  };
+  const beginContact = (type: "email" | "phone", value: string) => { setContactType(type); setContact(value); setContactCode(""); setContactStep("idle"); };
+  const cancelContact = () => { setContactType(null); setContact(""); setContactCode(""); setContactStep("idle"); };
+  return <section><h2 className="font-display text-2xl font-semibold text-stone-950">Account details</h2><p className="mt-1 text-sm leading-6 text-stone-600">Manage your profile, sign-in details and password.</p><div className="mt-7 max-w-2xl overflow-hidden rounded-2xl border border-stone-200 bg-white"><form onSubmit={(event) => { event.preventDefault(); void save(); }} className="space-y-5 p-6 sm:p-8"><Field label="Name"><input name="name" autoComplete="name" required value={profileName} onChange={(event) => setProfileName(event.target.value)} className="profile-input" /></Field><button type="submit" disabled={busy || !profileName.trim()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50"><Check className="h-4 w-4" aria-hidden="true" />Save name</button></form><div className="border-t border-stone-200 p-6 sm:p-8"><h3 className="font-display text-lg font-semibold text-stone-950">Sign-in details</h3><p className="mt-1 text-xs leading-5 text-stone-500">Verify each contact before using it to sign in.</p><div className="mt-5 divide-y divide-stone-200 rounded-xl border border-stone-200">{(["email", "phone"] as const).map((type) => { const value = type === "email" ? account.email : account.phone; const verified = type === "email" ? account.email_verified : account.phone_verified; const active = contactType === type; return <div key={type} className="p-4"><div className="flex min-h-11 items-center justify-between gap-4"><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-stone-500">{type === "email" ? "Email address" : "Mobile number"}</p><p className="mt-1 truncate font-medium text-stone-950">{value || `No ${type === "email" ? "email address" : "mobile number"} added`}</p></div>{verified ? <span className="shrink-0 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">Verified</span> : !active && <button type="button" onClick={() => beginContact(type, value || "")} className="min-h-11 shrink-0 rounded-full border border-stone-300 px-4 text-sm font-semibold hover:border-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">{value ? `Verify ${type === "email" ? "email" : "phone"}` : `Add ${type === "email" ? "email" : "phone"}`}</button>}</div>{active && <form onSubmit={(event) => { event.preventDefault(); void verifyContact(); }} className="mt-4 space-y-4 border-t border-stone-200 pt-4"><Field label={type === "email" ? "Email address" : "Mobile number"}><input name={`${type}-contact`} type={type === "email" ? "email" : "tel"} inputMode={type === "email" ? "email" : "tel"} autoComplete={type === "email" ? "email" : "tel"} required value={contact} onChange={(event) => { setContact(event.target.value); setContactStep("idle"); setContactCode(""); }} className="profile-input" placeholder={type === "email" ? "you@example.com" : "+977 98…"} /></Field>{contactStep === "code" && <Field label="Six-digit verification code"><input name="contact-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={contactCode} onChange={(event) => setContactCode(event.target.value.replace(/\D/g, ""))} className="profile-input text-center font-display text-xl tracking-[0.25em]" /></Field>}<div className="flex flex-wrap gap-3"><button type="submit" disabled={busy || !contact.trim() || (contactStep === "code" && contactCode.length !== 6)} className="min-h-11 rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">{contactStep === "idle" ? "Send code" : `Verify ${type === "email" ? "email" : "phone"}`}</button><button type="button" onClick={cancelContact} className="min-h-11 rounded-full px-4 text-sm font-semibold text-stone-600 hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Cancel</button></div></form>}</div>; })}</div></div><form onSubmit={(event) => { event.preventDefault(); void savePassword(); }} className="space-y-4 border-t border-stone-200 p-6 sm:p-8"><div><h3 className="font-display text-lg font-semibold text-stone-950">Password</h3><p className="mt-1 text-xs leading-5 text-stone-500">{account.has_password ? "Replace your current password." : "Set a password for email or phone sign-in."}</p></div>{account.has_password && <Field label="Current password"><input name="current-password" type="password" autoComplete="current-password" minLength={8} required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="profile-input" /></Field>}<Field label="New password"><input name="new-password" type="password" autoComplete="new-password" minLength={8} required value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className="profile-input" placeholder="At least 8 characters" /></Field><button type="submit" disabled={busy || newPassword.length < 8 || (account.has_password && currentPassword.length < 8)} className="inline-flex min-h-11 items-center justify-center rounded-full bg-stone-950 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">Save password</button></form></div></section>;
 }
 
 function UnavailableChannel({ label }: { label: string }) { return <div className="py-5"><p className="font-semibold text-stone-950">{label}</p><p className="mt-1 text-sm text-stone-500">This restaurant has not enabled this channel.</p></div>; }
@@ -326,9 +400,19 @@ function Rewards({ membership, offers, preference, busy, onToggle, onApply }: { 
   return <section><div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="font-display text-2xl font-semibold text-stone-950">Rewards</h2><p className="mt-1 text-sm text-stone-600">{membership?.loyalty_points ?? 0} points available at {membership?.restaurant_name}.</p></div>{preference?.available && <button type="button" aria-pressed={preference.opted_in} disabled={busy} onClick={onToggle} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-60 ${preference.opted_in ? "border border-stone-300 bg-white text-stone-800" : "bg-stone-950 text-white hover:bg-orange-700"}`}>{busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" /> : preference.opted_in ? <><Check className="h-4 w-4" /> Email offers on</> : <><Mail className="h-4 w-4" /> Turn on email offers</>}</button>}</div>{offers.length ? <div className="mt-7 grid gap-3 sm:grid-cols-2">{offers.map((offer) => <article key={offer.recipient_id} className="rounded-2xl border border-stone-200 bg-white p-5"><Tag className="h-5 w-5 text-orange-600" aria-hidden="true" /><h3 className="mt-6 font-display text-xl font-semibold text-stone-950">{offer.name}</h3><p className="mt-1 text-sm text-stone-600">{offer.discount_type === "percentage" ? `${offer.value}% off` : currency.format(offer.value)}. Expires {shortDate.format(new Date(offer.valid_until))}.</p><button type="button" disabled={busy} onClick={() => onApply(offer)} className="mt-6 min-h-11 rounded-full bg-orange-600 px-5 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Use on current order</button></article>)}</div> : <Empty icon={<Tag />} title="No offers right now" text="New rewards from this restaurant will appear here." />}</section>;
 }
 
-function SignIn({ step, email, code, busy, error, setEmail, setCode, sendCode, signIn, signInWithGoogle }: any) {
-  return <main className="mx-auto grid min-h-[72dvh] max-w-6xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_27rem] md:px-8"><div className="max-w-xl"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-600 text-white"><UserRound aria-hidden="true" /></span><h1 className="mt-7 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-6xl">One profile for every table.</h1><p className="mt-5 max-w-lg text-base leading-7 text-stone-600">Sign in once to keep your restaurants, orders, points and offers together.</p></div><form onSubmit={(event) => { event.preventDefault(); void (step === "email" ? sendCode() : signIn()); }} className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.09)] sm:p-8"><h2 className="font-display text-2xl font-semibold text-stone-950">{step === "email" ? "Sign in to Yummy" : "Check your inbox"}</h2><p className="mt-2 text-sm leading-6 text-stone-600">{step === "email" ? "Use Google or receive a six-digit code by email." : <>Enter the code sent to <strong>{email}</strong>.</>}</p>{step === "email" ? <><button type="button" disabled={busy} onClick={() => void signInWithGoogle()} className="mt-6 flex min-h-12 w-full items-center justify-center rounded-xl border border-stone-300 bg-white font-semibold text-stone-950 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">Continue with Google</button><div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wider text-stone-400"><span className="h-px flex-1 bg-stone-200" />or<span className="h-px flex-1 bg-stone-200" /></div><Field label="Email address"><input name="email" type="email" autoComplete="email" spellCheck={false} required value={email} onChange={(event) => setEmail(event.target.value)} className="profile-input" placeholder="you@example.com" /></Field></> : <Field label="Six-digit code" className="mt-6"><input name="code" inputMode="numeric" autoComplete="one-time-code" spellCheck={false} pattern="[0-9]{6}" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="profile-input text-center font-display text-2xl tracking-[0.3em]" /></Field>}{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<button disabled={busy || (step === "code" && code.length !== 6)} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Signing in" /> : <>{step === "email" ? "Email me a code" : "Verify code"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button>{step === "code" && <button type="button" disabled={busy} onClick={() => { setCode(""); void sendCode(); }} className="mt-3 min-h-11 w-full text-sm font-semibold text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Send a new code</button>}</form></main>;
+function SignIn({ invitation, step, identifier, password, usePassword, code, busy, error, setIdentifier, setPassword, setUsePassword, setCode, sendCode, signIn, signInWithPassword, signInWithGoogle }: any) {
+  const enteringIdentifier = step === "identifier";
+  const [method, setMethod] = useState<"email" | "phone">("phone");
+  const [mode, setMode] = useState<"signin" | "signup" | "recovery">("signin");
+  const [name, setName] = useState("");
+  const chooseMethod = (next: "email" | "phone") => { setMethod(next); setIdentifier(""); setPassword(""); };
+  const chooseMode = (next: "signin" | "signup" | "recovery") => { setMode(next); setPassword(""); setCode(""); setUsePassword(next === "signin"); };
+  const title = !enteringIdentifier ? (mode === "signup" ? "Verify your account" : "Reset your password") : mode === "signup" ? "Create your Yummy account" : mode === "recovery" ? "Reset your password" : "Sign in to Yummy";
+  const submit = () => enteringIdentifier ? (mode === "signin" ? signInWithPassword() : sendCode()) : signIn(mode === "signup" ? name : undefined);
+  return <main className="mx-auto grid min-h-[72dvh] max-w-6xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_27rem] md:px-8"><div className="max-w-xl"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-600 text-white"><UserRound aria-hidden="true" /></span><h1 className="mt-7 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-6xl">One profile for every table.</h1><p className="mt-5 max-w-lg text-base leading-7 text-stone-600">Keep your restaurants, orders, points and offers together in one Yummy profile.</p></div><form onSubmit={(event) => { event.preventDefault(); void submit(); }} className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.09)] sm:p-8"><h2 className="font-display text-2xl font-semibold text-stone-950">{title}</h2><p className="mt-2 text-sm leading-6 text-stone-600">{!enteringIdentifier ? <>Enter the code sent to <strong>{identifier}</strong>.</> : mode === "signup" ? "Verify your email or mobile number to create an account." : mode === "recovery" ? "We’ll verify your identity before setting a new password." : "Enter your password to continue."}</p>{enteringIdentifier ? <><div className="mt-6 grid grid-cols-2 rounded-xl bg-stone-100 p-1" role="group" aria-label="Sign-in method"><button type="button" aria-pressed={method === "email"} onClick={() => chooseMethod("email")} className={`min-h-11 rounded-lg text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${method === "email" ? "bg-white text-stone-950 shadow-sm" : "text-stone-600"}`}>Email</button><button type="button" aria-pressed={method === "phone"} onClick={() => chooseMethod("phone")} className={`min-h-11 rounded-lg text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${method === "phone" ? "bg-white text-stone-950 shadow-sm" : "text-stone-600"}`}>Mobile</button></div>{mode === "signup" && <Field label="Your name" className="mt-4"><input name="name" autoComplete="name" required value={name} onChange={(event) => setName(event.target.value)} className="profile-input" /></Field>}<Field label={method === "email" ? "Email address" : "Mobile number"} className="mt-4"><input name="identifier" type={method === "email" ? "email" : "tel"} inputMode={method === "email" ? "email" : "tel"} autoComplete={method === "email" ? "email" : "tel"} spellCheck={false} required value={identifier} onChange={(event) => setIdentifier(event.target.value)} className="profile-input" placeholder={method === "email" ? "you@example.com" : "98XXXXXXXX"} /></Field>{mode === "signin" && <Field label="Password" className="mt-4"><input name="password" type="password" autoComplete="current-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} className="profile-input" /></Field>}{mode === "signup" && <Field label="Create password" className="mt-4"><input name="new-password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} className="profile-input" placeholder="At least 8 characters" /></Field>}{mode === "recovery" && <Field label="New password" className="mt-4"><input name="new-password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} className="profile-input" placeholder="At least 8 characters" /></Field>}</> : <Field label="Six-digit verification code" className="mt-6"><input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="profile-input text-center font-display text-2xl tracking-[0.3em]" /></Field>}{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<button disabled={busy || (!enteringIdentifier && code.length !== 6) || (enteringIdentifier && password.length < 8)} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Working" /> : <>{enteringIdentifier ? mode === "signin" ? "Sign in" : "Send verification code" : mode === "signup" ? "Create account" : "Reset password"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button>{enteringIdentifier && mode === "signin" && <div className="mt-3 flex flex-col items-center gap-1"><button type="button" onClick={() => chooseMode("recovery")} className="min-h-10 px-3 text-sm font-semibold text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Forgot password?</button>{error && <button type="button" onClick={() => chooseMode("recovery")} className="min-h-10 px-3 text-sm font-semibold text-stone-700 underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Sign in with a verification code</button>}</div>}{enteringIdentifier && <p className="mt-4 text-center text-sm text-stone-600">{mode === "signup" ? "Already have an account?" : "New to Yummy?"} <button type="button" onClick={() => chooseMode(mode === "signup" ? "signin" : "signup")} className="min-h-11 px-1 font-semibold text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">{mode === "signup" ? "Sign in" : "Create account"}</button></p>}{!enteringIdentifier && <button type="button" disabled={busy} onClick={() => { setCode(""); void sendCode(); }} className="mt-3 min-h-11 w-full text-sm font-semibold text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Send a new code</button>}{enteringIdentifier && mode === "signin" && <><div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wider text-stone-400"><span className="h-px flex-1 bg-stone-200" />or<span className="h-px flex-1 bg-stone-200" /></div><button type="button" disabled={busy} onClick={() => void signInWithGoogle()} className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-stone-300 bg-white font-semibold text-stone-950 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50"><GoogleLogo />Continue with Google</button></>}</form></main>;
 }
+
+function GoogleLogo() { return <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.55h3.24c1.9-1.75 2.98-4.33 2.98-7.42Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.35l-3.24-2.55c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.63A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.39 13.93A6 6 0 0 1 6.08 12c0-.67.12-1.32.31-1.93V7.44H3.04A10 10 0 0 0 2 12c0 1.61.39 3.14 1.04 4.56l3.35-2.63Z"/><path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.96 5.44l3.35 2.63C7.18 7.7 9.39 5.94 12 5.94Z"/></svg>; }
 
 function PreferenceGate({ membership, marketing, emailChoice, smsChoice, phone, busy, error, setEmailChoice, setSmsChoice, save }: any) {
   return <main className="mx-auto grid min-h-[70dvh] max-w-5xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_28rem] md:px-8"><div><Sparkles className="h-10 w-10 text-orange-600" /><h1 className="mt-6 text-balance font-display text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl">Choose how this restaurant contacts you.</h1><p className="mt-4 max-w-lg leading-7 text-stone-600">These choices apply only to {membership?.restaurant_name || "this restaurant"}. Your personal details stay in Account.</p></div><form onSubmit={(event) => { event.preventDefault(); void save(); }} className="rounded-[1.5rem] border border-stone-200 bg-white p-6 sm:p-8"><h2 className="font-display text-2xl font-semibold">Marketing choices</h2><div className="mt-5 divide-y divide-stone-200 border-y border-stone-200">{marketing.email_decision_required && <ChannelChoice icon={<Mail />} legend="Email offers" name="email" value={emailChoice} onChange={setEmailChoice} />}{marketing.sms_decision_required && <div className="py-5"><ChannelChoice icon={<MessageSquareText />} legend="SMS offers" name="sms" value={smsChoice} onChange={setSmsChoice} compact />{smsChoice && !phone && <p className="mt-3 text-sm text-amber-800">No mobile number is saved. Choose No for now, then add one in Account and enable SMS later.</p>}</div>}</div>{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<button disabled={busy || (marketing.email_decision_required && emailChoice === null) || (marketing.sms_decision_required && smsChoice === null) || (smsChoice && !phone)} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 font-semibold text-white hover:bg-orange-600 disabled:opacity-50">Save choices <ArrowRight className="h-4 w-4" /></button></form></main>;
@@ -342,8 +426,8 @@ function OrderReceipt({ order, onClose }: { order: CustomerOrder; onClose: () =>
   return <div className="fixed inset-0 z-[80] flex items-end justify-center bg-stone-950/75 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section ref={ref} onKeyDown={keepFocusInside} role="dialog" aria-modal="true" aria-labelledby="receipt-title" className="grid max-h-[100dvh] w-full max-w-4xl overflow-y-auto overscroll-contain bg-white sm:max-h-[90dvh] sm:rounded-[1.5rem] md:grid-cols-[16rem_1fr]"><aside className="bg-[#10131a] p-7 text-white"><ReceiptText className="h-5 w-5 text-orange-400" aria-hidden="true" /><p className="mt-10 text-sm text-white/50">{order.restaurant_name}</p><h2 id="receipt-title" className="mt-2 font-display text-4xl font-semibold">Order #{order.id}</h2><p className="mt-3 text-sm text-white/55">{shortDate.format(new Date(order.created_at))}</p><p className="mt-10 border-t border-white/15 pt-5 text-sm text-white/50">Estimated total</p><p className="mt-1 font-display text-3xl font-semibold tabular-nums">{currency.format(order.grand_total)}</p></aside><div className="relative p-6 sm:p-9"><button type="button" onClick={onClose} aria-label="Close order details" className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full border border-stone-200 text-stone-600 hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><X className="h-5 w-5" aria-hidden="true" /></button><h3 className="pr-14 font-display text-2xl font-semibold">Itemized estimate</h3><div className="mt-6">{order.items.map((item, index) => <div key={`${order.id}-${index}`} className="grid grid-cols-[auto_1fr_auto] gap-4 border-b border-stone-200 py-4"><span className="text-sm font-semibold text-orange-700">{item.quantity}x</span><span className="break-words font-medium text-stone-950">{item.name}</span><span className="font-semibold tabular-nums text-stone-950">{currency.format(item.line_total)}</span></div>)}</div><div className="mt-6 flex justify-between font-semibold"><span>Items subtotal</span><span>{currency.format(subtotal)}</span></div><div className="mt-3 flex justify-between text-xl font-semibold"><span>Estimated total</span><span>{currency.format(order.grand_total)}</span></div><p className="mt-5 text-xs leading-5 text-stone-500">For reference only. The restaurant-issued fiscal receipt is the final record.</p></div></section></div>;
 }
 
-function EmptyProfile() { return <section className="mx-auto max-w-xl py-20 text-center"><Store className="mx-auto h-8 w-8 text-orange-600" /><h2 className="mt-5 font-display text-3xl font-semibold text-stone-950">No restaurants yet</h2><p className="mt-3 text-stone-600">Scan a restaurant&apos;s Yummy sign-up QR or visit its menu to join.</p><Link href="/" className="mt-7 inline-flex min-h-11 items-center gap-2 rounded-full bg-stone-950 px-5 text-sm font-semibold text-white">Explore restaurants <ArrowRight className="h-4 w-4" /></Link></section>; }
+function EmptyProfile() { return <section className="relative overflow-hidden rounded-[1.5rem] bg-[#10131a] p-7 text-white shadow-[0_24px_70px_rgba(16,19,26,0.18)] sm:p-8"><div className="absolute -right-14 -top-14 h-36 w-36 rounded-full border-[28px] border-orange-500/15" aria-hidden="true" /><span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500 text-white"><Store className="h-5 w-5" aria-hidden="true" /></span><h2 className="mt-12 max-w-xs font-display text-3xl font-semibold tracking-[-0.03em]">Your next favourite place starts here.</h2><p className="mt-4 max-w-sm text-sm leading-6 text-white/60">Browse a restaurant or scan its table QR. Orders, rewards and offers will then appear in your Yummy account.</p><Link href="/#discover" className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-xl bg-white px-5 text-sm font-semibold text-stone-950 hover:bg-orange-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400">Explore restaurants <ArrowRight className="h-4 w-4" aria-hidden="true" /></Link></section>; }
 function Empty({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <div className="mt-7 rounded-2xl border border-dashed border-stone-300 bg-white px-6 py-12 text-center"><span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-stone-100 text-stone-500">{icon}</span><h3 className="mt-4 font-display text-lg font-semibold text-stone-950">{title}</h3><p className="mt-2 text-sm text-stone-600">{text}</p></div>; }
 function ProfileSkeleton({ compact = false }: { compact?: boolean }) { return <div className={`mx-auto max-w-6xl animate-pulse px-4 ${compact ? "py-4" : "py-12"}`} aria-label="Loading profile"><div className="h-8 w-48 rounded bg-stone-200" /><div className="mt-5 h-40 rounded-2xl bg-stone-200" /></div>; }
 function Field({ label, className = "", children }: { label: string; className?: string; children: React.ReactNode }) { return <label className={`block text-sm font-medium text-stone-800 ${className}`}>{label}<span className="mt-2 block">{children}</span></label>; }
-function ChannelChoice({ icon, legend, name, value, onChange, compact = false }: any) { return <fieldset className={compact ? "" : "py-5"}><legend className="flex items-center gap-2 font-semibold text-stone-950">{icon}{legend}</legend><div className="mt-3 grid grid-cols-2 gap-2">{[{ label: "Yes", value: true }, { label: "No", value: false }].map((option) => <label key={option.label} className={`flex min-h-12 cursor-pointer items-center justify-center rounded-xl border text-sm font-semibold focus-within:ring-2 focus-within:ring-orange-500 ${value === option.value ? "border-stone-950 bg-stone-950 text-white" : "border-stone-300 bg-white text-stone-700"}`}><input type="radio" className="sr-only" name={name} checked={value === option.value} onChange={() => onChange(option.value)} />{option.label}</label>)}</div></fieldset>; }
+function ChannelChoice({ icon, legend, name, value, onChange, compact = false, disableYes = false }: any) { return <fieldset className={compact ? "" : "py-5"}><legend className="flex items-center gap-2 font-semibold text-stone-950">{icon}{legend}</legend><div className="mt-3 grid grid-cols-2 gap-2">{[{ label: "Yes", value: true }, { label: "No", value: false }].map((option) => { const disabled = option.value && disableYes; return <label key={option.label} className={`flex min-h-12 items-center justify-center rounded-xl border text-sm font-semibold focus-within:ring-2 focus-within:ring-orange-500 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${value === option.value ? "border-stone-950 bg-stone-950 text-white" : "border-stone-300 bg-white text-stone-700"}`}><input type="radio" className="sr-only" name={name} checked={value === option.value} disabled={disabled} onChange={() => onChange(option.value)} />{option.label}</label>; })}</div>{disableYes && <p className="mt-2 text-xs text-stone-500">This restaurant has not completed marketing consent setup. You can still choose No to unsubscribe.</p>}</fieldset>; }

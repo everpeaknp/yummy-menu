@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Yummy Menu — One Connected Restaurant Visit</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: Inter; src: url("assets/fonts/inter-regular.ttf"); font-weight: 400; }
+      @font-face { font-family: Inter; src: url("assets/fonts/inter-medium.ttf"); font-weight: 500; }
+      @font-face { font-family: Inter; src: url("assets/fonts/inter-semibold.ttf"); font-weight: 600; }
+      @font-face { font-family: Inter; src: url("assets/fonts/inter-bold.ttf"); font-weight: 700; }
+      @font-face { font-family: Outfit; src: url("assets/fonts/outfit-medium.ttf"); font-weight: 500; }
+      @font-face { font-family: Outfit; src: url("assets/fonts/outfit-semibold.ttf"); font-weight: 600; }
+      @font-face { font-family: Outfit; src: url("assets/fonts/outfit-bold.ttf"); font-weight: 700; }
+
+      :root {
+        --orange: #ff6929;
+        --orange-dark: #94330d;
+        --ink: #111319;
+        --muted: #6f6b66;
+        --line: #dedbd5;
+        --paper: #fffdf9;
+        --warm: #f5f3ef;
+        --soft: #f0ece7;
+        --green: #247a52;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--warm); }
+      body { color: var(--ink); font-family: Inter, Arial, sans-serif; }
+      h1, h2, h3, p { margin: 0; }
+      img { display: block; }
+      button { font: inherit; }
+      #root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--warm); }
+
+      .grain {
+        position: absolute; inset: 0; pointer-events: none; z-index: 60; opacity: .035;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+      }
+
+      /* Opening table context */
+      #table-context { position: absolute; inset: 0; background: #d6c5b4; overflow: hidden; }
+      .table-shadow { position: absolute; left: -80px; right: -80px; bottom: 98px; height: 3px; background: rgba(72,49,35,.14); }
+      .plate { position: absolute; left: -130px; bottom: -170px; width: 600px; height: 600px; border-radius: 50%; border: 38px solid #eee7de; background: #c7b6a8; box-shadow: 0 30px 60px rgba(61,42,30,.12); }
+      .napkin { position: absolute; left: 420px; bottom: 88px; width: 310px; height: 180px; border-radius: 20px; background: #8a6856; transform: rotate(-7deg); }
+      .opening-copy { position: absolute; left: 140px; top: 132px; width: 690px; }
+      .opening-copy .kicker, .story-copy .kicker { font-size: 18px; color: var(--orange-dark); text-transform: uppercase; letter-spacing: .15em; font-weight: 700; }
+      .opening-copy h1 { margin-top: 20px; font-family: Outfit, sans-serif; font-size: 76px; line-height: .98; letter-spacing: -.045em; font-weight: 600; }
+      .opening-copy p { margin-top: 24px; max-width: 520px; color: #615145; font-size: 22px; line-height: 1.48; }
+      .qr-stand { position: absolute; left: 845px; top: 270px; width: 270px; height: 390px; padding: 28px; border-radius: 24px; border: 1px solid rgba(55,39,28,.18); background: #f4ede4; box-shadow: 0 30px 70px rgba(55,39,28,.17); transform: rotate(-2deg); }
+      .qr-brand { display: flex; align-items: center; gap: 13px; font-family: Outfit, sans-serif; font-size: 22px; font-weight: 700; }
+      .qr-brand img { width: 38px; height: 38px; object-fit: contain; }
+      .qr-title { margin-top: 22px; text-align: center; font-size: 21px; font-weight: 700; }
+      .qr-code { position: relative; margin: 20px auto 0; width: 190px; height: 190px; border: 13px solid white; background:
+        linear-gradient(90deg, #111 12px, transparent 12px) 0 0/30px 30px,
+        linear-gradient(#111 12px, transparent 12px) 0 0/30px 30px,
+        linear-gradient(90deg, transparent 16px, #111 16px 24px, transparent 24px) 0 0/30px 30px,
+        linear-gradient(transparent 16px, #111 16px 24px, transparent 24px) 0 0/30px 30px,
+        #fff;
+      }
+      .qr-foot { margin-top: 14px; text-align: center; color: #6b584c; font-size: 12px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; }
+
+      /* Stable narrative copy */
+      #product-story { position: absolute; inset: 0; visibility: hidden; }
+      .brand-mark { position: absolute; left: 140px; top: 88px; display: flex; align-items: center; gap: 16px; }
+      .brand-mark img { width: 50px; height: 50px; object-fit: contain; }
+      .brand-mark span { font-family: Outfit, sans-serif; font-size: 28px; font-weight: 700; }
+      .story-copy { position: absolute; left: 140px; top: 320px; width: 690px; visibility: hidden; }
+      .story-copy h2 { margin-top: 17px; font-family: Outfit, sans-serif; font-size: 66px; line-height: 1.02; letter-spacing: -.045em; font-weight: 600; }
+      .story-copy p { margin-top: 25px; width: 540px; color: var(--muted); font-size: 22px; line-height: 1.48; }
+      .step-index { position: absolute; left: 140px; bottom: 102px; display: flex; align-items: center; gap: 13px; color: #696560; font-size: 15px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+      .step-index::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+
+      /* Narration captions: short phrases, revealed word by word. */
+      #captions { position: absolute; left: 140px; bottom: 148px; z-index: 110; width: 790px; min-height: 82px; pointer-events: none; }
+      .caption-line { position: absolute; left: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 0 9px; width: fit-content; max-width: 790px; padding: 17px 21px 18px; border: 1px solid #353840; border-radius: 18px; background: #17191f; box-shadow: 0 15px 34px rgba(17,19,25,.18); color: #f7f5f2; font-family: Outfit, sans-serif; font-size: 31px; font-weight: 600; line-height: 1.12; letter-spacing: -.02em; visibility: hidden; }
+      .caption-word { display: inline-block; max-width: 790px; white-space: nowrap; }
+      .caption-word.accent { color: #ff9a6f; }
+
+      /* Persistent device */
+      #device { position: absolute; left: 1060px; top: 54px; z-index: 20; width: 700px; height: 972px; padding: 18px; border-radius: 70px; background: #111319; border: 3px solid #343741; box-shadow: 0 40px 100px rgba(26,24,22,.22); transform-origin: 50% 50%; }
+      #device::before { content: ""; position: absolute; left: 254px; top: 24px; z-index: 50; width: 186px; height: 33px; border-radius: 22px; background: #08090c; }
+      .device-screen { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 52px; background: var(--paper); }
+      .screen { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; background: var(--paper); visibility: hidden; }
+      #screen-scan { visibility: visible; background: #312b27; color: white; }
+      .statusbar { position: absolute; left: 30px; right: 30px; top: 18px; z-index: 30; display: flex; justify-content: space-between; color: currentColor; font-size: 14px; font-weight: 700; }
+      .scan-label { position: absolute; left: 0; right: 0; top: 96px; text-align: center; font-size: 22px; font-weight: 700; }
+      .scan-window { position: absolute; left: 152px; top: 264px; width: 360px; height: 360px; }
+      .scan-window::before, .scan-window::after, .scan-window span::before, .scan-window span::after { content: ""; position: absolute; width: 78px; height: 78px; border-color: var(--orange); border-style: solid; }
+      .scan-window::before { left: 0; top: 0; border-width: 6px 0 0 6px; border-radius: 18px 0 0 0; }
+      .scan-window::after { right: 0; top: 0; border-width: 6px 6px 0 0; border-radius: 0 18px 0 0; }
+      .scan-window span::before { left: 0; bottom: 0; border-width: 0 0 6px 6px; border-radius: 0 0 0 18px; }
+      .scan-window span::after { right: 0; bottom: 0; border-width: 0 6px 6px 0; border-radius: 0 0 18px 0; }
+      .scan-window .mini-code { position: absolute; inset: 64px; border: 15px solid #fff; background:
+        linear-gradient(90deg, #111 14px, transparent 14px) 0 0/34px 34px,
+        linear-gradient(#111 14px, transparent 14px) 0 0/34px 34px,
+        linear-gradient(90deg, transparent 18px, #111 18px 26px, transparent 26px) 0 0/34px 34px,
+        linear-gradient(transparent 18px, #111 18px 26px, transparent 26px) 0 0/34px 34px,
+        #fff;
+      }
+      .scan-hint { position: absolute; left: 0; right: 0; bottom: 100px; text-align: center; color: rgba(255,255,255,.76); font-size: 18px; }
+
+      .app-header { height: 116px; padding: 42px 34px 18px; display: flex; align-items: center; justify-content: space-between; background: #111319; color: white; }
+      .app-brand { display: flex; align-items: center; gap: 14px; }
+      .app-brand img { width: 42px; height: 42px; object-fit: contain; }
+      .app-brand strong { display: block; font-family: Outfit, sans-serif; font-size: 22px; }
+      .app-brand small { display: block; margin-top: 3px; color: #aaa7a4; font-size: 13px; }
+      .profile-pill { padding: 9px 14px; border: 1px solid #3a3d43; border-radius: 999px; font-size: 13px; font-weight: 700; }
+      .screen-body { padding: 30px 34px; }
+      .ui-kicker { color: var(--orange-dark); font-size: 13px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+      .ui-title { margin-top: 10px; font-family: Outfit, sans-serif; font-size: 36px; line-height: 1.05; letter-spacing: -.035em; }
+      .ui-copy { margin-top: 11px; color: var(--muted); font-size: 16px; line-height: 1.45; }
+      .primary { display: flex; align-items: center; justify-content: center; min-height: 58px; border: 0; border-radius: 18px; background: var(--orange); color: #2a160e; font-size: 17px; font-weight: 800; box-shadow: 0 12px 25px rgba(255,105,41,.20); }
+      .home-hero { position: relative; height: 518px; padding: 54px 38px; overflow: hidden; background: #111319; color: white; }
+      .home-hero .dish { position: absolute; right: -140px; bottom: -40px; width: 520px; height: 420px; object-fit: cover; border-radius: 48% 0 0 48%; filter: saturate(.9); }
+      .home-copy { position: relative; z-index: 2; width: 330px; }
+      .connected-chip { display: inline-flex; align-items: center; gap: 9px; padding: 9px 13px; border: 1px solid #3e4148; border-radius: 999px; color: #dedbd7; font-size: 13px; font-weight: 700; }
+      .connected-chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+      .home-copy h2 { margin-top: 28px; font-family: Outfit, sans-serif; font-size: 47px; line-height: 1.01; letter-spacing: -.045em; }
+      .home-copy p { margin-top: 17px; color: #b8b5b2; font-size: 16px; line-height: 1.48; }
+      #browse-button { margin-top: 26px; width: 190px; }
+      .home-foot { display: grid; grid-template-columns: 1fr 1fr; min-height: 302px; }
+      .home-foot > div { padding: 32px; border-right: 1px solid var(--line); }
+      .home-foot > div:last-child { border: 0; }
+      .home-foot strong { display: block; margin-top: 12px; font-family: Outfit, sans-serif; font-size: 25px; }
+      .home-foot span { display: block; margin-top: 8px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+
+      /* Menu */
+      .menu-head { padding: 46px 34px 0; }
+      .menu-head-row { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
+      .search { width: 235px; height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 16px; color: #6f6b66; display: flex; align-items: center; font-size: 14px; }
+      .tabs { display: flex; gap: 28px; margin-top: 24px; border-bottom: 1px solid var(--line); }
+      .tab { position: relative; padding: 0 0 14px; color: #76716c; font-size: 14px; font-weight: 700; }
+      .tab.active { color: var(--ink); }
+      .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 4px; border-radius: 4px; background: var(--orange); }
+      .menu-list { padding: 18px 34px 20px; }
+      .dish-row { display: grid; grid-template-columns: 110px 1fr 48px; align-items: center; gap: 18px; min-height: 158px; border-bottom: 1px solid var(--line); }
+      .dish-row img { width: 110px; height: 108px; border-radius: 18px; object-fit: cover; }
+      .dish-row h3 { font-size: 20px; }
+      .dish-row p { margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+      .dish-row strong { display: block; margin-top: 10px; font-size: 15px; }
+      .add-button { width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 50%; background: var(--orange); color: #23140d; font-size: 27px; font-weight: 600; }
+
+      /* Customization */
+      #screen-custom { background: rgba(17,19,25,.52); }
+      .custom-backdrop { position: absolute; inset: 0; background: linear-gradient(rgba(17,19,25,.35), rgba(17,19,25,.68)), url("assets/chicken-momo.webp") center/cover; }
+      .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 710px; padding: 28px 34px 30px; border-radius: 38px 38px 0 0; background: var(--paper); box-shadow: 0 -28px 60px rgba(0,0,0,.18); }
+      .sheet-grabber { width: 54px; height: 5px; margin: 0 auto 24px; border-radius: 4px; background: #d5d1cc; }
+      .sheet-title { display: flex; justify-content: space-between; gap: 20px; }
+      .sheet-title h2 { font-family: Outfit, sans-serif; font-size: 32px; }
+      .sheet-title strong { font-size: 18px; }
+      .required { margin-top: 25px; color: var(--orange-dark); font-size: 13px; font-weight: 800; }
+      .option { margin-top: 12px; padding: 17px 18px; display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: 17px; font-size: 16px; font-weight: 700; }
+      .option .radio { width: 23px; height: 23px; border: 2px solid #b9b4ae; border-radius: 50%; }
+      .option.selected { border-color: var(--orange); background: #fff5ef; }
+      .option.selected .radio { border: 7px solid var(--orange); }
+      .note-box { margin-top: 22px; padding: 17px; min-height: 72px; border: 1px solid var(--line); border-radius: 17px; color: #68645f; font-size: 14px; }
+      #add-cart { position: absolute; left: 34px; right: 34px; bottom: 30px; }
+
+      /* Cart and order status */
+      .cart-card { margin-top: 28px; padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: white; }
+      .cart-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+      .cart-item { display: grid; grid-template-columns: 82px 1fr auto; gap: 15px; align-items: center; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+      .cart-item img { width: 82px; height: 72px; object-fit: cover; border-radius: 14px; }
+      .cart-item h3 { font-size: 17px; }
+      .cart-item p { margin-top: 5px; color: var(--muted); font-size: 13px; }
+      .cart-item strong { font-size: 15px; }
+      .total { margin-top: 24px; display: flex; justify-content: space-between; font-size: 18px; font-weight: 800; }
+      #place-order { margin-top: 28px; width: 100%; }
+      .order-note { margin-top: 13px; text-align: center; color: var(--muted); font-size: 12px; }
+      #order-success { position: absolute; inset: 116px 0 0; padding: 96px 55px; background: var(--paper); text-align: center; display: none; }
+      .success-icon { width: 76px; height: 76px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #e7f4ed; color: var(--green); font-size: 36px; font-weight: 800; }
+      #order-success h2 { margin-top: 28px; font-family: Outfit, sans-serif; font-size: 38px; }
+      #order-success p { margin: 14px auto 0; width: 430px; color: var(--muted); font-size: 16px; line-height: 1.5; }
+      .order-id { margin-top: 28px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; font-size: 14px; font-weight: 700; }
+
+      /* Service */
+      .service-panel { margin-top: 28px; overflow: hidden; border-radius: 26px; background: #111319; color: white; }
+      .service-top { padding: 26px; border-bottom: 1px solid #2d3036; }
+      .service-top h3 { font-size: 23px; }
+      .service-top p { margin-top: 6px; color: #aaa7a4; font-size: 14px; }
+      .service-grid { display: grid; grid-template-columns: 1fr 1fr; }
+      .service-action { min-height: 155px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; border-right: 1px solid #2d3036; border-bottom: 1px solid #2d3036; text-align: center; font-size: 14px; font-weight: 700; }
+      .service-action:nth-child(2n) { border-right: 0; }
+      .service-action:nth-child(n+3) { border-bottom: 0; }
+      .service-icon { width: 42px; height: 42px; border: 1px solid #444852; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--orange); font-size: 18px; }
+      #bill-action.requested { background: #1a211f; color: #bce4d0; }
+      #bill-action.requested .service-icon { border-color: #3e765c; color: #7ed0a4; }
+
+      /* Profile */
+      .profile-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+      .summary-card { min-height: 170px; padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: white; }
+      .summary-card.dark { background: #111319; color: white; border-color: #111319; }
+      .summary-card h3 { margin-top: 11px; font-family: Outfit, sans-serif; font-size: 25px; }
+      .summary-card p { margin-top: 48px; color: #85817c; font-size: 13px; line-height: 1.4; }
+      .orders { margin-top: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 22px; background: white; }
+      .orders-head { display: flex; justify-content: space-between; align-items: center; }
+      .orders-head h3 { font-family: Outfit, sans-serif; font-size: 27px; }
+      .orders-head span { color: var(--muted); font-size: 13px; }
+      .order-row { display: grid; grid-template-columns: 72px 1fr auto; gap: 15px; align-items: center; margin-top: 17px; padding-top: 17px; border-top: 1px solid var(--line); }
+      .order-row img { width: 72px; height: 62px; object-fit: cover; border-radius: 13px; }
+      .order-row h4 { margin: 0; font-size: 16px; }
+      .order-row p { margin-top: 5px; color: var(--muted); font-size: 12px; }
+      .saved { padding: 7px 10px; border-radius: 999px; background: #fff1e8; color: var(--orange-dark); font-size: 11px; font-weight: 800; }
+
+      .touch { position: absolute; z-index: 80; width: 56px; height: 56px; border: 3px solid rgba(255,105,41,.72); border-radius: 50%; background: rgba(255,255,255,.80); box-shadow: 0 0 0 10px rgba(255,105,41,.12); visibility: hidden; }
+      .touch::after { content: ""; position: absolute; inset: 17px; border-radius: 50%; background: var(--orange); }
+
+      /* Final lockup */
+      #final { position: absolute; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: #111319; color: white; visibility: hidden; }
+      .final-inner { text-align: center; }
+      .final-brand { display: flex; align-items: center; justify-content: center; gap: 24px; }
+      .final-brand img { width: 96px; height: 96px; object-fit: contain; }
+      .final-brand span { font-family: Outfit, sans-serif; font-size: 76px; font-weight: 700; letter-spacing: -.04em; }
+      .final-rule { width: 10px; height: 10px; margin: 34px auto 28px; border-radius: 50%; background: var(--orange); }
+      .final-inner p { color: #bbb8b5; font-size: 23px; }
+
+      /* True mobile viewport and compact responsive anatomy */
+      #device { left: 1240px; top: 32px; width: 468px; height: 1016px; padding: 14px; border-radius: 60px; }
+      #device::before { left: 165px; top: 18px; width: 132px; height: 28px; }
+      .device-screen { border-radius: 46px; }
+      .app-header { height: 104px; padding: 34px 22px 14px; }
+      .app-brand { gap: 10px; }
+      .app-brand img { width: 34px; height: 34px; }
+      .app-brand strong { font-size: 18px; }
+      .app-brand small { font-size: 11px; }
+      .profile-pill { padding: 7px 10px; font-size: 10px; }
+      .screen-body { padding: 24px 22px; }
+      .ui-title { font-size: 30px; }
+      .ui-copy { font-size: 14px; }
+      .primary { min-height: 52px; border-radius: 15px; font-size: 15px; }
+
+      .qr-code { width: 190px; height: 190px; border: 12px solid white; background: white; }
+      .qr-code img, .mini-code img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+      .scan-window { left: 70px; top: 250px; width: 300px; height: 300px; }
+      .scan-window .mini-code { position: absolute; inset: 48px; border: 10px solid #fff; background: #fff; }
+      .scan-label { top: 90px; font-size: 18px; }
+
+      .home-hero { height: 470px; padding: 44px 26px; }
+      .home-hero .dish { right: -180px; bottom: -35px; width: 470px; height: 360px; opacity: .86; }
+      .home-copy { width: 285px; }
+      .home-copy h2 { font-size: 39px; }
+      .home-copy p { width: 250px; font-size: 14px; }
+      #browse-button { width: 168px; }
+      .home-foot { grid-template-columns: 1fr; min-height: 410px; }
+      .home-foot > div { min-height: 156px; padding: 24px 26px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .home-foot > div:last-child { border-bottom: 0; }
+      .home-foot strong { font-size: 22px; }
+
+      .menu-head { padding: 32px 22px 0; }
+      .menu-head-row { display: block; }
+      .search { width: 100%; height: 42px; margin-top: 14px; }
+      .tabs { gap: 19px; margin-top: 18px; }
+      .tab { font-size: 12px; }
+      .menu-list { padding: 10px 22px 16px; }
+      .dish-row { grid-template-columns: 76px 1fr 42px; gap: 12px; min-height: 142px; }
+      .dish-row img { width: 76px; height: 74px; border-radius: 14px; }
+      .dish-row h3 { font-size: 16px; }
+      .dish-row p { font-size: 11px; }
+      .dish-row strong { margin-top: 6px; font-size: 13px; }
+      .add-button { width: 40px; height: 40px; font-size: 22px; }
+
+      .sheet { height: 740px; padding: 24px 22px 24px; }
+      .sheet-title h2 { font-size: 27px; }
+      .option { padding: 15px; }
+      #add-cart { left: 22px; right: 22px; bottom: 24px; }
+
+      .cart-card { margin-top: 22px; padding: 18px; }
+      .cart-item { grid-template-columns: 66px 1fr auto; }
+      .cart-item img { width: 66px; height: 60px; }
+      #place-order { margin-top: 22px; }
+      #order-success { inset: 104px 0 0; padding: 104px 30px; }
+      #order-success h2 { font-size: 34px; }
+      #order-success p { width: 340px; font-size: 14px; }
+
+      .active-order-card { margin-top: 20px; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: white; }
+      .active-order-head { padding: 17px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+      .active-order-head strong { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: #9a4a22; }
+      .active-badge { padding: 6px 9px; border-radius: 999px; background: #e8f5ed; color: #23774f; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+      .ordered-item { display: grid; grid-template-columns: 62px 1fr auto; gap: 12px; align-items: center; padding: 17px 18px; }
+      .ordered-item img { width: 62px; height: 58px; object-fit: cover; border-radius: 13px; }
+      .ordered-item h3 { font-size: 15px; }
+      .ordered-item p { margin-top: 4px; color: var(--muted); font-size: 11px; }
+      .ordered-item strong { font-size: 13px; }
+      .receipt-action { margin: 0 18px 18px; min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid var(--line); border-radius: 14px; color: var(--ink); font-size: 13px; font-weight: 800; }
+      .bill-summary { margin-top: 16px; padding: 18px; border-radius: 18px; background: #111319; color: white; }
+      .bill-row { display: flex; justify-content: space-between; padding: 6px 0; color: #c9c6c2; font-size: 12px; }
+      .bill-row.total { margin-top: 8px; padding-top: 14px; border-top: 1px solid #393c42; color: white; font-size: 18px; font-weight: 800; }
+
+      #screen-receipt { background: #e7e3dd; }
+      .receipt-paper { position: absolute; left: 28px; right: 28px; top: 74px; bottom: 42px; padding: 30px 25px; background: #fff; box-shadow: 0 22px 50px rgba(17,19,25,.16); color: #111; font-family: "Courier New", monospace; }
+      .receipt-paper::before, .receipt-paper::after { content: ""; position: absolute; left: 0; right: 0; height: 8px; background: linear-gradient(135deg, transparent 50%, #fff 50%) 0 0/12px 12px repeat-x; }
+      .receipt-paper::before { top: -8px; }
+      .receipt-paper::after { bottom: -8px; transform: rotate(180deg); }
+      .receipt-brand { text-align: center; font-size: 19px; font-weight: 800; letter-spacing: .08em; }
+      .receipt-meta { margin-top: 15px; padding: 12px 0; display: flex; justify-content: space-between; border-top: 1px dashed #111; border-bottom: 1px dashed #111; font-size: 11px; line-height: 1.55; }
+      .receipt-table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+      .receipt-table th, .receipt-table td { padding: 8px 2px; border-bottom: 1px dashed #777; text-align: left; }
+      .receipt-table th:last-child, .receipt-table td:last-child { text-align: right; }
+      .receipt-totals { margin-top: 17px; font-size: 12px; }
+      .receipt-totals > div { display: flex; justify-content: space-between; padding: 5px 0; }
+      .receipt-totals .grand { margin-top: 7px; padding-top: 12px; border-top: 3px double #111; font-size: 17px; font-weight: 800; }
+      .receipt-note { margin-top: 25px; text-align: center; font-size: 10px; line-height: 1.5; }
+
+      .service-panel { margin-top: 20px; }
+      .service-top { padding: 20px; }
+      .service-action { min-height: 128px; }
+
+      .profile-points { margin-top: 18px; padding: 20px; border-radius: 20px; background: #111319; color: white; }
+      .points-main { display: flex; align-items: end; justify-content: space-between; gap: 16px; }
+      .points-number { font-family: Outfit, sans-serif; font-size: 48px; line-height: 1; font-weight: 700; }
+      .points-label { margin-top: 5px; color: #ffb38f; font-size: 12px; }
+      .visits-box { text-align: right; }
+      .visits-box strong { display: block; font-family: Outfit, sans-serif; font-size: 27px; }
+      .visits-box span { color: #a9a6a2; font-size: 10px; }
+      .reward-heading { margin-top: 18px; display: flex; justify-content: space-between; align-items: center; }
+      .reward-heading h3 { font-family: Outfit, sans-serif; font-size: 20px; }
+      .reward-heading span { color: var(--muted); font-size: 11px; }
+      .reward-row { margin-top: 9px; padding: 13px 15px; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 11px; border: 1px solid var(--line); border-radius: 15px; background: white; }
+      .reward-icon { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff1e8; color: var(--orange-dark); font-size: 15px; font-weight: 800; }
+      .reward-row strong { display: block; font-size: 13px; }
+      .reward-row small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+      .reward-value { color: var(--orange-dark); font-size: 11px; font-weight: 800; }
+      .orders { margin-top: 14px; padding: 16px; }
+      .orders-head h3 { font-size: 22px; }
+      .order-row { grid-template-columns: 54px 1fr auto; gap: 10px; margin-top: 12px; padding-top: 12px; }
+      .order-row img { width: 54px; height: 48px; }
+      .order-row h4 { font-size: 13px; }
+      .order-row p { font-size: 10px; }
+      .saved { padding: 6px 8px; font-size: 9px; }
+    </style>
+  </head>
+  <body>
+    <main id="root" data-composition-id="yummy-menu-connected" data-start="0" data-duration="25" data-width="1920" data-height="1080">
+      <section id="table-context">
+        <div class="opening-copy">
+          <div class="kicker">At the table</div>
+          <h1>Scan once.<br>Stay connected.</h1>
+          <p>One table session carries the guest through the whole restaurant visit.</p>
+        </div>
+        <div class="plate"></div>
+        <div class="napkin"></div>
+        <div class="table-shadow"></div>
+        <div class="qr-stand">
+          <div class="qr-brand"><img src="assets/yummy_logo.png" alt=""><span>Yummy Kitchen</span></div>
+          <div class="qr-title">Scan for the menu</div>
+          <div class="qr-code"><img src="assets/table-8-qr.png" alt="Table 8 QR code"></div>
+          <div class="qr-foot">Table 8</div>
+        </div>
+      </section>
+
+      <section id="product-story">
+        <div class="brand-mark"><img src="assets/yummy_logo.png" alt=""><span>Yummy Menu</span></div>
+        <article id="copy-home" class="story-copy"><div class="kicker">Table connected</div><h2>Your visit starts here.</h2><p>The restaurant and table stay attached while you browse.</p></article>
+        <article id="copy-menu" class="story-copy"><div class="kicker">Browse menu</div><h2>Choose what feels right.</h2><p>Popular dishes are ready the moment the menu opens.</p></article>
+        <article id="copy-custom" class="story-copy"><div class="kicker">Make it yours</div><h2>Every choice stays clear.</h2><p>Required options and notes live in one focused sheet.</p></article>
+        <article id="copy-cart" class="story-copy"><div class="kicker">Place the order</div><h2>Send it to the kitchen.</h2><p>The order keeps its restaurant and table context.</p></article>
+        <article id="copy-active" class="story-copy"><div class="kicker">Current order</div><h2>Everything you ordered.</h2><p>Items, status, totals and receipt stay with Table 8.</p></article>
+        <article id="copy-receipt" class="story-copy"><div class="kicker">Your receipt</div><h2>The full bill, itemized.</h2><p>See what was ordered, what is paid, and what is due.</p></article>
+        <article id="copy-service" class="story-copy"><div class="kicker">Table service</div><h2>Need something?</h2><p>Ask the floor team without leaving the same visit.</p></article>
+        <article id="copy-profile" class="story-copy"><div class="kicker">Your profile</div><h2>The visit stays with you.</h2><p>Orders, Yummy points, and restaurant rewards come together.</p></article>
+        <div id="step-index" class="step-index">01 · Connected</div>
+      </section>
+
+      <section id="device" data-layout-allow-overlap>
+        <div class="device-screen">
+          <section id="screen-scan" class="screen">
+            <div class="statusbar"><span>9:41</span><span>● ● ●</span></div>
+            <div class="scan-label">Scan your table QR</div>
+            <div class="scan-window"><span></span><div class="mini-code"><img src="assets/table-8-qr.png" alt="Table 8 QR code in scanner"></div></div>
+            <div class="scan-hint">Hold the code inside the frame</div>
+          </section>
+
+          <section id="screen-home" class="screen">
+            <div class="app-header"><div class="app-brand"><img src="assets/yummy_logo.png" alt=""><div><strong>Yummy Kitchen</strong><small>Table 8 · connected</small></div></div><div class="profile-pill">Profile</div></div>
+            <div class="home-hero"><img class="dish" src="assets/jholmomo.webp" alt=""><div class="home-copy"><div class="connected-chip">Dine, earn, return</div><h2>Everything for your visit.</h2><p>Browse from your table. Keep orders, points and rewards connected.</p><button id="browse-button" class="primary">Browse menu →</button></div></div>
+            <div class="home-foot"><div><div class="ui-kicker">Table 8</div><strong>Yummy Kitchen</strong><span>Your current session stays with you.</span></div><div><div class="ui-kicker">Your visit</div><strong>One place</strong><span>Menu, order, service and profile.</span></div></div>
+          </section>
+
+          <section id="screen-menu" class="screen">
+            <div class="app-header"><div class="app-brand"><img src="assets/yummy_logo.png" alt=""><div><strong>Yummy Kitchen</strong><small>Table 8 · menu</small></div></div><div class="profile-pill">1 visit</div></div>
+            <div class="menu-head"><div class="menu-head-row"><div><div class="ui-kicker">Browse menu</div><h2 class="ui-title">Find your favourite.</h2></div><div class="search">Search the menu…</div></div><div class="tabs"><div class="tab">Popular</div><div class="tab active">Momo</div><div class="tab">Mains</div><div class="tab">Drinks</div></div></div>
+            <div class="menu-list">
+              <div class="dish-row"><img src="assets/chicken-momo.webp" alt=""><div><h3>Chicken momo</h3><p>Steamed dumplings · house achar</p><strong>Rs 320</strong></div><button id="chicken-add" class="add-button">+</button></div>
+              <div class="dish-row"><img src="assets/fry-momo.webp" alt=""><div><h3>Fry momo</h3><p>Crisp fried dumplings · chilli dip</p><strong>Rs 350</strong></div><button class="add-button">+</button></div>
+              <div class="dish-row"><img src="assets/jholmomo.webp" alt=""><div><h3>Jhol momo</h3><p>Sesame tomato broth · fresh herbs</p><strong>Rs 380</strong></div><button class="add-button">+</button></div>
+            </div>
+          </section>
+
+          <section id="screen-custom" class="screen">
+            <div class="custom-backdrop"></div>
+            <div class="sheet"><div class="sheet-grabber"></div><div class="sheet-title"><div><div class="ui-kicker">Customize</div><h2>Chicken momo</h2></div><strong>Rs 320</strong></div><div class="required">Choose spice level · Required</div><div class="option"><span>Mild</span><span class="radio"></span></div><div class="option"><span>Spicy</span><span class="radio"></span></div><div id="extra-spicy" class="option"><span>Extra spicy</span><span class="radio"></span></div><div class="note-box">Special instructions</div><button id="add-cart" class="primary">Add to Cart · Rs 320</button></div>
+          </section>
+
+          <section id="screen-cart" class="screen">
+            <div class="app-header"><div class="app-brand"><img src="assets/yummy_logo.png" alt=""><div><strong>Your cart</strong><small>Yummy Kitchen · Table 8</small></div></div><div class="profile-pill">1 item</div></div>
+            <div class="screen-body"><div class="ui-kicker">Active table</div><h2 class="ui-title">Ready to order.</h2><p class="ui-copy">Your request goes directly to Yummy Kitchen.</p><div class="cart-card"><div class="cart-label"><span>Table 8</span><span>Qty 1</span></div><div class="cart-item"><img src="assets/chicken-momo.webp" alt=""><div><h3>Chicken momo</h3><p>Extra spicy</p></div><strong>Rs 320</strong></div><div class="total"><span>Total</span><span>Rs 320</span></div></div><button id="place-order" class="primary">Place Order</button><div class="order-note">No payment is collected in this request.</div></div>
+            <div id="order-success" data-layout-allow-overlap data-layout-allow-occlusion><div class="success-icon">✓</div><h2>Order sent</h2><p>The kitchen has your request. Your table stays connected for whatever comes next.</p><div class="order-id">Yummy Kitchen · Table 8</div></div>
+          </section>
+
+          <section id="screen-active" class="screen">
+            <div class="app-header"><div class="app-brand"><img src="assets/yummy_logo.png" alt=""><div><strong>Current order</strong><small>Yummy Kitchen · Table 8</small></div></div><div class="profile-pill">Active</div></div>
+            <div class="screen-body"><div class="ui-kicker">Order #1842</div><h2 class="ui-title">Ordered at Table 8.</h2><p class="ui-copy">The kitchen has your request.</p><div class="active-order-card"><div class="active-order-head"><strong>Ordered</strong><span class="active-badge">Active</span></div><div class="ordered-item"><img src="assets/chicken-momo.webp" alt=""><div><h3>Chicken momo</h3><p>1 × Extra spicy · Ordered</p></div><strong>NPR 320</strong></div><button id="receipt-button" class="receipt-action">▤ View receipt</button></div><div class="bill-summary"><div class="bill-row"><span>Ordered Total</span><strong>NPR 320</strong></div><div class="bill-row total"><span>Grand Total</span><strong>NPR 320</strong></div></div></div>
+          </section>
+
+          <section id="screen-receipt" class="screen">
+            <div class="receipt-paper"><div class="receipt-brand">YUMMY KITCHEN</div><div class="receipt-meta"><div>ORDER #1842<br>TABLE: 8<br>STATUS: ORDERED</div><div>06/10/2026<br>01:26</div></div><table class="receipt-table"><thead><tr><th>QTY</th><th>ITEM</th><th>AMT</th></tr></thead><tbody><tr><td>1</td><td>Chicken momo<br><small>Extra spicy</small></td><td>320.00</td></tr></tbody></table><div class="receipt-totals"><div><span>ITEMS SUBTOTAL</span><span>Rs. 320.00</span></div><div class="grand"><span>TOTAL</span><span>Rs. 320.00</span></div><div><span>PAID</span><span>Rs. 0.00</span></div><div><span>DUE</span><strong>Rs. 320.00</strong></div></div><div class="receipt-note">ESTIMATED TABLE BILL<br>RESTAURANT-ISSUED FISCAL RECEIPT IS FINAL</div></div>
+          </section>
+
+          <section id="screen-service" class="screen">
+            <div class="app-header"><div class="app-brand"><img src="assets/yummy_logo.png" alt=""><div><strong>Yummy Kitchen</strong><small>Table 8 · connected</small></div></div><div class="profile-pill">Order sent</div></div>
+            <div class="screen-body"><div class="ui-kicker">Table service</div><h2 class="ui-title">Still your table.</h2><p class="ui-copy">Ask the floor team for what comes next.</p><div class="service-panel"><div class="service-top"><h3>Need something?</h3><p>Send a request directly to the floor team.</p></div><div class="service-grid"><div class="service-action"><div class="service-icon">↗</div><span>Call Waiter</span></div><div id="bill-action" class="service-action"><div class="service-icon">₨</div><span id="bill-label">Request Bill</span></div><div class="service-action"><div class="service-icon">○</div><span>Water</span></div><div class="service-action"><div class="service-icon">Ⅱ</div><span>Cutlery</span></div></div></div></div>
+          </section>
+
+          <section id="screen-profile" class="screen">
+            <div class="app-header"><div class="app-brand"><img src="assets/yummy_logo.png" alt=""><div><strong>Your profile</strong><small>Dining life, together</small></div></div><div class="profile-pill">Table 8</div></div>
+            <div class="screen-body"><div class="ui-kicker">This visit stays with you</div><h2 class="ui-title">Your Yummy profile.</h2><div class="profile-points"><div class="points-main"><div><div class="points-number">1,240</div><div class="points-label">Yummy points</div></div><div class="visits-box"><strong>6</strong><span>Completed visits</span></div></div></div><div class="reward-heading"><h3>Rewards</h3><span>2 available</span></div><div class="reward-row"><div class="reward-icon">%</div><div><strong>Momo Monday</strong><small>Valid until Oct 31</small></div><div class="reward-value">15% off</div></div><div class="reward-row"><div class="reward-icon">★</div><div><strong>Free masala tea</strong><small>Ready for your next visit</small></div><div class="reward-value">300 pts</div></div><div class="orders"><div class="orders-head"><h3>Orders</h3><span>1 saved</span></div><div class="order-row"><img src="assets/chicken-momo.webp" alt=""><div><h4>Order #1842 · Chicken momo</h4><p>Yummy Kitchen · NPR 320</p></div><span class="saved">Visit saved</span></div></div></div>
+          </section>
+        </div>
+      </section>
+
+      <div id="touch" class="touch"></div>
+      <section id="final" data-layout-allow-overlap data-layout-allow-occlusion><div class="final-inner"><div class="final-brand"><img src="assets/yummy_logo.png" alt=""><span>Yummy Menu</span></div><div class="final-rule"></div><p>One connected restaurant visit.</p></div></section>
+      <aside id="captions" aria-label="Animated narration captions" data-layout-allow-overlap data-layout-allow-occlusion>
+        <div id="caption-01" class="caption-line"><span class="caption-word accent">Scan</span><span class="caption-word">your</span><span class="caption-word">table</span><span class="caption-word">and</span><span class="caption-word">stay</span><span class="caption-word">connected.</span></div>
+        <div id="caption-02" class="caption-line"><span class="caption-word accent">Choose</span><span class="caption-word">your</span><span class="caption-word">meal.</span><span class="caption-word">Make</span><span class="caption-word">it</span><span class="caption-word">yours.</span></div>
+        <div id="caption-03" class="caption-line"><span class="caption-word accent">Send</span><span class="caption-word">the</span><span class="caption-word">order</span><span class="caption-word">straight</span><span class="caption-word">to</span><span class="caption-word">the</span><span class="caption-word">restaurant.</span></div>
+        <div id="caption-04" class="caption-line"><span class="caption-word accent">See</span><span class="caption-word">exactly</span><span class="caption-word">what</span><span class="caption-word">you</span><span class="caption-word">ordered,</span><span class="caption-word">then</span><span class="caption-word">open</span><span class="caption-word">the</span><span class="caption-word">itemized</span><span class="caption-word">receipt.</span></div>
+        <div id="caption-05" class="caption-line"><span class="caption-word accent">Request</span><span class="caption-word">the</span><span class="caption-word">bill</span><span class="caption-word">without</span><span class="caption-word">leaving</span><span class="caption-word">the</span><span class="caption-word">table.</span></div>
+        <div id="caption-06" class="caption-line"><span class="caption-word">Your</span><span class="caption-word accent">orders,</span><span class="caption-word">points,</span><span class="caption-word">and</span><span class="caption-word">rewards</span><span class="caption-word">come</span><span class="caption-word">home</span><span class="caption-word">with</span><span class="caption-word">you.</span><span class="caption-word accent">In</span><span class="caption-word accent">Yummy.</span></div>
+      </aside>
+      <div class="grain"></div>
+
+      <audio id="room-ambience" data-start="0" data-duration="3.4" data-track-index="9" data-volume="0.10" data-fade-out="1" src="assets/ambience.wav"></audio>
+      <audio id="music-bed" data-start="0" data-duration="25" data-track-index="10" data-volume="0.13" data-fade-in="1.2" data-fade-out="0.8" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+      <audio id="scan-sfx" data-start="2.10" data-duration="0.18" data-track-index="11" data-volume="0.26" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="browse-sfx" data-start="4.20" data-duration="0.05" data-track-index="12" data-volume="0.24" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="dish-sfx" data-start="7.00" data-duration="0.05" data-track-index="13" data-volume="0.24" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="spice-sfx" data-start="8.65" data-duration="0.05" data-track-index="14" data-volume="0.24" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="cart-sfx" data-start="9.55" data-duration="0.12" data-track-index="15" data-volume="0.22" src="assets/sfx/drop_001.ogg"></audio>
+      <audio id="order-sfx" data-start="12.50" data-duration="0.18" data-track-index="16" data-volume="0.28" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="receipt-sfx" data-start="15.45" data-duration="0.35" data-track-index="17" data-volume="0.18" src="assets/sfx/card-place-1.ogg"></audio>
+      <audio id="bill-sfx" data-start="19.55" data-duration="0.05" data-track-index="18" data-volume="0.24" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="profile-sfx" data-start="20.70" data-duration="0.12" data-track-index="19" data-volume="0.18" src="assets/sfx/drop_001.ogg"></audio>
+      <audio id="logo-sfx" data-start="23.30" data-duration="0.90" data-track-index="20" data-volume="0.22" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
+      <audio id="voiceover-01" data-start="0.35" data-duration="1.984" data-track-index="21" data-volume="0.94" src="assets/voiceover-01.wav"></audio>
+      <audio id="voiceover-02" data-start="3.30" data-duration="1.813" data-track-index="22" data-volume="0.94" src="assets/voiceover-02.wav"></audio>
+      <audio id="voiceover-03" data-start="8.10" data-duration="1.941" data-track-index="23" data-volume="0.94" src="assets/voiceover-03.wav"></audio>
+      <audio id="voiceover-04" data-start="12.75" data-duration="3.904" data-track-index="24" data-volume="0.94" src="assets/voiceover-04.wav"></audio>
+      <audio id="voiceover-05" data-start="17.90" data-duration="2.219" data-track-index="25" data-volume="0.94" src="assets/voiceover-05.wav"></audio>
+      <audio id="voiceover-06" data-start="20.62" data-duration="3.520" data-track-index="26" data-volume="0.94" src="assets/voiceover-06.wav"></audio>
+    </main>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      const showCopy = (id, label, at) => {
+        tl.set(".story-copy", { visibility: "hidden" }, at)
+          .set(id, { visibility: "visible", y: 26 }, at)
+          .to(id, { y: 0, duration: .38, ease: "power3.out" }, at)
+          .set("#step-index", { textContent: label }, at);
+      };
+      const switchScreen = (from, to, at) => {
+        tl.set(to, { visibility: "visible", x: 440 }, at)
+          .to(from, { x: -440, duration: .44, ease: "power3.inOut" }, at)
+          .to(to, { x: 0, duration: .44, ease: "power3.inOut" }, at)
+          .set(from, { visibility: "hidden", x: 0 }, at + .45);
+      };
+      const tap = (x, y, at) => {
+        tl.set("#touch", { visibility: "visible", x, y, scale: .72 }, at)
+          .to("#touch", { scale: 1, duration: .14, ease: "power2.out" }, at)
+          .to("#touch", { scale: .82, duration: .12, ease: "power2.in" }, at + .16)
+          .set("#touch", { visibility: "hidden" }, at + .34);
+      };
+      const caption = (id, at, duration) => {
+        const words = `${id} .caption-word`;
+        tl.set(".caption-line", { visibility: "hidden" }, at)
+          .set(id, { visibility: "visible", y: 14 }, at)
+          .to(id, { y: 0, duration: .22, ease: "power3.out" }, at)
+          .fromTo(words,
+            { y: 12, scale: .96 },
+            { y: 0, scale: 1, duration: .22, stagger: .055, ease: "power2.out" },
+            at + .04)
+          .to(id, { y: -6, duration: .18, ease: "power2.in" }, at + duration - .18)
+          .set(id, { visibility: "hidden" }, at + duration);
+      };
+
+      caption("#caption-01", .35, 2.16);
+      caption("#caption-02", 3.30, 2.06);
+      caption("#caption-03", 8.10, 2.18);
+      caption("#caption-04", 12.75, 4.12);
+      caption("#caption-05", 17.90, 2.46);
+      caption("#caption-06", 20.62, 3.70);
+
+      tl.set("#device", { scale: .62, x: -120, y: 38, rotation: -5 }, 0)
+        .fromTo(".opening-copy", { x: -40 }, { x: 0, duration: .55, ease: "power3.out" }, .10)
+        .fromTo(".qr-stand", { y: 45, rotation: -5 }, { y: 0, rotation: -2, duration: .65, ease: "power3.out" }, .28)
+        .fromTo("#device", { y: 88 }, { y: 38, duration: .7, ease: "power3.out" }, .48)
+        .to(".scan-window", { scale: 1.035, duration: .28, ease: "power2.inOut", yoyo: true, repeat: 1 }, 1.55)
+        .to("#device", { scale: 1, x: 0, y: 0, rotation: 0, duration: .62, ease: "power3.inOut" }, 1.95)
+        .set("#table-context", { visibility: "hidden" }, 2.50)
+        .set("#product-story", { visibility: "visible" }, 2.50);
+
+      switchScreen("#screen-scan", "#screen-home", 2.50);
+      showCopy("#copy-home", "01 · Connected", 2.50);
+      tap(1370, 500, 4.18);
+      switchScreen("#screen-home", "#screen-menu", 4.55);
+      showCopy("#copy-menu", "02 · Browse", 4.55);
+      tap(1650, 420, 6.98);
+      switchScreen("#screen-menu", "#screen-custom", 7.38);
+      showCopy("#copy-custom", "03 · Customize", 7.38);
+
+      tap(1650, 610, 8.58);
+      tl.add(() => document.querySelector("#extra-spicy").classList.add("selected"), 8.65);
+      tap(1470, 955, 9.50);
+      switchScreen("#screen-custom", "#screen-cart", 10.02);
+      showCopy("#copy-cart", "04 · Order", 10.02);
+      tap(1470, 760, 11.92);
+      tl.set("#place-order", { textContent: "Sending Request…" }, 12.04)
+        .to("#place-order", { scale: .98, duration: .18, ease: "power2.inOut", yoyo: true, repeat: 1 }, 12.04)
+        .set("#screen-cart > .screen-body", { display: "none" }, 12.49)
+        .set("#order-success", { display: "block", y: 28 }, 12.50)
+        .to("#order-success", { y: 0, duration: .36, ease: "power3.out" }, 12.50);
+
+      tl.set("#order-success", { display: "none" }, 13.28);
+      switchScreen("#screen-cart", "#screen-active", 13.30);
+      showCopy("#copy-active", "05 · Ordered", 13.30);
+      tap(1470, 550, 15.42);
+      switchScreen("#screen-active", "#screen-receipt", 15.82);
+      showCopy("#copy-receipt", "06 · Receipt", 15.82);
+
+      switchScreen("#screen-receipt", "#screen-service", 18.28);
+      showCopy("#copy-service", "07 · Service", 18.28);
+      tap(1585, 545, 19.52);
+      tl.add(() => {
+        document.querySelector("#bill-action").classList.add("requested");
+        document.querySelector("#bill-label").textContent = "Request Bill · 5:00";
+      }, 19.60);
+
+      switchScreen("#screen-service", "#screen-profile", 20.58);
+      showCopy("#copy-profile", "08 · Return", 20.58);
+      tl.to("#device", { scale: .99, duration: 2.4, ease: "none" }, 20.72)
+        .set("#screen-profile, #copy-profile, #device, #product-story", { visibility: "hidden" }, 23.19)
+        .set("#final", { visibility: "visible" }, 23.20)
+        .fromTo(".final-brand", { y: 30 }, { y: 0, duration: .45, ease: "power3.out" }, 23.20)
+        .fromTo(".final-rule", { scale: 0 }, { scale: 1, duration: .40, ease: "back.out(1.8)" }, 23.42)
+        .fromTo(".final-inner p", { y: 18 }, { y: 0, duration: .35, ease: "power2.out" }, 23.55);
+
+      window.__timelines["yummy-menu-connected"] = tl;
+    </script>
+  </body>
+</html>

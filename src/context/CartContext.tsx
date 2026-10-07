@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { MenuItem } from "@/services/api";
 
 interface CartItem extends MenuItem {
@@ -52,8 +53,11 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [session, setSession] = useState<QRSession | null>(null);
+  const routeRestaurantId = Number(pathname.match(/^\/(\d+)(?:\/|$)/)?.[1] || 0) || null;
+  const scopedSession = routeRestaurantId && session?.restaurantId !== routeRestaurantId ? null : session;
 
   // Load session from localStorage on mount and stay in sync
   useEffect(() => {
@@ -265,7 +269,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         totalItems,
         totalPrice,
-        session,
+        session: scopedSession,
         refreshSession,
         resetSession,
       }}

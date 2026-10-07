@@ -279,11 +279,23 @@ export interface CustomerRestaurantMembership {
   relationship_status: "subscriber" | "verified_customer";
 }
 
+export interface CustomerRestaurantInvitation {
+  restaurant_id: number;
+  restaurant_name: string;
+  restaurant_phone?: string;
+  customer_name: string;
+  expired: boolean;
+  expires_in_days: number;
+}
+
 export interface CustomerAccount {
   id: number;
-  email: string;
+  email?: string;
+  email_verified: boolean;
   name: string;
   phone?: string;
+  phone_verified: boolean;
+  has_password: boolean;
   restaurants: CustomerRestaurantMembership[];
 }
 
@@ -371,13 +383,31 @@ const unwrap = <T,>(response: { data: { data?: T } | T }): T => {
   return body.data === undefined ? response.data as T : body.data;
 };
 
-export const requestCustomerCode = async (email: string) => {
-  await apiClient.post("/public/customer/auth/request-code", { email });
+export const requestCustomerCode = async (identifier: string) => {
+  await apiClient.post("/public/customer/auth/request-code", { identifier });
 };
 
-export const verifyCustomerCode = async (email: string, code: string) => {
-  const response = await apiClient.post("/public/customer/auth/verify-code", { email, code }, { withCredentials: true });
+export const verifyCustomerCode = async (identifier: string, code: string, password?: string, name?: string) => {
+  const response = await apiClient.post("/public/customer/auth/verify-code", { identifier, code, password: password || undefined, name: name || undefined }, { withCredentials: true });
   return unwrap<{ access_token: string }>(response).access_token;
+};
+
+export const loginCustomerWithPassword = async (identifier: string, password: string) => {
+  const response = await apiClient.post("/public/customer/auth/password", { identifier, password }, { withCredentials: true });
+  return unwrap<{ access_token: string }>(response).access_token;
+};
+
+export const setCustomerPassword = async (password: string, currentPassword?: string) => {
+  await apiClient.post("/public/customer/me/password", { password, current_password: currentPassword || undefined }, { headers: customerHeaders() });
+};
+
+export const requestCustomerContactCode = async (identifier: string) => {
+  await apiClient.post("/public/customer/me/contact/request-code", { identifier }, { headers: customerHeaders() });
+};
+
+export const verifyCustomerContactCode = async (identifier: string, code: string) => {
+  const response = await apiClient.post("/public/customer/me/contact/verify-code", { identifier, code }, { headers: customerHeaders() });
+  return unwrap<CustomerAccount>(response);
 };
 
 export const verifyCustomerGoogleToken = async (idToken: string) => {
@@ -451,6 +481,20 @@ export const joinCustomerRestaurant = async (restaurantId: number, name?: string
   const response = await apiClient.post(
     `/public/customer/restaurants/${restaurantId}/join`,
     { name },
+    { headers: customerHeaders() },
+  );
+  return unwrap<CustomerRestaurantMembership>(response);
+};
+
+export const getCustomerRestaurantInvitation = async (token: string) => {
+  const response = await apiClient.get(`/public/customer/invitations/${encodeURIComponent(token)}`);
+  return unwrap<CustomerRestaurantInvitation>(response);
+};
+
+export const acceptCustomerRestaurantInvitation = async (token: string) => {
+  const response = await apiClient.post(
+    `/public/customer/invitations/${encodeURIComponent(token)}/accept`,
+    {},
     { headers: customerHeaders() },
   );
   return unwrap<CustomerRestaurantMembership>(response);

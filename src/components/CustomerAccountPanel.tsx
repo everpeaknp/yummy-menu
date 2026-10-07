@@ -15,6 +15,7 @@ import {
   getCustomerOffers,
   getCustomerOrders,
   joinCustomerRestaurant,
+  loginCustomerWithPassword,
   logoutCustomer,
   refreshCustomerSession,
   requestCustomerCode,
@@ -27,11 +28,13 @@ const currency = new Intl.NumberFormat("en-NP", { style: "currency", currency: "
 const shortDate = new Intl.DateTimeFormat("en-NP", { dateStyle: "medium" });
 
 type AccountView = "orders" | "rewards";
-type Step = "email" | "code" | "preferences" | "account";
+type Step = "identifier" | "code" | "preferences" | "account";
 
 export default function CustomerAccountPanel({ restaurantId, view }: { restaurantId: string; view: AccountView }) {
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
+  const [step, setStep] = useState<Step>("identifier");
+  const [identifier, setIdentifier] = useState("");
+  const [password, setPassword] = useState("");
+  const [usePassword, setUsePassword] = useState(false);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [account, setAccount] = useState<CustomerAccount | null>(null);
@@ -96,15 +99,15 @@ export default function CustomerAccountPanel({ restaurantId, view }: { restauran
 
   const sendCode = async () => {
     setBusy(true); setError("");
-    try { await requestCustomerCode(email); setStep("code"); }
-    catch (requestError: any) { setError(requestError.response?.data?.detail || "We couldn't send the code. Check the email and try again."); }
+    try { await requestCustomerCode(identifier); setStep("code"); }
+    catch (requestError: any) { setError(requestError.response?.data?.detail || "We couldn't send the code. Check your email or phone number and try again."); }
     finally { setBusy(false); }
   };
 
   const signIn = async () => {
     setBusy(true); setError("");
     try {
-      sessionStorage.setItem("yummy_customer_token", await verifyCustomerCode(email, code));
+      sessionStorage.setItem("yummy_customer_token", await verifyCustomerCode(identifier, code, password, name));
       await loadAccount();
     } catch (requestError: any) { setError(requestError.response?.data?.detail || "That code is invalid or expired."); }
     finally { setBusy(false); }
@@ -112,7 +115,16 @@ export default function CustomerAccountPanel({ restaurantId, view }: { restauran
 
   const signOut = async () => {
     await logoutCustomer();
-    setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketingPreferences(null); setCode(""); setStep("email");
+    setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketingPreferences(null); setCode(""); setPassword(""); setStep("identifier");
+  };
+
+  const passwordSignIn = async () => {
+    setBusy(true); setError("");
+    try {
+      sessionStorage.setItem("yummy_customer_token", await loginCustomerWithPassword(identifier, password));
+      await loadAccount();
+    } catch (requestError: any) { setError(requestError.response?.data?.detail || "Your sign-in details are incorrect."); }
+    finally { setBusy(false); }
   };
 
   const saveMarketingChoices = async () => {
@@ -194,21 +206,23 @@ export default function CustomerAccountPanel({ restaurantId, view }: { restauran
         <div className="max-w-xl">
           <span className="mb-5 grid h-12 w-12 place-items-center rounded-2xl bg-orange-600 text-white">{view === "orders" ? <ReceiptText /> : <Gift />}</span>
           <h1 className="text-balance font-display text-4xl font-semibold tracking-tight text-stone-950 sm:text-5xl">{view === "orders" ? "Your orders, all together." : "Good meals should give something back."}</h1>
-          <p className="mt-4 max-w-lg text-base leading-7 text-stone-600">Sign in with your email to {view === "orders" ? "see past orders and follow your dining history" : "see your points, restaurant offers and rewards"}.</p>
+          <p className="mt-4 max-w-lg text-base leading-7 text-stone-600">Sign in with your email or phone number to {view === "orders" ? "see past orders and follow your dining history" : "see your points, restaurant offers and rewards"}.</p>
         </div>
-        <form onSubmit={(event) => { event.preventDefault(); step === "email" ? sendCode() : signIn(); }} className="rounded-[1.75rem] border border-stone-200 bg-white p-6 shadow-[0_18px_60px_rgba(28,25,23,0.08)] sm:p-8">
-          <h2 className="font-display text-2xl font-semibold text-stone-950">{step === "email" ? "Sign in to Yummy" : "Check your inbox"}</h2>
-          <p className="mt-2 text-sm leading-6 text-stone-600">{step === "email" ? "No password needed. We'll email you a six-digit code." : <>Enter the code sent to <strong>{email}</strong>.</>}</p>
-          {step === "email" ? <div className="mt-6 space-y-4">
-            <label className="block text-sm font-medium text-stone-800" htmlFor="customer-email">Email address</label>
-            <div className="relative"><Mail className="absolute left-4 top-3.5 h-5 w-5 text-stone-400" aria-hidden="true" /><input id="customer-email" name="email" type="email" autoComplete="email" spellCheck={false} required value={email} onChange={(event) => setEmail(event.target.value)} className="min-h-12 w-full rounded-xl border border-stone-300 bg-white pl-12 pr-4 text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" placeholder="you@example.com" /></div>
+        <form onSubmit={(event) => { event.preventDefault(); step === "identifier" ? (usePassword ? passwordSignIn() : sendCode()) : signIn(); }} className="rounded-[1.75rem] border border-stone-200 bg-white p-6 shadow-[0_18px_60px_rgba(28,25,23,0.08)] sm:p-8">
+          <h2 className="font-display text-2xl font-semibold text-stone-950">{step === "identifier" ? "Sign in to Yummy" : "Enter your code"}</h2>
+          <p className="mt-2 text-sm leading-6 text-stone-600">{step === "identifier" ? "Use a verified email address or mobile number." : <>Enter the code sent to <strong>{identifier}</strong>.</>}</p>
+          {step === "identifier" ? <div className="mt-6 space-y-4">
+            <label className="block text-sm font-medium text-stone-800" htmlFor="customer-identifier">Email or mobile number</label>
+            <div className="relative"><Mail className="absolute left-4 top-3.5 h-5 w-5 text-stone-400" aria-hidden="true" /><input id="customer-identifier" name="identifier" type="text" autoComplete="username" spellCheck={false} required value={identifier} onChange={(event) => setIdentifier(event.target.value)} className="min-h-12 w-full rounded-xl border border-stone-300 bg-white pl-12 pr-4 text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" placeholder="you@example.com or +977 98…" /></div>
+            {usePassword && <><label className="block text-sm font-medium text-stone-800" htmlFor="customer-password">Password</label><input id="customer-password" name="password" type="password" autoComplete="current-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} className="min-h-12 w-full rounded-xl border border-stone-300 px-4 text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" /></>}
             <label className="block text-sm font-medium text-stone-800" htmlFor="customer-name">Name <span className="font-normal text-stone-500">(first visit only)</span></label>
             <input id="customer-name" name="name" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className="min-h-12 w-full rounded-xl border border-stone-300 px-4 text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" placeholder="Your name" />
-          </div> : <div className="mt-6"><label className="block text-sm font-medium text-stone-800" htmlFor="customer-code">Six-digit code</label><input id="customer-code" name="code" inputMode="numeric" autoComplete="one-time-code" spellCheck={false} pattern="[0-9]{6}" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="mt-2 min-h-14 w-full rounded-xl border border-stone-300 px-4 text-center font-display text-2xl tracking-[0.35em] text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" /></div>}
+          </div> : <div className="mt-6 space-y-4"><div><label className="block text-sm font-medium text-stone-800" htmlFor="customer-code">Six-digit code</label><input id="customer-code" name="code" inputMode="numeric" autoComplete="one-time-code" spellCheck={false} pattern="[0-9]{6}" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} className="mt-2 min-h-14 w-full rounded-xl border border-stone-300 px-4 text-center font-display text-2xl tracking-[0.35em] text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" /></div><div><label className="block text-sm font-medium text-stone-800" htmlFor="new-customer-password">Create a password <span className="font-normal text-stone-500">(optional)</span></label><input id="new-customer-password" name="new-password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 min-h-12 w-full rounded-xl border border-stone-300 px-4 text-stone-950 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100" placeholder="At least 8 characters" /></div></div>}
           {error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}
-          <button disabled={busy || (step === "code" && code.length !== 6)} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Loading" /> : <>{step === "email" ? "Email me a code" : "Verify code"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button>
+          <button disabled={busy || (step === "code" && code.length !== 6)} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Loading" /> : <>{step === "identifier" ? (usePassword ? "Sign in" : "Send verification code") : "Verify & continue"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button>
+          {step === "identifier" && <button type="button" onClick={() => { setUsePassword((value) => !value); setError(""); }} className="mt-3 min-h-11 w-full text-sm font-semibold text-orange-700 hover:text-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">{usePassword ? "Use a verification code" : "Use my password"}</button>}
           {step === "code" && <button type="button" disabled={busy} onClick={() => { setCode(""); void sendCode(); }} className="mt-3 min-h-11 w-full text-sm font-semibold text-orange-700 hover:text-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">Send a new code</button>}
-          {step === "code" && <button type="button" onClick={() => { setStep("email"); setError(""); }} className="mt-3 min-h-11 w-full text-sm font-medium text-stone-600 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Use a different email</button>}
+          {step === "code" && <button type="button" onClick={() => { setStep("identifier"); setError(""); }} className="mt-3 min-h-11 w-full text-sm font-medium text-stone-600 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Use a different email or phone</button>}
         </form>
       </section>
     );

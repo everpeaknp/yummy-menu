@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Yummy Menu — Dine, earn, return</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #f6f6f4; }
+      body { font-family: "Inter", sans-serif; color: #10131a; }
+      h1, h2, h3, p { margin: 0; }
+      button { font: inherit; }
+      .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; }
+      .scene:not(#scene-1) { opacity: 0; }
+      .display { font-family: "Outfit", sans-serif; letter-spacing: -0.045em; }
+      .eyebrow { font-size: 18px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
+      .orange { color: #ff6929; }
+      .scene:not(#scene-1) .orange, .final-tag { color: #b9471c; }
+      #scene-3 .table-panel .orange, #scene-4 .points .orange { color: #ff9a70; }
+      .rule { height: 2px; background: #ff6929; transform-origin: left center; }
+      .logo { width: 76px; height: 76px; object-fit: contain; }
+      .brand { display: flex; align-items: center; gap: 20px; font-family: "Outfit", sans-serif; font-size: 38px; font-weight: 700; }
+
+      #scene-1 { z-index: 1; background: #10131a; color: #fffdf9; }
+      .hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; width: 100%; height: 100%; }
+      .hero-copy { display: flex; flex-direction: column; justify-content: space-between; padding: 92px 104px 86px; }
+      .hero-copy h1 { max-width: 1040px; font-size: 104px; line-height: 0.98; font-weight: 650; }
+      .hero-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; }
+      .hero-pill { display: inline-flex; align-items: center; gap: 12px; border: 1px solid rgba(255,253,249,.18); border-radius: 999px; padding: 14px 20px; font-size: 20px; color: rgba(255,253,249,.72); }
+      .hero-pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: #ff6929; }
+      .hero-side { position: relative; overflow: hidden; border-left: 1px solid rgba(255,253,249,.1); background: #17191f; }
+      .hero-side img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.78) contrast(1.03); }
+      .hero-side::after { content: ""; position: absolute; inset: 0; background: rgba(16,19,26,.3); }
+      .hero-word { position: absolute; right: -30px; bottom: 18px; z-index: 2; font-family: "Outfit", sans-serif; font-size: 170px; font-weight: 700; letter-spacing: -.06em; color: rgba(255,253,249,.13); }
+
+      #scene-2 { z-index: 2; background: #f6f6f4; }
+      .menu-layout { display: grid; grid-template-columns: 330px 1fr; height: 100%; padding: 58px 70px; gap: 62px; }
+      .menu-nav { display: flex; flex-direction: column; border-right: 1px solid #d6d3d1; padding: 16px 44px 16px 0; }
+      .menu-nav .brand { font-size: 32px; }
+      .menu-nav h3 { margin-top: 92px; font-size: 22px; font-weight: 700; }
+      .category { display: flex; align-items: center; gap: 14px; min-height: 58px; border-bottom: 1px solid #e7e5e4; font-size: 20px; color: #57534e; }
+      .category.active { color: #10131a; font-weight: 800; }
+      .category.active::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ff6929; }
+      .menu-main { display: flex; flex-direction: column; padding: 14px 0; }
+      .menu-header { display: flex; justify-content: space-between; align-items: end; gap: 60px; padding-bottom: 34px; border-bottom: 1px solid #d6d3d1; }
+      .menu-header h2 { margin-top: 14px; font-size: 76px; line-height: 1; font-weight: 650; }
+      .search { width: 330px; border: 1px solid #d6d3d1; border-radius: 999px; padding: 18px 24px; background: #fffdf9; color: #78716c; font-size: 19px; }
+      .dish-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0 54px; padding-top: 28px; }
+      .dish { display: grid; grid-template-columns: 148px 1fr auto; align-items: center; gap: 24px; min-height: 190px; border-bottom: 1px solid #d6d3d1; }
+      .dish img { width: 148px; height: 128px; border-radius: 22px; object-fit: cover; }
+      .dish h3 { font-family: "Outfit", sans-serif; font-size: 29px; line-height: 1.08; letter-spacing: -.025em; }
+      .dish p { margin-top: 12px; font-size: 18px; line-height: 1.5; color: #746d68; }
+      .add { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; background: #10131a; color: #fffdf9; font-size: 30px; font-weight: 400; }
+
+      #scene-3 { z-index: 3; background: #f6f6f4; }
+      .order-layout { display: grid; grid-template-columns: 1.1fr .9fr; height: 100%; padding: 62px 74px; gap: 66px; }
+      .customizer { display: flex; flex-direction: column; border-radius: 36px; background: #fffdf9; padding: 50px 58px; box-shadow: 0 24px 80px rgba(28,25,23,.08); }
+      .customizer-head { display: flex; align-items: center; gap: 28px; padding-bottom: 30px; border-bottom: 1px solid #e7e5e4; }
+      .customizer-head img { width: 130px; height: 118px; border-radius: 22px; object-fit: cover; }
+      .customizer h2 { font-size: 58px; font-weight: 650; }
+      .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 34px; }
+      .choice { display: flex; align-items: center; justify-content: space-between; min-height: 78px; border: 2px solid #e7e5e4; border-radius: 20px; padding: 0 24px; font-size: 20px; font-weight: 700; }
+      .choice.selected { border-color: #ff6929; background: #fff1eb; }
+      .choice-dot { width: 24px; height: 24px; border: 7px solid #10131a; border-radius: 50%; background: #fffdf9; }
+      .confirm { display: flex; justify-content: space-between; margin-top: auto; border-radius: 999px; padding: 22px 30px; background: #10131a; color: #fffdf9; font-size: 21px; font-weight: 800; }
+      .table-panel { display: flex; flex-direction: column; justify-content: space-between; border-radius: 36px; background: #10131a; padding: 54px; color: #fffdf9; }
+      .table-panel h2 { margin-top: 18px; font-size: 70px; line-height: 1; font-weight: 650; }
+      .table-panel p { margin-top: 18px; max-width: 560px; font-size: 22px; line-height: 1.5; color: rgba(255,253,249,.62); }
+      .service { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid rgba(255,253,249,.14); border-radius: 22px; overflow: hidden; }
+      .service span { min-height: 70px; display: grid; place-items: center; border-right: 1px solid rgba(255,253,249,.1); border-bottom: 1px solid rgba(255,253,249,.1); color: rgba(255,253,249,.78); font-size: 18px; font-weight: 700; }
+      .service span:nth-child(2n) { border-right: 0; }
+      .service span:nth-last-child(-n+2) { border-bottom: 0; }
+
+      #scene-4 { z-index: 4; background: #f6f6f4; }
+      .profile-layout { display: grid; grid-template-columns: 1fr 1.05fr; height: 100%; padding: 72px 78px; gap: 48px; }
+      .profile-copy { display: flex; flex-direction: column; justify-content: space-between; padding: 12px 20px 12px 0; }
+      .profile-copy h2 { max-width: 790px; margin-top: 20px; font-size: 86px; line-height: .98; font-weight: 650; }
+      .profile-copy p { max-width: 660px; margin-top: 26px; font-size: 24px; line-height: 1.55; color: #57534e; }
+      .profile-brand { padding-top: 26px; border-top: 1px solid #d6d3d1; }
+      .profile-brand .brand { font-size: 42px; }
+      .profile-ui { display: grid; grid-template-rows: 1.12fr .88fr; gap: 24px; }
+      .points { position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; border-radius: 34px; padding: 48px; background: #10131a; color: #fffdf9; }
+      .points::after { content: ""; position: absolute; width: 270px; height: 270px; right: -80px; top: -80px; border: 46px solid rgba(255,105,41,.18); border-radius: 50%; }
+      .points h3 { font-size: 62px; font-weight: 650; }
+      .points p { font-size: 20px; color: rgba(255,253,249,.58); }
+      .profile-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .profile-card { display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #d6d3d1; border-radius: 26px; padding: 32px; background: #fffdf9; }
+      .profile-card h3 { font-size: 34px; font-weight: 650; }
+      .profile-card p { font-size: 18px; line-height: 1.45; color: #78716c; }
+      .final-tag { display: inline-flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 800; color: #b9471c; }
+      .final-tag::before { content: ""; width: 36px; height: 3px; background: #ff6929; }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-vshj" id="root" data-composition-id="yummy-menu-brag" data-start="0" data-duration="20" data-width="1920" data-height="1080">
+      <section data-hf-id="hf-k674" id="scene-1" class="scene">
+        <div data-hf-id="hf-qqr5" class="hero-grid">
+          <div data-hf-id="hf-jloi" class="hero-copy">
+            <div data-hf-id="hf-5eos" id="s1-brand" class="brand"><img data-hf-id="hf-qpn8" class="logo" src="assets/yummy_logo.png" alt="">Yummy</div>
+            <h1 data-hf-id="hf-7w3v" id="s1-title" class="display">Everything for your visit, in one place.</h1>
+            <div data-hf-id="hf-8x9s" class="hero-bottom"><div data-hf-id="hf-1km8" id="s1-pill" class="hero-pill">Dine, earn, return</div><div data-hf-id="hf-z7kv" id="s1-rule" class="rule" style="width: 260px"></div></div>
+          </div>
+          <div data-hf-id="hf-4f1a" id="s1-image" class="hero-side"><img data-hf-id="hf-nkn0" src="assets/jholmomo.webp" alt="Jhol momo"><div data-hf-id="hf-3tom" class="hero-word" aria-hidden="true" data-layout-ignore="">Yummy</div></div>
+        </div>
+      </section>
+
+      <section data-hf-id="hf-v1or" id="scene-2" class="scene">
+        <div data-hf-id="hf-gxx4" class="menu-layout">
+          <aside data-hf-id="hf-m9vi" class="menu-nav">
+            <div data-hf-id="hf-6u6d" id="s2-brand" class="brand"><span data-hf-id="hf-zmw5" class="orange" aria-hidden="true">●</span>Yummy</div>
+            <h3 data-hf-id="hf-ijsh" id="s2-browse">Browse categories</h3>
+            <div data-hf-id="hf-xlti" id="s2-cat1" class="category active">Popular</div>
+            <div data-hf-id="hf-qa0k" id="s2-cat2" class="category">Momo</div>
+            <div data-hf-id="hf-xlz4" id="s2-cat3" class="category">Main dishes</div>
+            <div data-hf-id="hf-lu2t" id="s2-cat4" class="category">Drinks</div>
+          </aside>
+          <main data-hf-id="hf-g37x" class="menu-main">
+            <header data-hf-id="hf-oor9" class="menu-header"><div data-hf-id="hf-yeow"><div data-hf-id="hf-outd" id="s2-eye" class="eyebrow orange">Browse menu</div><h2 data-hf-id="hf-l1pr" id="s2-title" class="display">Find your next favourite.</h2></div><div data-hf-id="hf-ugnm" id="s2-search" class="search">Search the menu…</div></header>
+            <div data-hf-id="hf-se81" class="dish-list">
+              <article data-hf-id="hf-ahfp" id="dish-1" class="dish"><img data-hf-id="hf-1ptv" src="assets/chicken-momo.webp" alt="Chicken momo"><div data-hf-id="hf-y7yw"><h3 data-hf-id="hf-wka1">Chicken momo</h3><p data-hf-id="hf-ab25">A familiar favourite, ready to customize.</p></div><span data-hf-id="hf-cupj" class="add">+</span></article>
+              <article data-hf-id="hf-efjq" id="dish-2" class="dish"><img data-hf-id="hf-6bne" src="assets/thakali.webp" alt="Thakali"><div data-hf-id="hf-x11t"><h3 data-hf-id="hf-2sfg">Thakali</h3><p data-hf-id="hf-hghw">Explore the kitchen by category.</p></div><span data-hf-id="hf-elbr" class="add">+</span></article>
+              <article data-hf-id="hf-idnr" id="dish-3" class="dish"><img data-hf-id="hf-5am0" src="assets/cappuccino.webp" alt="Cappuccino"><div data-hf-id="hf-xfcu"><h3 data-hf-id="hf-zpl3">Cappuccino</h3><p data-hf-id="hf-3n81">Your table order stays with you.</p></div><span data-hf-id="hf-e70q" class="add">+</span></article>
+              <article data-hf-id="hf-mbrs" id="dish-4" class="dish"><img data-hf-id="hf-i9vm" src="assets/chicken-biryani.webp" alt="Chicken biriyani"><div data-hf-id="hf-w8fr"><h3 data-hf-id="hf-g11q">Chicken biriyani</h3><p data-hf-id="hf-apby">Browse, choose, and keep moving.</p></div><span data-hf-id="hf-dspp" class="add">+</span></article>
+            </div>
+          </main>
+        </div>
+      </section>
+
+      <section data-hf-id="hf-r3kq" id="scene-3" class="scene">
+        <div data-hf-id="hf-5h53" class="order-layout">
+          <section data-hf-id="hf-jgl1" class="customizer">
+            <div data-hf-id="hf-96mk" class="customizer-head"><img data-hf-id="hf-szpz" id="s3-image" src="assets/fry-momo.webp" alt="Fry momo"><div data-hf-id="hf-wmqs"><div data-hf-id="hf-00hc" class="eyebrow orange">Customize</div><h2 data-hf-id="hf-ib2j" id="s3-title" class="display">Chicken momo</h2></div></div>
+            <div data-hf-id="hf-f6g0" class="choices"><div data-hf-id="hf-8uth" id="choice-1" class="choice selected"><span data-hf-id="hf-p4zv">Regular</span><span data-hf-id="hf-7w6q" class="choice-dot"></span></div><div data-hf-id="hf-c4uv" id="choice-2" class="choice"><span data-hf-id="hf-g627">Extra spicy</span><span data-hf-id="hf-kyim">+</span></div><div data-hf-id="hf-5z52" id="choice-3" class="choice"><span data-hf-id="hf-ffbf">Chilli sauce</span><span data-hf-id="hf-3k4i">+</span></div><div data-hf-id="hf-gump" id="choice-4" class="choice"><span data-hf-id="hf-wag5">Special instructions</span><span data-hf-id="hf-ffy9">›</span></div></div>
+            <div data-hf-id="hf-dz43" id="s3-confirm" class="confirm"><span data-hf-id="hf-lkj9">Add to cart</span><span data-hf-id="hf-c8vc">Ready</span></div>
+          </section>
+          <aside data-hf-id="hf-hx7o" class="table-panel">
+            <div data-hf-id="hf-vftp"><div data-hf-id="hf-wz1z" id="s3-eye" class="eyebrow orange">Dining here?</div><h2 data-hf-id="hf-9g6a" id="s3-table" class="display">Scan the table QR to order</h2><p data-hf-id="hf-9wtj" id="s3-copy">Your current table bill updates as items are added.</p></div>
+            <div data-hf-id="hf-h0nb" id="s3-service" class="service"><span data-hf-id="hf-8mq9">Call Waiter</span><span data-hf-id="hf-qmob">Request Bill</span><span data-hf-id="hf-ctak">Water</span><span data-hf-id="hf-g6ix">Cutlery</span></div>
+          </aside>
+        </div>
+      </section>
+
+      <section data-hf-id="hf-8bv1" id="scene-4" class="scene">
+        <div data-hf-id="hf-4k8a" class="profile-layout">
+          <div data-hf-id="hf-qddz" class="profile-copy">
+            <div data-hf-id="hf-vu4q"><div data-hf-id="hf-i94c" id="s4-eye" class="eyebrow orange">Your profile</div><h2 data-hf-id="hf-xsb9" id="s4-title" class="display">The next visit already knows you.</h2><p data-hf-id="hf-69az" id="s4-copy">Orders, points, rewards and restaurant updates in one place.</p></div>
+            <div data-hf-id="hf-lyz0" id="s4-brand" class="profile-brand"><div data-hf-id="hf-ap3u" class="brand"><span data-hf-id="hf-d9tl" class="orange" aria-hidden="true">●</span>Yummy</div><div data-hf-id="hf-bkyt" class="final-tag">Dine, earn, return</div></div>
+          </div>
+          <div data-hf-id="hf-dzbi" class="profile-ui">
+            <section data-hf-id="hf-5mni" id="s4-points" class="points"><div data-hf-id="hf-1043"><div data-hf-id="hf-t0lg" class="eyebrow orange">Available balance</div><h3 data-hf-id="hf-ifb0" class="display">Yummy points</h3></div><p data-hf-id="hf-otrz">Earn points every time you return.</p></section>
+            <div data-hf-id="hf-8vmf" class="profile-rows"><article data-hf-id="hf-uzd6" id="s4-orders" class="profile-card"><h3 data-hf-id="hf-ihov" class="display">Orders</h3><p data-hf-id="hf-yvt4">Your completed visits stay linked to your account.</p></article><article data-hf-id="hf-jhrf" id="s4-rewards" class="profile-card"><h3 data-hf-id="hf-37xi" class="display">Rewards</h3><p data-hf-id="hf-3f45">Offers are ready to use on an active table order.</p></article></div>
+          </div>
+        </div>
+      </section>
+
+      <audio data-hf-id="hf-f59a" id="music" data-start="0" data-duration="20" data-track-index="10" data-volume="0.22" src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3"></audio>
+      <audio data-hf-id="hf-fk6w" id="tap-1" data-start="3.70" data-duration="0.01" data-track-index="11" data-volume="0.28" src="assets/sfx/click_003.ogg"></audio>
+      <audio data-hf-id="hf-rcho" id="tap-2" data-start="8.44" data-duration="0.01" data-track-index="11" data-volume="0.24" src="assets/sfx/click_002.ogg"></audio>
+      <audio data-hf-id="hf-wvsb" id="confirm" data-start="14.76" data-duration="0.18" data-track-index="11" data-volume="0.28" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio data-hf-id="hf-8sxj" id="landing" data-start="19.48" data-duration="0.15" data-track-index="11" data-volume="0.34" src="assets/sfx/impactSoft_medium_004.ogg"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      tl.from("#s1-brand", { x: -42, opacity: 0, duration: 0.62, ease: "expo.out" }, 0.18)
+        .from("#s1-title", { y: 68, opacity: 0, duration: 0.9, ease: "power3.out" }, 0.38)
+        .from("#s1-image", { scale: 1.08, opacity: 0, duration: 1.3, ease: "sine.out" }, 0.22)
+        .from("#s1-pill", { x: -28, opacity: 0, duration: 0.52, ease: "power2.out" }, 1.08)
+        .from("#s1-rule", { scaleX: 0, duration: 0.7, ease: "circ.out" }, 1.2);
+
+      // beat-locked: 3.70s
+      tl.to("#scene-1", { x: -1920, duration: 0.58, ease: "power3.inOut" }, 3.7)
+        .fromTo("#scene-2", { x: 1920, opacity: 1 }, { x: 0, duration: 0.58, ease: "power3.inOut" }, 3.7)
+        .set("#scene-1", { x: 0, opacity: 0 }, 4.29)
+        .from("#s2-brand", { x: -40, opacity: 0, duration: 0.5, ease: "expo.out" }, 4.3)
+        .from("#s2-eye", { y: 24, opacity: 0, duration: 0.38, ease: "power4.out" }, 4.36)
+        .from("#s2-title", { y: 46, opacity: 0, duration: 0.7, ease: "power3.out" }, 4.44)
+        .from("#s2-search", { scale: 0.94, opacity: 0, duration: 0.46, ease: "back.out(1.2)" }, 4.7)
+        .from("#s2-browse", { opacity: 0, duration: 0.34, ease: "sine.out" }, 4.56)
+        .from("#s2-cat1, #s2-cat2, #s2-cat3, #s2-cat4", { x: -28, opacity: 0, duration: 0.42, stagger: 0.1, ease: "power2.out" }, 4.74)
+        // beat-grid: 5.28s, 6.34s, 7.40s, 7.92s; holds after arrival
+        .from("#dish-1", { y: 34, opacity: 0, duration: 0.54, ease: "expo.out" }, 5.28)
+        .from("#dish-2", { x: 36, opacity: 0, duration: 0.48, ease: "power3.out" }, 6.34)
+        .from("#dish-3", { y: 32, opacity: 0, duration: 0.5, ease: "circ.out" }, 7.4)
+        .from("#dish-4", { x: 36, opacity: 0, duration: 0.44, ease: "power4.out" }, 7.92);
+
+      // beat-locked: 8.44s
+      tl.to("#scene-2", { x: -1920, duration: 0.55, ease: "power3.inOut" }, 8.44)
+        .fromTo("#scene-3", { x: 1920, opacity: 1 }, { x: 0, duration: 0.55, ease: "power3.inOut" }, 8.44)
+        .set("#scene-2", { x: 0, opacity: 0 }, 9.0)
+        .from("#s3-image", { scale: 0.82, opacity: 0, duration: 0.58, ease: "back.out(1.25)" }, 9.02)
+        .from("#s3-title", { x: -34, opacity: 0, duration: 0.55, ease: "expo.out" }, 9.12)
+        .from("#choice-1", { y: 28, opacity: 0, duration: 0.42, ease: "power3.out" }, 9.5)
+        .from("#choice-2", { x: 30, opacity: 0, duration: 0.42, ease: "circ.out" }, 10.01)
+        .from("#choice-3", { y: 28, opacity: 0, duration: 0.42, ease: "power4.out" }, 10.54)
+        .from("#choice-4", { x: 30, opacity: 0, duration: 0.42, ease: "back.out(1.15)" }, 11.06)
+        .from("#s3-confirm", { scale: 0.96, opacity: 0, duration: 0.5, ease: "expo.out" }, 11.6)
+        .from("#s3-eye", { y: 24, opacity: 0, duration: 0.4, ease: "power2.out" }, 9.18)
+        .from("#s3-table", { x: 48, opacity: 0, duration: 0.72, ease: "power3.out" }, 9.4)
+        .from("#s3-copy", { opacity: 0, duration: 0.6, ease: "sine.out" }, 10.2)
+        .from("#s3-service span", { y: 22, opacity: 0, duration: 0.38, stagger: 0.09, ease: "expo.out" }, 12.65);
+
+      // beat-locked: 14.76s; warm focus pull into the return loop
+      tl.to("#scene-3", { filter: "blur(15px)", duration: 0.5, ease: "power1.in" }, 14.76)
+        .to("#scene-3", { opacity: 0, duration: 0.3, ease: "power2.in" }, 15.01)
+        .fromTo("#scene-4", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 15.01)
+        .from("#s4-eye", { x: -32, opacity: 0, duration: 0.46, ease: "expo.out" }, 15.38)
+        .from("#s4-title", { y: 54, opacity: 0, duration: 0.78, ease: "power3.out" }, 15.48)
+        .from("#s4-copy", { opacity: 0, duration: 0.58, ease: "sine.out" }, 16.18)
+        .from("#s4-points", { x: 62, opacity: 0, duration: 0.72, ease: "circ.out" }, 15.5)
+        .from("#s4-orders", { y: 36, opacity: 0, duration: 0.52, ease: "power4.out" }, 16.86)
+        .from("#s4-rewards", { x: 36, opacity: 0, duration: 0.52, ease: "back.out(1.15)" }, 17.38)
+        // final logo settles ahead of the 19.48s landing and holds through 20s
+        .from("#s4-brand", { y: 28, opacity: 0, duration: 0.7, ease: "expo.out" }, 18.44);
+
+      window.__timelines["yummy-menu-brag"] = tl;
+    </script>
+  </body>
+</html>
