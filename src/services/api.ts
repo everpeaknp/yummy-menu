@@ -310,6 +310,15 @@ export interface CustomerOrder {
   items: { name: string; quantity: number; line_total: number }[];
 }
 
+export interface CustomerReceivableSummary {
+  restaurant_id: number;
+  restaurant_name: string;
+  amount_due: number;
+  restaurant_credit: number;
+  charges: { id: number; label: string; reference?: string; amount: number; open_amount: number; occurred_at: string; due_date?: string }[];
+  credits: { id: number; label: string; reference?: string; amount: number; open_amount: number; occurred_at: string }[];
+}
+
 export interface CustomerEmailPreference {
   restaurant_id: number;
   available: boolean;
@@ -506,6 +515,14 @@ export const getCustomerOrders = async (restaurantId: number) => {
     headers: customerHeaders(),
   });
   return unwrap<CustomerOrder[]>(response);
+};
+
+export const getCustomerReceivables = async (restaurantId: number) => {
+  const response = await apiClient.get("/public/customer/me/receivables", {
+    params: { restaurant_id: restaurantId },
+    headers: customerHeaders(),
+  });
+  return unwrap<CustomerReceivableSummary>(response);
 };
 
 export const getCustomerEmailPreference = async (restaurantId: number) => {

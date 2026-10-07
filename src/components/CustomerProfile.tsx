@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight, Check, ChevronRight, Gift, History, Loader2, LogOut, Mail,
+  ArrowRight, Banknote, Check, ChevronRight, Gift, History, Loader2, LogOut, Mail,
   MessageSquareText, Phone, ReceiptText, ScanLine, Sparkles, Store, Tag, UserRound, X,
 } from "lucide-react";
 import {
-  CustomerAccount, CustomerEmailPreference, CustomerMarketingPreferences, CustomerRestaurantInvitation,
+  CustomerAccount, CustomerReceivableSummary, CustomerEmailPreference, CustomerMarketingPreferences, CustomerRestaurantInvitation,
   CustomerOffer, CustomerOrder, CustomerRestaurantMembership, applyCustomerOffer,
   clearStoredCustomerToken, getCustomerAccount, getCustomerEmailPreference, getCustomerMarketingPreferences,
-  acceptCustomerRestaurantInvitation, getCustomerOffers, getCustomerOrders, getCustomerRestaurantInvitation, joinCustomerRestaurant, loginCustomerWithPassword, logoutCustomer,
+  acceptCustomerRestaurantInvitation, getCustomerReceivables, getCustomerOffers, getCustomerOrders, getCustomerRestaurantInvitation, joinCustomerRestaurant, loginCustomerWithPassword, logoutCustomer,
   getStoredCustomerToken, refreshCustomerSession, requestCustomerCode, setCustomerEmailPreference,
   requestCustomerContactCode, setCustomerMarketingPreferences, setCustomerPassword, updateCustomerAccount, verifyCustomerCode, verifyCustomerContactCode, verifyCustomerGoogleToken,
   storeCustomerToken,
@@ -22,12 +22,13 @@ const currency = new Intl.NumberFormat("en-NP", { style: "currency", currency: "
 const shortDate = new Intl.DateTimeFormat("en-NP", { dateStyle: "medium" });
 const apiErrorMessage = (error: any, fallback: string) => {
   const payload = error?.response?.data;
-  return (typeof payload?.message === "string" && payload.message)
+  const message = (typeof payload?.message === "string" && payload.message)
     || (typeof payload?.detail === "string" && payload.detail)
     || (typeof payload?.detail?.message === "string" && payload.detail.message)
     || fallback;
+  return message.trim().toLowerCase() === "not found" ? fallback : message;
 };
-type Section = "overview" | "orders" | "rewards" | "communication" | "account";
+type Section = "overview" | "orders" | "credit" | "rewards" | "communication" | "account";
 type Step = "loading" | "expired" | "identifier" | "code" | "enroll" | "preferences" | "account";
 
 export default function CustomerProfile({ restaurantId, restaurantName, initialSection = "overview" }: { restaurantId?: string; restaurantName?: string; initialSection?: Section }) {
@@ -41,6 +42,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [account, setAccount] = useState<CustomerAccount | null>(null);
   const [activeRestaurantId, setActiveRestaurantId] = useState<number | null>(scopedRestaurantId);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [receivables, setReceivables] = useState<CustomerReceivableSummary | null>(null);
   const [offers, setOffers] = useState<CustomerOffer[]>([]);
   const [preference, setPreference] = useState<CustomerEmailPreference | null>(null);
   const [marketing, setMarketing] = useState<CustomerMarketingPreferences | null>(null);
@@ -68,10 +70,11 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   const loadRestaurant = async (id: number, requireDecision: boolean) => {
     setError("");
-    const [nextOrders, nextOffers, nextPreference, nextMarketing] = await Promise.all([
-      getCustomerOrders(id), getCustomerOffers(id), getCustomerEmailPreference(id), getCustomerMarketingPreferences(id),
+    const [nextOrders, nextCredit, nextOffers, nextPreference, nextMarketing] = await Promise.all([
+      getCustomerOrders(id), getCustomerReceivables(id).catch(() => null), getCustomerOffers(id), getCustomerEmailPreference(id), getCustomerMarketingPreferences(id),
     ]);
     setOrders(nextOrders);
+    setReceivables(nextCredit);
     setOffers(nextOffers);
     setPreference(nextPreference);
     setMarketing(nextMarketing);
@@ -101,7 +104,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   useEffect(() => {
     const requestedSection = new URLSearchParams(window.location.search).get("section");
-    if (requestedSection === "overview" || requestedSection === "orders" || requestedSection === "rewards" || requestedSection === "communication" || requestedSection === "account") setSection(requestedSection);
+    if (requestedSection === "overview" || requestedSection === "orders" || requestedSection === "credit" || requestedSection === "rewards" || requestedSection === "communication" || requestedSection === "account") setSection(requestedSection);
     const restore = async () => {
       let requestedRestaurantId = scopedRestaurantId;
       const token = new URLSearchParams(window.location.search).get("invite") || "";
@@ -311,10 +314,11 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
         {membership && <MembershipLedger membership={membership} compact={!scopedRestaurantId} />}
       </aside>
       <div className="min-w-0">
-        <nav className="flex gap-1 overflow-x-auto border-b border-stone-300" aria-label="Profile sections">{(["overview", "orders", "rewards", "communication", "account"] as Section[]).map((item) => <button key={item} type="button" aria-current={section === item ? "page" : undefined} onClick={() => openSection(item)} className={`min-h-12 shrink-0 border-b-2 px-4 text-sm font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500 ${section === item ? "border-orange-600 text-stone-950" : "border-transparent text-stone-500 hover:text-stone-950"}`}>{item}</button>)}</nav>
+        <nav className="flex gap-1 overflow-x-auto border-b border-stone-300" aria-label="Profile sections">{(["overview", "orders", "credit", "rewards", "communication", "account"] as Section[]).map((item) => <button key={item} type="button" aria-current={section === item ? "page" : undefined} onClick={() => openSection(item)} className={`min-h-12 shrink-0 border-b-2 px-4 text-sm font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500 ${section === item ? "border-orange-600 text-stone-950" : "border-transparent text-stone-500 hover:text-stone-950"}`}>{item === "credit" ? "Payments due" : item}</button>)}</nav>
         {busy && !preference ? <ProfileSkeleton compact /> : <div className="pt-7">
           {section === "overview" && <Overview membership={membership} orders={orders} offers={offers} onSection={openSection} />}
           {section === "orders" && <OrderHistory orders={orders} onOpen={setSelectedOrder} />}
+          {section === "credit" && <Receivables summary={receivables} />}
           {section === "rewards" && <Rewards membership={membership} offers={offers} preference={preference} busy={busy} onToggle={toggleOffers} onApply={applyOffer} />}
           {section === "communication" && <CommunicationPreferences restaurantName={membership?.restaurant_name || "this restaurant"} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account?.phone} busy={busy} onEmailChoice={setEmailChoice} onSmsChoice={setSmsChoice} onAccount={() => openSection("account")} onSave={saveMarketingChoices} />}
           {section === "account" && account && <AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} />}
@@ -349,6 +353,40 @@ function Overview({ membership, orders, offers, onSection }: { membership: Custo
 
 function OrderHistory({ orders, onOpen }: { orders: CustomerOrder[]; onOpen: (order: CustomerOrder) => void }) {
   return <section><h2 className="font-display text-2xl font-semibold text-stone-950">Order history</h2><p className="mt-1 text-sm text-stone-600">Open any visit for its itemized estimate.</p>{orders.length ? <div className="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-white">{orders.map((order) => <button type="button" key={order.id} onClick={() => onOpen(order)} className="group grid w-full grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-stone-200 p-5 text-left last:border-0 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-display text-lg font-semibold text-stone-950">Order #{order.id}</span><span className="text-xs font-medium capitalize text-stone-500">{order.status}</span></div><p className="mt-1 text-sm text-stone-500">{shortDate.format(new Date(order.created_at))}</p><p className="mt-3 truncate text-sm text-stone-600">{order.items.map((item) => `${item.quantity} x ${item.name}`).join(", ")}</p></div><div className="flex items-center gap-3"><span className="font-display font-semibold tabular-nums text-stone-950">{currency.format(order.grand_total)}</span><ChevronRight className="h-5 w-5 text-stone-300 group-hover:text-orange-600" aria-hidden="true" /></div></button>)}</div> : <Empty icon={<ReceiptText />} title="No orders yet" text="Completed visits at this restaurant will appear here." />}</section>;
+}
+
+function Receivables({ summary }: { summary: CustomerReceivableSummary | null }) {
+  if (!summary) return <Empty icon={<Banknote />} title="Balance details unavailable" text="Refresh the page to try again." />;
+  const entries = [
+    ...summary.charges.map((item) => ({
+      key: `charge-${item.id}`,
+      date: item.occurred_at,
+      title: item.label,
+      amount: item.amount,
+      openAmount: item.open_amount,
+      kind: "charge" as const,
+    })),
+    ...summary.credits.map((item) => ({
+      key: `credit-${item.id}`,
+      date: item.occurred_at,
+      title: item.label,
+      amount: item.amount,
+      openAmount: item.open_amount,
+      kind: "credit" as const,
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return <section>
+    <h2 className="font-display text-2xl font-semibold text-stone-950">Payments due</h2>
+    <p className="mt-1 text-sm leading-6 text-stone-600">Your unpaid purchases and recorded payments at {summary.restaurant_name}.</p>
+    <div className="mt-7 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+      <div className="bg-stone-950 px-6 py-7 text-white sm:flex sm:items-end sm:justify-between sm:px-8">
+        <div><p className="text-sm text-white/60">Amount to pay</p><p className="mt-2 font-display text-4xl font-semibold tabular-nums">{currency.format(summary.amount_due)}</p></div>
+        <p className="mt-4 max-w-xs text-sm leading-6 text-white/60 sm:mt-0 sm:text-right">Payments are managed directly by the restaurant.</p>
+      </div>
+      {summary.restaurant_credit > 0 && <div className="border-b border-stone-200 bg-emerald-50 px-6 py-4 text-sm text-emerald-900 sm:px-8"><span className="font-semibold">Restaurant credit available: </span>{currency.format(summary.restaurant_credit)}. Contact the restaurant to use it or arrange a refund.</div>}
+      {entries.length ? <div className="divide-y divide-stone-200">{entries.map((entry) => <div key={entry.key} className="flex items-center justify-between gap-5 px-6 py-5 sm:px-8"><div className="min-w-0"><p className="break-words font-semibold text-stone-950">{entry.title}</p><p className="mt-1 text-sm text-stone-500">{shortDate.format(new Date(entry.date))}{entry.openAmount > 0 ? ` · ${currency.format(entry.openAmount)} remaining` : " · Settled"}</p></div><p className={`shrink-0 font-display font-semibold tabular-nums ${entry.kind === "credit" ? "text-green-700" : "text-stone-950"}`}>{entry.kind === "credit" ? "−" : "+"}{currency.format(entry.amount)}</p></div>)}</div> : <div className="px-6 py-10 text-center sm:px-8"><p className="font-semibold text-stone-950">No payments due</p><p className="mt-1 text-sm text-stone-500">Unpaid purchases and recorded payments will appear here.</p></div>}
+    </div>
+  </section>;
 }
 
 function CommunicationPreferences({ restaurantName, marketing, emailChoice, smsChoice, phone, busy, onEmailChoice, onSmsChoice, onAccount, onSave }: { restaurantName: string; marketing: CustomerMarketingPreferences | null; emailChoice: boolean | null; smsChoice: boolean | null; phone?: string; busy: boolean; onEmailChoice: (value: boolean) => void; onSmsChoice: (value: boolean) => void; onAccount: () => void; onSave: () => void }) {
