@@ -17,6 +17,7 @@ import {
 } from "@/services/api";
 import { getGoogleIdToken } from "@/lib/firebase";
 import TableQrScanner from "@/components/TableQrScanner";
+import ProfileLoadError from "@/components/ProfileLoadError";
 
 const currency = new Intl.NumberFormat("en-NP", { style: "currency", currency: "NPR", maximumFractionDigits: 0 });
 const shortDate = new Intl.DateTimeFormat("en-NP", { dateStyle: "medium" });
@@ -29,7 +30,7 @@ const apiErrorMessage = (error: any, fallback: string) => {
   return message.trim().toLowerCase() === "not found" ? fallback : message;
 };
 type Section = "overview" | "orders" | "credit" | "rewards" | "communication" | "account";
-type Step = "loading" | "expired" | "identifier" | "code" | "enroll" | "preferences" | "account";
+type Step = "loading" | "expired" | "identifier" | "code" | "profile-error" | "enroll" | "preferences" | "account";
 
 export default function CustomerProfile({ restaurantId, restaurantName, initialSection = "overview" }: { restaurantId?: string; restaurantName?: string; initialSection?: Section }) {
   const scopedRestaurantId = restaurantId ? Number(restaurantId) : null;
@@ -175,6 +176,30 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     finally { setBusy(false); }
   };
 
+  const openSignedInAccount = async () => {
+    try {
+      await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken));
+      openSection("account");
+      return true;
+    } catch (requestError: any) {
+      if (requestError.response?.status === 401) {
+        clearStoredCustomerToken();
+        setError("Your session expired. Please sign in again.");
+        setStep("identifier");
+      } else {
+        setError(requestError.response?.data?.detail || "We signed you in, but could not open your profile. Try again.");
+        setStep("profile-error");
+      }
+      return false;
+    }
+  };
+
+  const retrySignedInAccount = async () => {
+    setBusy(true); setError("");
+    try { await openSignedInAccount(); }
+    finally { setBusy(false); }
+  };
+
   const signIn = async (name?: string) => {
     setBusy(true); setError("");
     try {
@@ -185,17 +210,15 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
       setBusy(false);
       return;
     }
-    try { await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken)); openSection("account"); }
-    catch (requestError: any) { setError(requestError.response?.data?.detail || "You are signed in, but we could not load your profile. Try again."); }
-    finally { setBusy(false); }
+    await openSignedInAccount();
+    setBusy(false);
   };
 
   const signInWithPassword = async () => {
     setBusy(true); setError("");
     try {
       storeCustomerToken(await loginCustomerWithPassword(identifier, password));
-      await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken));
-      openSection("account");
+      await openSignedInAccount();
     } catch (requestError: any) {
       if (requestError?.response?.status === 401) {
         setError(identifier.includes("@") ? "Email address or password is incorrect." : "Mobile number or password is incorrect.");
@@ -211,8 +234,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     try {
       const idToken = await getGoogleIdToken();
       storeCustomerToken(await verifyCustomerGoogleToken(idToken));
-      await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken));
-      openSection("account");
+      await openSignedInAccount();
     } catch (requestError: any) {
       setError(requestError.response?.data?.detail || requestError.message || "Google sign-in could not be completed.");
     } finally { setBusy(false); }
@@ -296,6 +318,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   if (step === "loading") return <ProfileSkeleton />;
   if (step === "expired" && invitation) return <ExpiredInvitation invitation={invitation} onContinue={() => setStep("identifier")} />;
+  if (step === "profile-error") return <ProfileLoadError error={error} busy={busy} onRetry={retrySignedInAccount} onSignOut={signOut} />;
   if (step === "identifier" || step === "code") return <SignIn invitation={invitation} step={step} identifier={identifier} password={password} usePassword={usePassword} code={code} busy={busy} error={error} setIdentifier={setIdentifier} setPassword={setPassword} setUsePassword={setUsePassword} setCode={setCode} sendCode={sendCode} signIn={signIn} signInWithPassword={signInWithPassword} signInWithGoogle={signInWithGoogle} />;
   if (step === "enroll") return <EnrollmentPrompt restaurantName={invitation?.restaurant_name || restaurantName || "this restaurant"} invited={Boolean(invitation)} busy={busy} error={error} onEnroll={enroll} onSignOut={signOut} />;
   if (step === "preferences" && marketing) return <PreferenceGate membership={membership} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account?.phone} busy={busy} error={error} setEmailChoice={setEmailChoice} setSmsChoice={setSmsChoice} save={saveMarketingChoices} />;
