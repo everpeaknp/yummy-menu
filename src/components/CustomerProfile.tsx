@@ -179,7 +179,6 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const openSignedInAccount = async () => {
     try {
       await loadAccount(invitation?.restaurant_id ?? scopedRestaurantId, Boolean(invitationToken));
-      openSection("account");
       return true;
     } catch (requestError: any) {
       if (requestError.response?.status === 401) {
