@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getRestaurant } from "@/services/api";
+import { useDialog } from '@/lib/useDialog';
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -13,11 +14,11 @@ interface ReceiptModalProps {
 export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [restaurantData, setRestaurantData] = useState<any>(null);
+  const dialogRef = useDialog(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
       setIsMounted(true);
-      document.body.style.overflow = "hidden";
       
       // Fetch restaurant details dynamically when opening
       if (session?.restaurantId) {
@@ -26,7 +27,6 @@ export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalP
         });
       }
     } else {
-      document.body.style.overflow = "unset";
       const timer = setTimeout(() => setIsMounted(false), 400);
       return () => clearTimeout(timer);
     }
@@ -55,6 +55,7 @@ export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalP
       
       {/* Thermal Receipt Content */}
       <div 
+        ref={dialogRef} role="dialog" aria-modal="true" aria-label="Order estimate"
         className={`relative w-full max-w-[340px] bg-[#f8f9fa] shadow-2xl transition-transform duration-400 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'translate-y-0 scale-100' : 'translate-y-12 scale-95 opacity-0'}`}
         style={{
            fontFamily: "'Courier New', Courier, monospace",
@@ -66,6 +67,7 @@ export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalP
         <div className="absolute top-[-4px] left-0 right-0 h-2 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwb2x5Z29uIGZpbGw9IiNmOGY5ZmEiIHBvaW50cz0iMCw4IDQsMCA4LDggMCw4Ii8+PC9zdmc+')] bg-repeat-x"></div>
 
         <button 
+          type="button" aria-label="Close order estimate"
           onClick={onClose}
           className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/10 text-black/50 hover:bg-black/20 hover:text-black transition-colors z-10"
         >

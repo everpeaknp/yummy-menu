@@ -1,410 +1,55 @@
 "use client";
 
-import { useCart } from "@/context/CartContext";
-import { ShoppingBag, X, Minus, Plus, Utensils, Send, Loader2, ShoppingCart, Receipt } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { requestOrder, getImageUrl, getGroupedMenu } from "@/services/api";
-import Image from "next/image";
-import ReceiptModal from "./ReceiptModal";
+import { useCart } from '@/context/CartContext';
+import { cartUnitPrice } from '@/lib/cart';
+import { requestOrder } from '@/services/api';
+import { Check, ChevronLeft, Loader2, Minus, Plus, Receipt, ScanLine, Send, ShoppingBag } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import ReceiptModal from './ReceiptModal';
 
-export default function FloatingCart() {
-  const { cart, totalItems, totalPrice, updateQuantity, updateNotes, session, clearCart, refreshSession, resetSession } = useCart();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [orderedTotalFromMenuFallback, setOrderedTotalFromMenuFallback] = useState(0);
-  const [orderedMenuPriceMap, setOrderedMenuPriceMap] = useState<Record<number, number>>({});
-  const sessionToken = session?.qrToken;
+const money = (amount: number) => new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', maximumFractionDigits: 2 }).format(amount);
+const statusLabels: Record<string, string> = { requested: 'Awaiting acceptance', pending: 'Accepted', preparing: 'Preparing', running: 'In progress', ready: 'Ready', scheduled: 'Scheduled', completed: 'Completed', cancelled: 'Cancelled' };
 
-  const orderedTotalFromItems = useMemo(() => (session?.orderedItems || []).reduce((sum, item) => {
-    const lineTotal = Number((item as any).line_total ?? 0);
-    if (lineTotal > 0) return sum + lineTotal;
-    const unitPrice = Number((item as any).unit_price ?? 0);
-    return sum + (unitPrice * Number(item.quantity ?? 0));
-  }, 0), [session?.orderedItems]);
-
+export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }: { onBrowse?: () => void; onScan?: () => void }) {
+  const { cart, totalPrice, updateQuantity, updateNotes, session, clearCart, refreshSession, resetSession } = useCart();
+  const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [receiptOpen, setReceiptOpen] = useState(false);
   useEffect(() => {
-    let cancelled = false;
-
-    const computeFallbackOrderedTotal = async () => {
-      if (!session?.restaurantId || !session?.orderedItems?.length) {
-        setOrderedTotalFromMenuFallback(0);
-        setOrderedMenuPriceMap({});
-        return;
-      }
-
-      const hasServerOrderedTotal = Number(session?.activeOrderTotal ?? 0) > 0 || orderedTotalFromItems > 0;
-      if (hasServerOrderedTotal) {
-        setOrderedTotalFromMenuFallback(0);
-        return;
-      }
-
-      try {
-        const grouped = await getGroupedMenu(String(session.restaurantId));
-        const priceMap: Record<number, number> = {};
-        grouped.forEach((group) => {
-          group.items.forEach((item) => {
-            priceMap[Number(item.id)] = Number(item.price ?? 0);
-          });
-        });
-
-        const fallbackTotal = (session.orderedItems || []).reduce((sum, item) => {
-          const menuPrice = Number(priceMap[Number(item.menu_item_id)] ?? 0);
-          return sum + (menuPrice * Number(item.quantity ?? 0));
-        }, 0);
-
-        if (!cancelled) {
-          setOrderedMenuPriceMap(priceMap);
-          setOrderedTotalFromMenuFallback(fallbackTotal);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setOrderedTotalFromMenuFallback(0);
-          setOrderedMenuPriceMap({});
-        }
-      }
-    };
-
-    computeFallbackOrderedTotal();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session?.restaurantId, session?.orderedItems, session?.activeOrderTotal, orderedTotalFromItems]);
-
-  const orderedTotal = Number(session?.activeOrderTotal ?? 0) || orderedTotalFromItems || orderedTotalFromMenuFallback;
-  const draftTotal = totalPrice;
-  const grandTotal = orderedTotal + draftTotal;
-
-  useEffect(() => {
-    if (!isOpen || !sessionToken) return;
-    refreshSession();
-    const timer = setInterval(() => {
-      refreshSession();
-    }, 10000);
+    if (!session?.qrToken) return;
+    void refreshSession();
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') void refreshSession(); }, 10000);
     return () => clearInterval(timer);
-  }, [isOpen, sessionToken, refreshSession]);
-
-  if (totalItems === 0 && !orderSuccess && (!session?.orderedItems || session.orderedItems.length === 0)) return null;
-
-  const handleCheckout = async () => {
-    if (!session) {
-      alert("Please scan a table QR code to place an order.");
-      return;
-    }
-
-    setIsSubmitting(true);
+  }, [session?.qrToken, refreshSession]);
+  const orderedTotal = Number(session?.activeOrderTotal || 0);
+  const checkout = async () => {
+    if (!session || submittingRef.current || !cart.length) return;
+    submittingRef.current = true; setSubmitting(true); setError(''); setSuccess(false);
     try {
-      const items = cart.map((item) => ({
-        menu_item_id: item.id,
-        qty: item.quantity,
-        notes: item.notes,
-        modifiers: item.modifiers,
-      }));
-
-      const response = await requestOrder(
-        session.restaurantId,
-        session.tableId,
-        session.qrToken,
-        items
-      );
-
-      // Handle OrderFullContext (response.order.id) or direct OrderRead (response.id)
+      const response = await requestOrder(session.restaurantId, session.tableId, session.qrToken, cart.map(item => ({ menu_item_id: item.id, qty: item.quantity, notes: item.notes, modifiers: item.modifiers })));
       if (response.id || response.order?.id || response.restaurant_order_id) {
-        setOrderSuccess(true);
-        clearCart();
-        
-        // Refresh session to show new items in "Ordered" section
-        await refreshSession();
-
-        setTimeout(() => {
-          setOrderSuccess(false);
-          setIsOpen(false);
-        }, 5000);
+        clearCart(); setSuccess(true); await refreshSession();
+      } else if (response.statusCode === 404 || response.statusCode === 410) {
+        resetSession(); setError('This table QR has expired. Scan it again to send your saved draft.');
       } else {
-        const errorMsg = response.detail || response.error || "Unknown error";
-        const statusCode = Number(response.statusCode || 0);
-        if (
-          statusCode === 404 ||
-          statusCode === 401 ||
-          /not found|invalid|expired|session ended|not authenticated/i.test(String(errorMsg))
-        ) {
-          resetSession();
-          clearCart();
-          alert("This table session has ended. Please scan the table QR code again.");
-          return;
-        }
-        console.error("Order failed details:", response);
-        alert("Failed to place order: " + errorMsg);
+        const detail = typeof response.detail === 'string' ? response.detail : 'Please try again.';
+        setError(response.statusCode === 401 ? 'Sign in again to continue. Your draft is saved.' : `Could not send your order. ${detail}`);
       }
-    } catch (error) {
-      console.error("Checkout error:", error);
-      alert("Network error. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { submittingRef.current = false; setSubmitting(false); }
   };
-
-  return (
-    <>
-      {/* Floating Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        aria-label={`Open order, ${totalItems} items, NPR ${grandTotal}`}
-        className="fixed bottom-24 right-4 z-50 flex min-h-14 items-center gap-3 rounded-full bg-stone-950 px-5 text-white shadow-[0_14px_35px_rgba(16,19,26,0.28)] hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 active:scale-[0.98] lg:bottom-6 lg:right-6"
-      >
-        <ShoppingBag size={20} aria-hidden="true" />
-        <span className="text-sm font-semibold">{totalItems ? `${totalItems} · NPR ${grandTotal}` : "View order"}</span>
-      </button>
-
-      {/* Cart Drawer Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[60] flex justify-end">
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-500" 
-            onClick={() => !isSubmitting && setIsOpen(false)} 
-          />
-          
-          <div className="relative h-full w-full max-w-md bg-white/95 font-body backdrop-blur-2xl shadow-[0_0_50px_rgba(0,0,0,0.3)] animate-in slide-in-from-right duration-500 ease-out flex flex-col overflow-hidden border-l border-white/20">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100/50 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-              <div>
-                <h2 className="font-display text-2xl font-bold text-gray-900 tracking-tight">Your Order</h2>
-                {session && (
-                  <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-amber-600">
-                    <Utensils size={10} strokeWidth={3} />
-                    {session.tableName} • {session.restaurantName || "Restaurant"}
-                  </p>
-                )}
-              </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-all active:scale-90"
-              >
-                <X size={24} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            {/* Success State */}
-            {orderSuccess ? (
-              <div className="flex h-[60vh] flex-col items-center justify-center p-10 text-center animate-in fade-in zoom-in duration-500">
-                <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-inner">
-                   <Send size={48} strokeWidth={1.5} className="animate-bounce" />
-                </div>
-                <h3 className="font-display text-3xl font-bold text-gray-900 tracking-tight">Order Received!</h3>
-                <p className="mt-3 text-sm text-gray-500 leading-relaxed">
-                  We&apos;ve sent your request to the kitchen. <br/>A waiter will be with you shortly.
-                </p>
-                <button 
-                  onClick={() => setIsOpen(false)}
-                  className="font-display mt-10 w-full rounded-2xl bg-black px-6 py-4.5 font-semibold text-white shadow-xl shadow-black/10 hover:shadow-black/20 hover:-translate-y-0.5 transition-all"
-                >
-                  Back to Menu
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-10 scrollbar-hide">
-                  {/* Current Cart Items (Drafts) */}
-                  {cart.length > 0 && (
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                           <ShoppingCart size={14} className="text-gray-400" />
-                           <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400">In your cart</h3>
-                        </div>
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500">Draft</span>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {cart.map((item) => (
-                          <div key={item.id} className="group relative flex items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300">
-                            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-white">
-                              {item.image ? (
-                                <Image
-                                  src={getImageUrl(item.image)!}
-                                  alt={item.name}
-                                  fill
-                                  sizes="80px"
-                                  unoptimized={item.image.startsWith('/')}
-                                  className="object-contain p-1.5"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-3xl opacity-20">🍽️</div>
-                              )}
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-display mb-1 truncate text-base font-semibold leading-tight text-gray-900">{item.name}</h4>
-                              <p className="text-sm font-semibold text-black">NPR {item.price}</p>
-                            </div>
-
-                            <div className="flex items-center gap-4 bg-gray-50 p-1.5 rounded-full border border-gray-100 shadow-inner">
-                              <button 
-                                onClick={() => updateQuantity(item.id, -1)}
-                                className="h-8 w-8 flex items-center justify-center rounded-full bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-all active:scale-90"
-                              >
-                                <Minus size={16} strokeWidth={3} />
-                              </button>
-                              <span className="w-4 text-center text-sm font-semibold text-gray-900">{item.quantity}</span>
-                              <button 
-                                onClick={() => updateQuantity(item.id, 1)}
-                                className="h-8 w-8 flex items-center justify-center rounded-full bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-all active:scale-90"
-                              >
-                                <Plus size={16} strokeWidth={3} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Already Ordered Items (Persistence) */}
-                  {session?.orderedItems && session.orderedItems.length > 0 && (
-                    <div className="space-y-6 pt-2">
-                      <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                           <Utensils size={14} className="text-amber-500" />
-                           <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-600/80">Ordered</h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => setIsReceiptOpen(true)}
-                            className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-700 hover:bg-gray-50 hover:text-black shadow-sm transition-all active:scale-95"
-                          >
-                            <Receipt size={12} strokeWidth={2.5} />
-                            Receipt
-                          </button>
-                          <span className="flex items-center gap-1.5 rounded-full border border-emerald-100/50 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600">
-                            <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
-                            Active
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-3">
-                        {session.orderedItems.map((item, idx) => (
-                          <div key={`${item.id}-${idx}`} className="flex items-center gap-4 bg-white/50 p-3 rounded-2xl border border-gray-100/60 shadow-sm">
-                            {/* Premium Quantity + Image Container */}
-                            <div className="relative h-14 w-14 shrink-0">
-                              <div className="h-full w-full overflow-hidden rounded-xl border border-gray-100 bg-white">
-                                {item.image ? (
-                                  <Image
-                                    src={getImageUrl(item.image)!}
-                                    alt={item.name}
-                                    fill
-                                    sizes="56px"
-                                    unoptimized={item.image.startsWith('/')}
-                                    className="object-contain p-1"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center bg-zinc-50 text-emerald-600/30">
-                                    <Utensils size={20} strokeWidth={1.5} />
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Perfectly Stylized Badge */}
-                              <div className="absolute -top-1.5 -right-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full bg-black text-[11px] font-black text-white shadow-md ring-2 ring-white z-10">
-                                {item.quantity}
-                              </div>
-                            </div>
-                            
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-3">
-                                    <h4 className="font-display truncate text-sm font-semibold leading-tight text-gray-800">{item.name}</h4>
-                                    <span className="shrink-0 rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 shadow-xs">
-                                        {['requested', 'pending', 'preparing', 'running', 'ready', 'scheduled'].includes(item.status) ? 'Ordered' : 'Done'}
-                                    </span>
-                                </div>
-                                {item.notes && <p className="text-[10px] text-gray-400 font-medium italic mt-1 truncate">&quot;{item.notes}&quot;</p>}
-                                {(Number((item as any).unit_price ?? 0) > 0 || Number(orderedMenuPriceMap[Number(item.menu_item_id)] ?? 0) > 0) && (
-                                  <p className="mt-1 text-xs font-semibold text-gray-500">
-                                    NPR {(Number((item as any).unit_price ?? orderedMenuPriceMap[Number(item.menu_item_id)] ?? 0)) * Number(item.quantity ?? 0)}
-                                  </p>
-                                )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {cart.length === 0 && (!session?.orderedItems || session.orderedItems.length === 0) && (
-                    <div className="flex flex-col items-center justify-center py-24 text-gray-300">
-                      <div className="h-20 w-20 rounded-full bg-gray-50 flex items-center justify-center mb-6">
-                        <ShoppingBag size={40} strokeWidth={1} className="opacity-40 text-gray-400" />
-                      </div>
-                      <p className="font-display text-sm font-semibold tracking-tight text-gray-400">Your cart is empty</p>
-                      <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-gray-300">Waiting for your treats</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer with Glass Effect */}
-                {(cart.length > 0 || orderedTotal > 0) && (
-                  <div className="border-t border-gray-100/60 bg-white/70 backdrop-blur-md p-6 sm:p-8 space-y-6 shadow-[0_-15px_30px_rgba(0,0,0,0.03)]">
-                    <div className="space-y-2">
-                      {orderedTotal > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-semibold uppercase tracking-wide text-gray-400">Ordered Total</span>
-                          <span className="font-semibold text-gray-700">NPR {orderedTotal}</span>
-                        </div>
-                      )}
-                      {draftTotal > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-semibold uppercase tracking-wide text-gray-400">Draft Total</span>
-                          <span className="font-semibold text-gray-700">NPR {draftTotal}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Grand Total</span>
-                        <div className="text-right">
-                          <span className="text-[10px] block font-semibold text-gray-400 -mb-1">NPR</span>
-                          <span className="font-display text-4xl font-bold text-gray-900 tracking-tight">{grandTotal}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={handleCheckout}
-                      disabled={isSubmitting || cart.length === 0}
-                      className="font-display group flex w-full items-center justify-center gap-3 rounded-2xl bg-black py-5 text-center font-semibold text-white shadow-2xl shadow-black/20 transition-all hover:bg-zinc-800 active:scale-95 disabled:bg-gray-300 disabled:shadow-none"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                          <span className="text-xs uppercase tracking-wide">Sending Request</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-xs uppercase tracking-wide">Place Order</span>
-                          <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                        </>
-                      )}
-                    </button>
-                    {!session && (
-                        <p className="rounded-lg border border-amber-100/40 bg-amber-50/30 py-2 text-center text-[10px] font-semibold uppercase leading-tight tracking-wide text-amber-600/70">
-                            Scan QR at table to secure your order
-                        </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Render the local Receipt Modal independently from the drawer */}
-      <ReceiptModal 
-        isOpen={isReceiptOpen} 
-        onClose={() => setIsReceiptOpen(false)} 
-        session={session} 
-      />
-    </>
-  );
+  return <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
+    <div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">Your order</h2><button type="button" onClick={onBrowse} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-600"><ChevronLeft size={16} />Add dishes</button></div>
+    {success && <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900"><Check size={20} className="mt-0.5 shrink-0" /><div><p className="font-semibold">Request sent to the restaurant</p><p className="mt-1 text-sm">The team will review and accept your order before preparation starts.</p></div></div>}
+    {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="space-y-5">
+        {cart.length > 0 && <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5"><h3 className="mb-1 text-sm font-bold">Not sent yet</h3><div className="divide-y divide-stone-100">{cart.map(item => <article key={item.lineId} className="py-4"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><h4 className="break-words text-sm font-semibold">{item.name}</h4>{Boolean(item.modifiers?.length) && <p className="mt-1 text-xs leading-5 text-stone-500">{item.modifiers?.map(modifier => modifier.modifier_name_snapshot).join(' · ')}</p>}<p className="mt-2 text-sm font-semibold">{money(cartUnitPrice(item) * item.quantity)}</p></div><div className="flex shrink-0 items-center rounded-xl border border-stone-200"><button type="button" disabled={submitting} onClick={() => updateQuantity(item.lineId, -1)} aria-label={`Decrease ${item.name} quantity`} className="grid h-11 w-11 place-items-center"><Minus size={16} /></button><span className="min-w-5 text-center text-sm font-semibold">{item.quantity}</span><button type="button" disabled={submitting} onClick={() => updateQuantity(item.lineId, 1)} aria-label={`Increase ${item.name} quantity`} className="grid h-11 w-11 place-items-center"><Plus size={16} /></button></div></div><label className="mt-3 block"><span className="sr-only">Instructions for {item.name}</span><input defaultValue={item.notes || ''} disabled={submitting} onBlur={event => updateNotes(item.lineId, event.target.value)} placeholder="Any special instructions?" maxLength={500} className="min-h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3 text-base sm:text-sm outline-none focus:border-orange-400" /></label></article>)}</div></section>}
+        {Boolean(session?.orderedItems?.length) && <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5"><div className="mb-2 flex items-center justify-between"><h3 className="text-sm font-bold">Sent to the restaurant</h3><button type="button" onClick={() => setReceiptOpen(true)} className="flex min-h-11 items-center gap-1.5 text-xs font-semibold text-stone-500"><Receipt size={16} />Estimate</button></div><div className="divide-y divide-stone-100">{session?.orderedItems?.map(item => <article key={item.id} className="flex items-start gap-3 py-4"><span className="grid h-8 min-w-8 place-items-center rounded-lg bg-stone-100 text-xs font-semibold">{item.quantity}×</span><div className="min-w-0 flex-1"><h4 className="break-words text-sm font-semibold">{item.name}</h4><p className="mt-1 text-xs text-stone-500">{statusLabels[item.status] || item.status}</p>{item.notes && <p className="mt-1 text-xs text-stone-500">{item.notes}</p>}</div><p className="shrink-0 text-sm font-semibold">{money(Number(item.line_total ?? Number(item.unit_price || 0) * item.quantity))}</p></article>)}</div></section>}
+        {!cart.length && !session?.orderedItems?.length && <div className="rounded-2xl border border-stone-200 bg-white px-5 py-14 text-center"><ShoppingBag className="mx-auto h-9 w-9 text-stone-300" /><h3 className="mt-4 font-semibold">Your order is empty</h3><p className="mt-2 text-sm text-stone-500">Choose something from the menu to get started.</p><button type="button" onClick={onBrowse} className="mt-5 min-h-12 rounded-xl bg-orange-600 px-6 text-sm font-semibold text-white">Browse menu</button></div>}
+      </div>
+      {(cart.length > 0 || orderedTotal > 0) && <aside><div className="rounded-2xl border border-stone-200 bg-white p-4 lg:sticky lg:top-24"><h3 className="font-semibold">Order summary</h3><dl className="mt-4 space-y-3 text-sm">{orderedTotal > 0 && <div className="flex justify-between"><dt className="text-stone-500">Already ordered</dt><dd className="font-semibold">{money(orderedTotal)}</dd></div>}{cart.length > 0 && <div className="flex justify-between"><dt className="text-stone-500">Your draft</dt><dd className="font-semibold">{money(totalPrice)}</dd></div>}<div className="flex justify-between border-t border-stone-100 pt-3"><dt className="font-semibold">Estimated total</dt><dd className="font-bold">{money(orderedTotal + totalPrice)}</dd></div></dl><p className="mt-3 text-xs leading-5 text-stone-500">Final taxes, discounts and charges are confirmed by the restaurant.</p>{cart.length > 0 && (session ? <button type="button" onClick={() => void checkout()} disabled={submitting} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-60">{submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={17} />}{submitting ? 'Sending request…' : 'Send order request'}</button> : <button type="button" onClick={onScan} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-semibold text-white"><ScanLine size={18} />Scan table QR to order</button>)}</div></aside>}
+    </div><ReceiptModal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} session={session} />
+  </div>;
 }

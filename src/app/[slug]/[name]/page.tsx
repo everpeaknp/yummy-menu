@@ -1,11 +1,12 @@
 
 import MenuGrid from "@/components/MenuGrid";
-import TableBanner from "@/components/TableBanner";
-import { getGroupedMenu, getRestaurant } from "@/services/api";
+import { getRestaurant } from "@/services/api";
 import { slugify } from "@/config/restaurants";
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 interface PageProps {
+  searchParams?: Record<string, string | string[] | undefined>;
   params: {
     slug: string; // This will act as the ID in the URL structure /ID/Name
     name: string; // This is the restaurant name slug
@@ -55,14 +56,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // params.slug = ID
 // params.name = Name
 
-export default async function RestaurantIdPage({ params }: PageProps) {
+export default async function RestaurantIdPage({ params, searchParams }: PageProps) {
   const { slug: id, name } = params; // Remap slug->id, name->name for clarity
-  
+
   // Parallel Fetching
-  const [restaurant, categories] = await Promise.all([
-    getRestaurant(id),
-    getGroupedMenu(id),
-  ]);
+  const restaurant = await getRestaurant(id);
 
   // 1. Critical Failure: Restaurant validation
   if (!restaurant) {
@@ -71,32 +69,24 @@ export default async function RestaurantIdPage({ params }: PageProps) {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900">Restaurant Not Found</h1>
             <p className="mt-2 text-gray-500">
-              Could not fetch details for restaurant ID {id}.
+              This restaurant is currently unavailable. Please try again or ask the team for help.
             </p>
             <p className="mt-1 text-xs text-gray-400">
-               (Check server logs for fetch errors)
+
             </p>
           </div>
         </div>
       );
   }
 
-  // 2. Strict Slug Match
   const expectedSlug = slugify(restaurant.name);
   if (expectedSlug !== name) {
-     return (
-        <div className="flex h-screen items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Restaurant Mismatch</h1>
-            <p className="mt-2 text-gray-500">
-               The restaurant name does not match the ID.
-            </p>
-             <p className="mt-4 text-sm text-gray-400">
-                Did you mean: <a href={`/${id}/${expectedSlug}`} className="text-primary-600 hover:underline">/{id}/{expectedSlug}</a>?
-            </p>
-          </div>
-        </div>
-      );
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchParams || {})) {
+      if (Array.isArray(value)) value.forEach(entry => query.append(key, entry));
+      else if (value !== undefined) query.set(key, value);
+    }
+    redirect(`/${id}/${expectedSlug}${query.size ? `?${query}` : ''}`);
   }
 
   // Debug: Verify cover image from API
@@ -104,8 +94,7 @@ export default async function RestaurantIdPage({ params }: PageProps) {
 
   return (
     <>
-        <TableBanner />
-        <MenuGrid initialCategories={categories} restaurantId={id} restaurant={restaurant} />
+        <MenuGrid restaurantId={id} restaurant={restaurant} />
     </>
   );
 }

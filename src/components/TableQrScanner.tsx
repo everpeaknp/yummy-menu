@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { slugify } from "@/config/restaurants";
 import { verifyQRToken } from "@/services/api";
+import { useDialog } from '@/lib/useDialog';
 
 function tokenFromScan(value: string) {
   const raw = value.trim();
@@ -16,6 +17,7 @@ function tokenFromScan(value: string) {
 }
 
 export default function TableQrScanner({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const dialogRef = useDialog(open, onClose);
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
   const handlingRef = useRef(false);
   const [status, setStatus] = useState<"starting" | "scanning" | "verifying">("starting");
@@ -60,5 +62,5 @@ export default function TableQrScanner({ open, onClose }: { open: boolean; onClo
   }, [open]);
 
   if (!open) return null;
-  return <div className="fixed inset-0 z-[80] grid place-items-end bg-black/70 p-0 sm:place-items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="table-scanner-title"><section className="w-full max-w-md rounded-t-3xl bg-white p-5 sm:rounded-3xl"><div className="flex items-start justify-between gap-4"><div><h2 id="table-scanner-title" className="font-display text-xl font-semibold text-stone-950">Scan Table QR</h2><p className="mt-1 text-sm text-stone-600">Point the camera at the QR code on your table.</p></div><button type="button" onClick={onClose} aria-label="Close scanner" className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><X className="h-5 w-5" aria-hidden="true" /></button></div><div className="relative mt-5 aspect-square overflow-hidden rounded-2xl bg-stone-950"><div id="table-qr-reader" className="h-full w-full" />{status !== "scanning" && <div className="absolute inset-0 grid place-items-center bg-stone-950/80 text-white"><div className="text-center">{status === "verifying" ? <Loader2 className="mx-auto h-8 w-8 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Camera className="mx-auto h-8 w-8" aria-hidden="true" />}<p className="mt-3 text-sm">{status === "verifying" ? "Connecting to table…" : "Starting camera…"}</p></div></div>}</div>{error && <p className="mt-4 text-sm font-medium text-red-700" role="alert">{error}</p>}</section></div>;
+  return <div className="fixed inset-0 z-[80] grid place-items-end bg-black/70 p-0 sm:place-items-center sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="table-scanner-title" className="w-full max-w-md rounded-t-3xl bg-white p-5 sm:rounded-3xl"><div className="flex items-start justify-between gap-4"><div><h2 id="table-scanner-title" className="font-display text-xl font-semibold text-stone-950">Scan Table QR</h2><p className="mt-1 text-sm text-stone-600">Point the camera at the QR code on your table.</p></div><button type="button" onClick={onClose} aria-label="Close scanner" className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><X className="h-5 w-5" aria-hidden="true" /></button></div><div className="relative mt-5 aspect-square overflow-hidden rounded-2xl bg-stone-950"><div id="table-qr-reader" className="h-full w-full" />{status !== "scanning" && <div className="absolute inset-0 grid place-items-center bg-stone-950/80 text-white"><div className="text-center">{status === "verifying" ? <Loader2 className="mx-auto h-8 w-8 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Camera className="mx-auto h-8 w-8" aria-hidden="true" />}<p className="mt-3 text-sm">{status === "verifying" ? "Connecting to table…" : "Starting camera…"}</p></div></div>}</div>{error && <p className="mt-4 text-sm font-medium text-red-700" role="alert">{error}</p>}</section></div>;
 }

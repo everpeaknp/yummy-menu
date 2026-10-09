@@ -12,11 +12,11 @@ export default function ProfileLoadError({
   onSignOut: () => void;
 }) {
   return (
-    <main className="mx-auto grid min-h-[72dvh] max-w-6xl items-center gap-10 px-4 py-10 md:grid-cols-[1fr_27rem] md:px-8">
+    <main className="mx-auto grid max-w-md gap-5 px-4 py-6">
       <div className="max-w-xl">
         <span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-600 text-white"><UserRound aria-hidden="true" /></span>
-        <h1 className="mt-7 text-balance font-display text-4xl font-semibold tracking-[-0.04em] text-stone-950 sm:text-6xl">Your account is ready.</h1>
-        <p className="mt-5 max-w-lg text-base leading-7 text-stone-600">We just need to reconnect to your Yummy profile.</p>
+        <h1 className="mt-3 text-balance font-display text-2xl font-semibold tracking-tight text-stone-950">Your account is ready.</h1>
+        <p className="mt-2 max-w-lg text-sm leading-7 text-stone-600">We just need to reconnect to your Yummy profile.</p>
       </div>
       <section className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.09)] sm:p-8" aria-labelledby="profile-load-error-title">
         <h2 id="profile-load-error-title" className="font-display text-2xl font-semibold text-stone-950">Couldn’t open your profile</h2>

@@ -1,148 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { verifyQRToken } from "@/services/api";
-import { slugify } from "@/config/restaurants";
-import { Loader2 } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Loader2, ScanLine } from 'lucide-react';
+import { setBaseUrl, verifyQRToken } from '@/services/api';
+import { slugify } from '@/config/restaurants';
 
 export default function QRVerifyPage() {
   const { token } = useParams();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-
+  const [error, setError] = useState('');
   useEffect(() => {
     if (!token) return;
-
-    async function handleVerify() {
+    let cancelled = false;
+    const verify = async () => {
       try {
-        const context = await verifyQRToken(token as string);
-        
-        if (!context) {
-          setError("Invalid or expired QR code. Please ask the waiter for assistance.");
-          return;
-        }
-
-        // --- SMART REDIRECT LOGIC ---
-        // If local_pos_ip is provided, try to ping it
+        // A previously visited local POS must not capture a new restaurant's scan.
+        setBaseUrl(process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001');
+        const context = await verifyQRToken(String(token));
+        if (!context || cancelled) return;
+        localStorage.setItem('yummy_pos_mode', 'cloud');
         if (context.local_pos_ip) {
-          const localUrl = `http://${context.local_pos_ip}:8001`;
-          console.log(`[QR] Local POS IP detected: ${context.local_pos_ip}. Attempting ping...`);
-          
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 1200);
           try {
-            // Light fetch with short timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 1200); // 1.2s timeout
-            
-            const pingResponse = await fetch(`${localUrl}/qr/verify/${token}`, {
-              method: 'GET',
-              signal: controller.signal
+            const localUrl = `http://${context.local_pos_ip}:8001`;
+            const response = await fetch(`${localUrl}/qr/verify/${encodeURIComponent(String(token))}`, {
+              signal: controller.signal,
             });
-            clearTimeout(timeoutId);
-
-            if (pingResponse.ok) {
-              console.log("[QR] Local POS server reachable! Switching to local network.");
-              const { setBaseUrl } = await import("@/services/api");
+            if (cancelled) return;
+            if (response.ok) {
               setBaseUrl(localUrl);
-              localStorage.setItem("yummy_pos_mode", "local");
+              localStorage.setItem('yummy_pos_mode', 'local');
             }
-          } catch (pingErr) {
-            console.warn("[QR] Local POS server unreachable. Falling back to Cloud.", pingErr);
-            localStorage.setItem("yummy_pos_mode", "cloud");
+          } catch {
+            // Cloud remains available when the restaurant's local POS is unreachable.
+          } finally {
+            clearTimeout(timeout);
           }
         }
-
-        // Store session info
-        const activeOrderTotal = Array.isArray(context.active_orders)
-          ? context.active_orders.reduce(
-              (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
-              0
-            )
-          : 0;
-
-        const sessionData = {
-          restaurantId: context.restaurant_id,
-          restaurantName: context.restaurant_name,
-          tableId: context.table_id,
-          tableName: context.table_name,
-          qrToken: context.token,
-          orderedItems: context.ordered_items,
-          activeOrderTotal,
-          activeOrderIds: Array.isArray(context.active_orders) ? context.active_orders.map((order) => order.id) : [],
-          startTime: new Date().getTime()
-        };
-        
-        localStorage.setItem("yummy_qr_session", JSON.stringify(sessionData));
-        window.dispatchEvent(new Event("yummy_qr_session_updated"));
-        console.log("[QR] Session saved:", sessionData);
-
-        // Redirect to menu
-        setTimeout(() => {
-          const restaurantSlug = slugify(context.restaurant_name || "restaurant");
-          router.push(`/${context.restaurant_id}/${restaurantSlug}`);
-        }, 100);
-        
-      } catch (err) {
-        console.error("Verification error:", err);
-        setError("Something went wrong. Please try again.");
+        if (cancelled) return;
+        localStorage.setItem('yummy_qr_session', JSON.stringify({
+          restaurantId: context.restaurant_id, restaurantName: context.restaurant_name,
+          tableId: context.table_id, tableName: context.table_name, qrToken: context.token,
+          orderedItems: context.ordered_items || [], activeOrderIds: (context.active_orders || []).map(order => order.id),
+          activeOrderTotal: (context.active_orders || []).reduce((sum, order) => sum + Number(order.grand_total ?? order.total ?? 0), 0), startTime: Date.now(),
+        }));
+        window.dispatchEvent(new Event('yummy_qr_session_updated'));
+        router.replace(`/${context.restaurant_id}/${slugify(context.restaurant_name || 'restaurant')}?view=menu`);
+      } catch (requestError: any) {
+        if (cancelled) return;
+        setError([404, 410].includes(requestError.response?.status) ? 'This QR code is invalid or expired. Please ask the restaurant team for help.' : 'Could not connect to this table. Check your connection and try again.');
       }
-    }
-
-    handleVerify();
+    };
+    void verify();
+    return () => { cancelled = true; };
   }, [token, router]);
-
-  if (error) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gray-50 px-4 text-center">
-        <div className="mb-4 rounded-full bg-red-100 p-3 text-red-600">
-          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-        <h1 className="text-xl font-bold text-gray-900">Verification Failed</h1>
-        <p className="mt-2 max-w-xs text-gray-500">{error}</p>
-        
-        <div className="mt-8 space-y-3 w-full max-w-xs">
-          <button 
-            onClick={() => window.location.reload()}
-            className="w-full rounded-lg bg-black px-6 py-3 text-white shadow-md active:scale-95 font-bold"
-          >
-            Try Again
-          </button>
-
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-2">Internal Testing Only</p>
-            <button 
-              onClick={async () => {
-                // Manual debug bypass for testing
-                const sessionData = {
-                  restaurantId: 52,
-                  restaurantName: "Yummyi",
-                  tableId: 1, // Default to a valid ID
-                  tableName: "DEBUG-TABLE",
-                  qrToken: token as string || "manual-test",
-                  activeOrderTotal: 0,
-                  startTime: new Date().getTime()
-                };
-                localStorage.setItem("yummy_qr_session", JSON.stringify(sessionData));
-                window.dispatchEvent(new Event("yummy_qr_session_updated"));
-                const { slugify } = await import("@/config/restaurants");
-                router.push(`/52/${slugify("Yummyi")}`);
-              }}
-              className="w-full rounded-lg border-2 border-dashed border-gray-300 px-6 py-2 text-gray-500 hover:bg-gray-100 active:scale-95 text-sm"
-            >
-              Skip Verification & Load Menu
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-screen flex-col items-center justify-center bg-white">
-      <Loader2 className="h-12 w-12 animate-spin text-primary-600" />
-      <h2 className="mt-6 text-lg font-medium text-gray-900">Verifying Table</h2>
-    </div>
-  );
+  return <main className="grid min-h-[100dvh] place-items-center bg-stone-50 p-5"><section className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 text-center">{error ? <><ScanLine className="mx-auto h-9 w-9 text-orange-600" /><h1 className="mt-5 text-xl font-bold">Could not open this table</h1><p role="alert" className="mt-3 text-sm leading-6 text-stone-500">{error}</p><button type="button" onClick={() => window.location.reload()} className="mt-5 min-h-12 w-full rounded-xl bg-orange-600 text-sm font-semibold text-white">Try again</button></> : <><Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-600" /><h1 className="mt-5 text-lg font-bold">Connecting to your table</h1><p role="status" className="mt-2 text-sm text-stone-500">Your menu will open in a moment.</p></>}</section></main>;
 }

@@ -14,7 +14,7 @@ console.log(`[API] Initial Base URL: ${INITIAL_API_URL}`);
 // Centralized Axios Instance
 export const apiClient = axios.create({
   baseURL: INITIAL_API_URL,
-  timeout: 300000, // 5 minutes (increased for extremely slow backend/recovery)
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -42,8 +42,9 @@ export const getImageUrl = (path?: string) => {
         const cleanPath = navPath.startsWith('/') ? navPath : `/${navPath}`;
         return cleanPath;
     }
-    // Ensure relative paths start with a leading slash for next/image
-    return path.startsWith('/') ? path : `/${path}`;
+    if (path.startsWith('/logos/') || path.startsWith('/images/')) return path;
+    const apiOrigin = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001').replace(/\/$/, '');
+    return new URL(path.startsWith('/') ? path : `/${path}`, apiOrigin).toString();
 }
 
 export interface MenuCategoryGroup {
@@ -112,9 +113,20 @@ export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
   }
 };
 
-export const getAllRestaurants = async (): Promise<Restaurant[]> => {
+export const getAllRestaurants = async (strict = false): Promise<Restaurant[]> => {
     try {
-        const response = await apiClient.get('/restaurants/');
+        let response;
+        try {
+            response = await apiClient.get('/restaurants/directory');
+        } catch (error: any) {
+            // Existing test/production servers may not have the directory route yet.
+            const routeMissing = error.response?.status === 404 ||
+                (error.response?.status === 422 && error.response?.data?.errors?.some(
+                    (item: any) => item.field === 'restaurant_id' && item.error?.includes('valid integer')
+                ));
+            if (!routeMissing) throw error;
+            response = await apiClient.get('/restaurants/');
+        }
         const data = response.data.data || response.data;
         if (!Array.isArray(data)) return [];
         
@@ -136,6 +148,7 @@ export const getAllRestaurants = async (): Promise<Restaurant[]> => {
           });
     } catch (error) {
         console.error("Failed to fetch restaurants", error);
+        if (strict) throw error;
         return [];
     }
 }
@@ -143,7 +156,7 @@ export const getAllRestaurants = async (): Promise<Restaurant[]> => {
 export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategoryGroup[]> => {
   try {
     console.log(`[API] Fetching grouped menu for Restaurant ${restaurantId}`);
-    const response = await apiClient.get(`/menus/public/restaurant/${restaurantId}/grouped`);
+    const response = await apiClient.get(`/menus/public/restaurant/${restaurantId}/grouped`, { headers: customerHeaders() });
     const rawData = response.data.data || response.data;
     
     if (!Array.isArray(rawData)) return [];
@@ -166,17 +179,17 @@ export const getGroupedMenu = async (restaurantId: string): Promise<MenuCategory
 
   } catch (error) {
     console.error("Failed to fetch grouped menu", error);
-    return [];
+    throw error;
   }
 };
 
 export const getModifierGroups = async (restaurantId: string): Promise<any[]> => {
   try {
-    const response = await apiClient.get(`/public/modifiers/groups?restaurant_id=${restaurantId}`);
+    const response = await apiClient.get(`/public/modifiers/groups?restaurant_id=${restaurantId}`, { headers: customerHeaders() });
     return response.data.data.groups || [];
   } catch (error) {
     console.error("Failed to fetch modifier groups", error);
-    return [];
+    throw error;
   }
 };
 
@@ -196,6 +209,7 @@ export interface QRTableContext {
     status: string;
     unit_price?: number;
     line_total?: number;
+    notes?: string;
     image?: string;
   }[];
   active_orders?: {
@@ -229,7 +243,7 @@ export const verifyQRToken = async (token: string): Promise<QRTableContext | nul
     return data;
   } catch (error) {
     console.error("Failed to verify QR token", error);
-    return null;
+    throw error;
   }
 };
 
@@ -372,14 +386,16 @@ export const getStoredCustomerToken = () => {
   return token;
 };
 
-export const storeCustomerToken = (token: string) => {
+export const storeCustomerToken = (token: string, notify = true) => {
   localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
   sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
+  if (notify) window.dispatchEvent(new Event('yummy_customer_session_updated'));
 };
 
 export const clearStoredCustomerToken = () => {
   localStorage.removeItem(CUSTOMER_TOKEN_KEY);
   sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
+  window.dispatchEvent(new Event('yummy_customer_session_updated'));
 };
 
 const customerHeaders = () => {
@@ -433,7 +449,7 @@ export const refreshCustomerSession = async () => {
     if (currentToken && observedToken && currentToken !== observedToken) return currentToken;
     const response = await apiClient.post("/public/customer/auth/refresh", {}, { withCredentials: true });
     const token = unwrap<{ access_token: string }>(response).access_token;
-    storeCustomerToken(token);
+    storeCustomerToken(token, false);
     return token;
   };
   if (typeof navigator !== "undefined" && navigator.locks) {
@@ -447,13 +463,19 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config as (typeof error.config & { _customerRefreshAttempted?: boolean }) | undefined;
-    const isCustomerRequest = typeof config?.url === "string" && config.url.startsWith("/public/customer/");
+    const isCustomerRequest = Boolean(config?.headers?.Authorization);
     const isAuthRequest = typeof config?.url === "string" && config.url.startsWith("/public/customer/auth/");
+    if (error.response?.status === 401 && isCustomerRequest && !isAuthRequest && config?._customerRefreshAttempted) clearStoredCustomerToken();
     if (error.response?.status !== 401 || !config || !isCustomerRequest || isAuthRequest || config._customerRefreshAttempted) {
       return Promise.reject(error);
     }
     config._customerRefreshAttempted = true;
-    const token = await refreshCustomerSession();
+    let token: string;
+    try { token = await refreshCustomerSession(); }
+    catch (refreshError: any) {
+      if (refreshError.response?.status === 401) clearStoredCustomerToken();
+      return Promise.reject(refreshError);
+    }
     config.headers = { ...config.headers, Authorization: `Bearer ${token}` };
     return apiClient(config);
   },
