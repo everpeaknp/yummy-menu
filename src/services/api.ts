@@ -247,6 +247,21 @@ export const verifyQRToken = async (token: string): Promise<QRTableContext | nul
   }
 };
 
+export const getMyActiveTable = async (restaurantId: number): Promise<QRTableContext> => {
+  const response = await apiClient.get('/qr/customer/active-table', {
+    params: { restaurant_id: restaurantId },
+    headers: customerHeaders(),
+  });
+  const data = response.data as QRTableContext;
+  if (data.ordered_items && Array.isArray(data.ordered_items)) {
+    data.ordered_items = data.ordered_items.map(item => ({
+      ...item,
+      image: getImageUrl(item.image),
+    }));
+  }
+  return data;
+};
+
 // Add an alias for compatibility if needed, but the project seems to prefer verifyQRToken
 export const verifyQrToken = verifyQRToken;
 
@@ -263,14 +278,16 @@ export const requestOrder = async (
       modifier_name_snapshot: string;
       price_adjustment_snapshot: number;
     }[];
-  }[]
+  }[],
+  location: { latitude: number; longitude: number; accuracy_meters: number },
 ) => {
   try {
     const response = await apiClient.post('/qr/orders/request', {
         restaurant_id: restaurantId,
         table_id: tableId,
         qr_token: qrToken,
-        items
+        items,
+        ...location,
     }, { headers: customerHeaders() });
     return response.data;
   } catch (error: any) {
@@ -288,6 +305,12 @@ export interface CustomerRestaurantMembership {
   restaurant_name: string;
   customer_id: number;
   loyalty_points: number;
+  level_name?: string | null;
+  level_benefit?: string | null;
+  level_points_multiplier?: number;
+  next_level_name?: string | null;
+  next_level_spend_remaining?: number;
+  next_level_visits_remaining?: number;
   total_orders: number;
   total_spent: number;
   relationship_status: "subscriber" | "verified_customer";
@@ -357,6 +380,7 @@ export interface CustomerMarketingPreferences {
 
 export interface CustomerOffer {
   recipient_id: number;
+  offer_code: string;
   name: string;
   discount_type: "fixed" | "percentage";
   value: number;
@@ -592,17 +616,21 @@ export const getCustomerOffers = async (restaurantId: number) => {
   return unwrap<CustomerOffer[]>(response);
 };
 
-export const applyCustomerOffer = async (restaurantId: number, recipientId: number, orderId: number) => {
+export const applyCustomerOffer = async (restaurantId: number, recipientId: number, qrToken: string) => {
   const response = await apiClient.post(
-    "/public/customer/me/offers/apply", { recipient_id: recipientId, order_id: orderId },
+    "/public/customer/me/offers/apply", { recipient_id: recipientId, qr_token: qrToken },
     { params: { restaurant_id: restaurantId }, headers: customerHeaders() },
   );
   return unwrap<{ valid: boolean; message: string; discount_amount: number; projected_grand_total: number }>(response);
 };
 
-export const createTableServiceRequest = async (qrToken: string, requestType: string) => {
+export const createTableServiceRequest = async (
+  qrToken: string,
+  requestType: string,
+  location: { latitude: number; longitude: number; accuracy_meters: number },
+) => {
   const response = await apiClient.post(
-    "/public/table-service/requests", { qr_token: qrToken, request_type: requestType },
+    "/public/table-service/requests", { qr_token: qrToken, request_type: requestType, ...location },
     { headers: customerHeaders() },
   );
   return unwrap<TableServiceRequest>(response);

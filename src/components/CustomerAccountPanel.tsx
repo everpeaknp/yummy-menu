@@ -164,11 +164,10 @@ export default function CustomerAccountPanel({ restaurantId, view }: { restauran
   const applyOffer = async (offer: CustomerOffer) => {
     const raw = localStorage.getItem("yummy_qr_session");
     const session = raw ? JSON.parse(raw) : null;
-    const orderId = Array.isArray(session?.activeOrderIds) ? session.activeOrderIds[0] : null;
-    if (!orderId) { setError("Scan your table QR and start an order before using this offer."); return; }
+    if (!session?.qrToken || Number(session?.restaurantId) !== Number(restaurantId)) { setError("Scan your table QR and start an order before using this offer."); return; }
     setBusy(true); setError(""); setMessage("");
     try {
-      const result = await applyCustomerOffer(Number(restaurantId), offer.recipient_id, orderId);
+      const result = await applyCustomerOffer(Number(restaurantId), offer.recipient_id, session.qrToken);
       setMessage(`${offer.name} applied. Your new total is ${currency.format(result.projected_grand_total)}.`);
       setOffers((current) => current.filter((item) => item.recipient_id !== offer.recipient_id));
     } catch (requestError: any) { setError(requestError.response?.data?.detail || "This offer could not be applied."); }

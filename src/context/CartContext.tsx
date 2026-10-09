@@ -15,6 +15,7 @@ export interface QRSession {
   orderedItems?: NonNullable<QRTableContext['ordered_items']>;
   activeOrderTotal?: number;
   activeOrderIds?: number[];
+  accountLinked?: boolean;
 }
 
 interface CartContextType {
@@ -63,8 +64,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!current) return;
     refreshing.current = (async () => {
       try {
-        const { verifyQRToken } = await import('@/services/api');
-        const context = await verifyQRToken(current.qrToken);
+        const { getMyActiveTable, verifyQRToken } = await import('@/services/api');
+        const context = current.accountLinked
+          ? await getMyActiveTable(current.restaurantId)
+          : await verifyQRToken(current.qrToken);
         if (!context || readSession()?.qrToken !== current.qrToken) return;
         const hadOrders = Boolean(current.activeOrderIds?.length || current.orderedItems?.length);
         if (hadOrders && !context.active_orders?.length && !context.ordered_items?.length) { resetSession(); return; }
@@ -84,6 +87,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     })().finally(() => { refreshing.current = null; });
     return refreshing.current;
   }, [resetSession]);
+  const resumeLinkedTable = useCallback(async () => {
+    if (!routeRestaurantId) return;
+    const { getMyActiveTable, getStoredCustomerToken } = await import('@/services/api');
+    if (!getStoredCustomerToken()) return;
+    try {
+      const context = await getMyActiveTable(routeRestaurantId);
+      const linkedSession: QRSession = {
+        restaurantId: context.restaurant_id,
+        restaurantName: context.restaurant_name,
+        tableId: context.table_id,
+        tableName: context.table_name,
+        qrToken: context.token,
+        startTime: Date.now(),
+        orderedItems: context.ordered_items || [],
+        activeOrderIds: (context.active_orders || []).map(order => order.id),
+        activeOrderTotal: (context.active_orders || []).reduce(
+          (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
+          0,
+        ),
+        accountLinked: true,
+      };
+      localStorage.setItem('yummy_qr_session', JSON.stringify(linkedSession));
+      setSession(linkedSession);
+      setSessionWarning('');
+      window.dispatchEvent(new Event('yummy_qr_session_updated'));
+    } catch (error: any) {
+      if (error?.response?.status !== 401 && error?.response?.status !== 404) {
+        setSessionWarning('We could not check your active table. Try again shortly.');
+      }
+    }
+  }, [routeRestaurantId]);
   useEffect(() => {
     setSession(readSession());
     try {
@@ -99,11 +133,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('storage', sync);
     window.addEventListener('yummy_qr_session_updated', sync);
+    const resume = () => { void resumeLinkedTable(); };
+    window.addEventListener('yummy_customer_session_updated', resume);
+    void resumeLinkedTable();
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('yummy_qr_session_updated', sync);
+      window.removeEventListener('yummy_customer_session_updated', resume);
     };
-  }, [refreshSession]);
+  }, [refreshSession, resumeLinkedTable]);
   useEffect(() => { if (restored) localStorage.setItem('yummy_cart', JSON.stringify(drafts)); }, [drafts, restored]);
   const value: CartContextType = {
     cart,

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BellRing, Check, CircleDollarSign, GlassWater, Loader2, UtensilsCrossed } from "lucide-react";
 import { createTableServiceRequest, getTableServiceRequests, TableServiceRequest } from "@/services/api";
+import { getTableActionLocation } from "@/lib/location";
 
 const actions = [
   { type: "call_waiter", label: "Call Waiter", icon: BellRing },
@@ -76,11 +77,12 @@ export default function TableServiceActions({ restaurantId }: { restaurantId?: n
     requestInFlight.current = true;
     setBusy(type); setError("");
     try {
-      const item = await createTableServiceRequest(token, type);
+      const location = await getTableActionLocation();
+      const item = await createTableServiceRequest(token, type, location);
       setLastSentAt((current) => ({ ...current, [type]: Date.now() }));
       setRequests((current) => [item, ...current.filter((entry) => entry.id !== item.id)]);
     } catch (requestError: any) {
-      setError(requestError.response?.data?.detail || "Could not notify the restaurant.");
+      setError(requestError.response?.data?.detail || requestError.message || "Could not notify the restaurant.");
     } finally { requestInFlight.current = false; setBusy(null); }
   };
 

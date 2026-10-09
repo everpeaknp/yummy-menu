@@ -6,6 +6,7 @@ import { requestOrder } from '@/services/api';
 import { Check, ChevronLeft, Loader2, Minus, Plus, Receipt, ScanLine, Send, ShoppingBag } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReceiptModal from './ReceiptModal';
+import { getTableActionLocation } from '@/lib/location';
 
 const money = (amount: number) => new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', maximumFractionDigits: 2 }).format(amount);
 const statusLabels: Record<string, string> = { requested: 'Awaiting acceptance', pending: 'Accepted', preparing: 'Preparing', running: 'In progress', ready: 'Ready', scheduled: 'Scheduled', completed: 'Completed', cancelled: 'Cancelled' };
@@ -28,7 +29,8 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
     if (!session || submittingRef.current || !cart.length) return;
     submittingRef.current = true; setSubmitting(true); setError(''); setSuccess(false);
     try {
-      const response = await requestOrder(session.restaurantId, session.tableId, session.qrToken, cart.map(item => ({ menu_item_id: item.id, qty: item.quantity, notes: item.notes, modifiers: item.modifiers })));
+      const location = await getTableActionLocation();
+      const response = await requestOrder(session.restaurantId, session.tableId, session.qrToken, cart.map(item => ({ menu_item_id: item.id, qty: item.quantity, notes: item.notes, modifiers: item.modifiers })), location);
       if (response.id || response.order?.id || response.restaurant_order_id) {
         clearCart(); setSuccess(true); await refreshSession();
       } else if (response.statusCode === 404 || response.statusCode === 410) {
@@ -37,6 +39,8 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
         const detail = typeof response.detail === 'string' ? response.detail : 'Please try again.';
         setError(response.statusCode === 401 ? 'Sign in again to continue. Your draft is saved.' : `Could not send your order. ${detail}`);
       }
+    } catch (requestError: any) {
+      setError(requestError?.message || 'We could not confirm that you are at the restaurant.');
     } finally { submittingRef.current = false; setSubmitting(false); }
   };
   return <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
