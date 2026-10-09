@@ -99,7 +99,7 @@ export interface QrVerifyResult {
 
 export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
   try {
-    const response = await apiClient.get(`/restaurants/${id}/`);
+    const response = await apiClient.get(`/restaurants/${id}`);
     const data = response.data.data || response.data;
     
     return {

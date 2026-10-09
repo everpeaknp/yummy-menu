@@ -70,5 +70,5 @@ test('empty directory is handled without fallback', async () => {
 test('individual restaurant lookup still uses its detail endpoint', async () => {
   const { api, calls } = loadApi([{ data: row }]);
   assert.equal((await api.getRestaurant('52')).id, 52);
-  assert.deepEqual(calls, ['/restaurants/52/']);
+  assert.deepEqual(calls, ['/restaurants/52']);
 });
