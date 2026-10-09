@@ -9,6 +9,7 @@ import CustomerGate from './CustomerGate';
 import CustomerProfile from './CustomerProfile';
 import RestaurantList from './RestaurantList';
 import TableQrScanner from './TableQrScanner';
+import ActiveTableReturn from './ActiveTableReturn';
 
 export default function CustomerHome({ initialView = 'discover' }: { initialView?: 'discover' | 'profile' }) {
   const [view, setView] = useState(initialView);
@@ -27,7 +28,7 @@ export default function CustomerHome({ initialView = 'discover' }: { initialView
   };
   return <main className="min-h-[100dvh] bg-stone-50 pb-[calc(5rem+env(safe-area-inset-bottom))] text-stone-950">
     <header className="sticky top-0 z-30 border-b border-stone-200 bg-white"><div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between px-4 sm:px-6"><a href="/" className="flex items-center gap-2 font-display text-xl font-semibold"><Image src="/logos/yummy_logo.png" alt="" width={36} height={36} unoptimized />Yummy</a><button type="button" onClick={() => setScan(true)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-orange-50 px-3 text-sm font-semibold text-orange-700"><ScanLine size={18} />Scan table</button></div></header>
-    <CustomerGate>{view === 'profile' ? <CustomerProfile key={profileRevision} embedded /> : <Discovery />}</CustomerGate>
+    <CustomerGate><ActiveTableReturn />{view === 'profile' ? <CustomerProfile key={profileRevision} embedded /> : <Discovery />}</CustomerGate>
     <nav aria-label="Main navigation" className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]"><div className="mx-auto flex h-16 max-w-md">{([{ id: 'discover', label: 'Discover', icon: Compass }, { id: 'profile', label: 'Profile', icon: UserRound }] as const).map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => navigate(id)} aria-current={view === id ? 'page' : undefined} className={`flex flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold ${view === id ? 'text-orange-600' : 'text-stone-500'}`}><Icon size={20} />{label}</button>)}</div></nav>
     <TableQrScanner open={scan} onClose={() => setScan(false)} />
   </main>;

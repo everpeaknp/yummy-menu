@@ -7,7 +7,12 @@ Following the restaurant and marketing choices are separate profile actions.
 
 On phones, Menu, Order and Profile are accessible through bottom navigation.
 Desktop uses a category rail, two dish columns, and a separate order summary.
-Customer home uses Discover and Profile. Customization and receipt dialogs close
+Customer home uses Discover and Profile. Both show a "Back to your table" card
+when a QR session is saved. It opens the restaurant's live Order view if an order
+is active, or its Menu otherwise. Home navigation does not clear the table or
+restaurant draft. The saved QR is revalidated on home mount and window focus;
+invalid/expired sessions and finished visits are cleared by the existing session
+refresh logic, while temporary network failures retain the return path. Customization and receipt dialogs close
 with Escape or the backdrop, trap focus, and restore scrolling when closed.
 
 The global profile starts with an account card and followed restaurants. Account
