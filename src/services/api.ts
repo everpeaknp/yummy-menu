@@ -380,7 +380,7 @@ export interface CustomerMarketingPreferences {
 
 export interface CustomerOffer {
   recipient_id: number;
-  offer_code: string;
+  offer_code: string | null;
   name: string;
   discount_type: "fixed" | "percentage";
   value: number;

@@ -31,6 +31,7 @@ const apiErrorMessage = (error: any, fallback: string) => {
 };
 type Section = "overview" | "orders" | "credit" | "rewards" | "communication" | "account";
 type Step = "loading" | "expired" | "identifier" | "code" | "profile-error" | "enroll" | "preferences" | "account";
+type RestaurantPanel = "orders" | "credit" | "rewards" | "communication";
 
 export default function CustomerProfile({ restaurantId, restaurantName, initialSection = "overview", authenticationOnly = false, onAuthenticated, embedded = false }: { restaurantId?: string; restaurantName?: string; initialSection?: Section; authenticationOnly?: boolean; embedded?: boolean; onAuthenticated?: (account: CustomerAccount) => void }) {
   const scopedRestaurantId = restaurantId ? Number(restaurantId) : null;
@@ -47,6 +48,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [offers, setOffers] = useState<CustomerOffer[]>([]);
   const [preference, setPreference] = useState<CustomerEmailPreference | null>(null);
   const [marketing, setMarketing] = useState<CustomerMarketingPreferences | null>(null);
+  const [unavailablePanels, setUnavailablePanels] = useState<Partial<Record<RestaurantPanel, boolean>>>({});
   const [emailChoice, setEmailChoice] = useState<boolean | null>(null);
   const [smsChoice, setSmsChoice] = useState<boolean | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
@@ -75,17 +77,28 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   const loadRestaurant = useCallback(async (id: number, requireDecision: boolean) => {
     setError("");
-    const [nextOrders, nextCredit, nextOffers, nextPreference, nextMarketing] = await Promise.all([
-      getCustomerOrders(id), getCustomerReceivables(id).catch(() => null), getCustomerOffers(id), getCustomerEmailPreference(id), getCustomerMarketingPreferences(id),
+    const [ordersResult, creditResult, offersResult, preferenceResult, marketingResult] = await Promise.allSettled([
+      getCustomerOrders(id), getCustomerReceivables(id), getCustomerOffers(id), getCustomerEmailPreference(id), getCustomerMarketingPreferences(id),
     ]);
-    setOrders(nextOrders);
-    setReceivables(nextCredit);
-    setOffers(nextOffers);
-    setPreference(nextPreference);
+    const nextUnavailable: Partial<Record<RestaurantPanel, boolean>> = {
+      orders: ordersResult.status === "rejected",
+      credit: creditResult.status === "rejected",
+      rewards: offersResult.status === "rejected",
+      communication: preferenceResult.status === "rejected" || marketingResult.status === "rejected",
+    };
+    setUnavailablePanels(nextUnavailable);
+    setOrders(ordersResult.status === "fulfilled" ? ordersResult.value : []);
+    setReceivables(creditResult.status === "fulfilled" ? creditResult.value : null);
+    setOffers(offersResult.status === "fulfilled" ? offersResult.value : []);
+    setPreference(preferenceResult.status === "fulfilled" ? preferenceResult.value : null);
+    const nextMarketing = marketingResult.status === "fulfilled" ? marketingResult.value : null;
     setMarketing(nextMarketing);
-    setEmailChoice(nextMarketing.email_decision_required ? null : nextMarketing.email_opted_in);
-    setSmsChoice(nextMarketing.sms_decision_required ? null : nextMarketing.sms_opted_in);
-    setStep(requireDecision && nextMarketing.decision_required ? "preferences" : "account");
+    setEmailChoice(nextMarketing?.email_decision_required ? null : nextMarketing?.email_opted_in ?? null);
+    setSmsChoice(nextMarketing?.sms_decision_required ? null : nextMarketing?.sms_opted_in ?? null);
+    if (Object.values(nextUnavailable).some(Boolean)) {
+      console.warn("Some customer profile panels could not be loaded.", { ordersResult, creditResult, offersResult, preferenceResult, marketingResult });
+    }
+    setStep(requireDecision && nextMarketing?.decision_required ? "preferences" : "account");
   }, []);
 
   const loadAccount = async (requestedRestaurantId: number | null = scopedRestaurantId, confirmInvitation = false) => {
@@ -158,7 +171,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     const syncSession = (event: StorageEvent) => {
       if (event.key !== "yummy_customer_token") return;
       if (!event.newValue) {
-        setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setStep("identifier");
+        setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setUnavailablePanels({}); setStep("identifier");
       } else {
         setStep("loading");
         void loadAccount().catch(() => { setError("We could not load your profile. Refresh and try again."); setStep("identifier"); });
@@ -249,7 +262,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   const signOut = async () => {
     await logoutCustomer();
-    setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setCode(""); setPassword(""); setStep("identifier");
+    setAccount(null); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setUnavailablePanels({}); setCode(""); setPassword(""); setStep("identifier");
   };
 
   const enroll = async () => {
@@ -276,7 +289,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     openSection(nextSection);
     const url = new URL(window.location.href); url.searchParams.set('restaurant', String(id));
     window.history.replaceState({}, '', url);
-    setBusy(true); setActiveRestaurantId(id); setOrders([]); setOffers([]); setPreference(null); setMarketing(null);
+    setBusy(true); setActiveRestaurantId(id); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setUnavailablePanels({});
     try { await loadRestaurant(id, false); }
     catch (requestError: any) { setError(requestError.response?.data?.detail || "We could not load this restaurant."); }
     finally { setBusy(false); }
@@ -364,10 +377,11 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
       <button type="button" onClick={() => openSection('overview')} className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-600 hover:text-stone-950"><ArrowLeft size={18} />Back to profile</button>
       {section === 'account' ? <AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} /> : <>
         <div className="mb-3 flex min-h-11 items-center gap-2"><Store size={18} className="shrink-0 text-stone-500" aria-hidden="true" />{account.restaurants.length > 1 ? <><label className="sr-only" htmlFor="profile-restaurant">Restaurant</label><select id="profile-restaurant" value={activeRestaurantId || ''} disabled={busy} onChange={event => void selectRestaurant(Number(event.target.value), section)} className="min-h-11 min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-3 text-base font-semibold">{account.restaurants.map(item => <option key={item.restaurant_id} value={item.restaurant_id}>{item.restaurant_name}</option>)}</select></> : <p className="truncate text-base font-semibold">{membership?.restaurant_name}</p>}</div>
+        <PanelAvailabilityNotice panels={unavailablePanels} onOpen={openSection} />
         <div className="mb-5"><ProfileSections section={section} onSection={openSection} /></div>
         {busy ? <ProfileSkeleton compact /> : <>
-          {section === 'orders' && <OrderHistory orders={orders} onOpen={setSelectedOrder} />}
-          {section === 'rewards' && <Rewards membership={membership} offers={offers} busy={busy} onApply={applyOffer} />}
+          {section === 'orders' && <OrderHistory orders={orders} unavailable={Boolean(unavailablePanels.orders)} onOpen={setSelectedOrder} />}
+          {section === 'rewards' && <Rewards membership={membership} offers={offers} offersUnavailable={Boolean(unavailablePanels.rewards)} busy={busy} onApply={applyOffer} />}
           {section === 'credit' && <Receivables summary={receivables} />}
           {section === 'communication' && <CommunicationPreferences restaurantName={membership?.restaurant_name || 'this restaurant'} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account.phone} busy={busy} onEmailChoice={setEmailChoice} onSmsChoice={setSmsChoice} onAccount={() => openSection('account')} onSave={saveMarketingChoices} />}
         </>}
@@ -390,12 +404,13 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
     {account?.restaurants.length ? <div className="mt-5">
       <div className="min-w-0">
+        <PanelAvailabilityNotice panels={unavailablePanels} onOpen={openSection} />
         <ProfileSections section={section} onSection={openSection} includeAccount />
         {busy && !preference ? <ProfileSkeleton compact /> : <div className="pt-5">
           {section === "overview" && <div className="space-y-4">{membership && <MembershipLedger membership={membership} compact />}<Overview membership={membership} orders={orders} offers={offers} onSection={openSection} /></div>}
-          {section === "orders" && <OrderHistory orders={orders} onOpen={setSelectedOrder} />}
+          {section === "orders" && <OrderHistory orders={orders} unavailable={Boolean(unavailablePanels.orders)} onOpen={setSelectedOrder} />}
           {section === "credit" && <Receivables summary={receivables} />}
-          {section === "rewards" && <Rewards membership={membership} offers={offers} busy={busy} onApply={applyOffer} />}
+          {section === "rewards" && <Rewards membership={membership} offers={offers} offersUnavailable={Boolean(unavailablePanels.rewards)} busy={busy} onApply={applyOffer} />}
           {section === "communication" && <CommunicationPreferences restaurantName={membership?.restaurant_name || "this restaurant"} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account?.phone} busy={busy} onEmailChoice={setEmailChoice} onSmsChoice={setSmsChoice} onAccount={() => openSection("account")} onSave={saveMarketingChoices} />}
           {section === "account" && account && <AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} />}
         </div>}
@@ -426,6 +441,21 @@ function ProfileSections({ section, onSection, includeAccount = false }: { secti
   return <nav aria-label="Restaurant profile sections" className={`grid gap-1 rounded-xl bg-stone-100 p-1 ${includeAccount ? "grid-cols-3 sm:grid-cols-6" : "grid-cols-4"}`}>{items.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => onSection(id)} aria-label={id === "credit" ? "Payments due" : label} aria-current={section === id ? "page" : undefined} className={`flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-lg px-1 text-[11px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 sm:text-xs ${includeAccount ? "flex-row" : "flex-col sm:flex-row"} ${section === id ? "bg-white text-orange-700 shadow-sm" : "text-stone-500 hover:text-stone-950"}`}><Icon size={15} className="shrink-0" aria-hidden="true" /><span>{label}</span></button>)}</nav>;
 }
 
+function PanelAvailabilityNotice({ panels, onOpen }: { panels: Partial<Record<RestaurantPanel, boolean>>; onOpen: (section: Section) => void }) {
+  const unavailable = ([
+    ["orders", "Orders"],
+    ["credit", "Payments"],
+    ["rewards", "Rewards & offers"],
+    ["communication", "Preferences"],
+  ] as const).filter(([panel]) => panels[panel]);
+  if (!unavailable.length) return null;
+  return <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+    <p className="font-semibold">Some profile details are temporarily unavailable</p>
+    <p className="mt-1 leading-5 text-amber-800">Your account is still available. Refresh to try again, or open a section below to see what could not load.</p>
+    <div className="mt-2 flex flex-wrap gap-2">{unavailable.map(([panel, label]) => <button key={panel} type="button" onClick={() => onOpen(panel)} className="min-h-9 rounded-lg border border-amber-300 bg-white px-3 text-xs font-semibold text-amber-950 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">{label} unavailable</button>)}</div>
+  </div>;
+}
+
 function MembershipLedger({ membership, compact }: { membership: CustomerRestaurantMembership; compact: boolean }) {
   const following = membership.relationship_status === "subscriber";
   return <section className="rounded-2xl border border-stone-200 bg-white p-4"><div className="flex items-center justify-between gap-3"><span className="text-xs font-semibold text-stone-500">{following ? "Restaurant status" : "Available points"}</span><Gift size={18} className="text-orange-600" aria-hidden="true" /></div><p className="mt-2 text-xl font-bold tabular-nums">{following ? "Following" : membership.loyalty_points}</p><dl className="mt-3 grid grid-cols-2 gap-3 border-t border-stone-100 pt-3 text-xs"><div><dt className="text-stone-500">Visits</dt><dd className="mt-1 font-semibold">{membership.total_orders}</dd></div><div><dt className="text-stone-500">Lifetime spend</dt><dd className="mt-1 font-semibold break-words">{currency.format(membership.total_spent)}</dd></div></dl></section>;
@@ -440,8 +470,8 @@ function Overview({ membership, orders, offers, onSection }: { membership: Custo
   ].map(({ id, label, detail, icon: Icon }) => <button key={id} type="button" onClick={() => onSection(id)} className="flex min-h-16 w-full items-center gap-3 p-4 text-left hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"><Icon size={18} className="shrink-0 text-orange-600" aria-hidden="true" /><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{label}</span><span className="mt-0.5 block text-xs text-stone-500">{detail}</span></span><ChevronRight size={17} className="shrink-0 text-stone-400" aria-hidden="true" /></button>)}</div></section>;
 }
 
-function OrderHistory({ orders, onOpen }: { orders: CustomerOrder[]; onOpen: (order: CustomerOrder) => void }) {
-  return <section><h2 className="text-lg font-semibold text-stone-950">Order history</h2><p className="mt-1 text-sm text-stone-600">Your past visits and itemized estimates.</p>{orders.length ? <div className="mt-3 overflow-hidden rounded-2xl border border-stone-200 bg-white">{orders.map((order) => <button type="button" key={order.id} onClick={() => onOpen(order)} className="group grid w-full grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-stone-200 p-4 text-left last:border-0 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-stone-950">Order #{order.id}</span><span className="text-xs font-medium capitalize text-stone-500">{order.status}</span></div><p className="mt-1 text-sm text-stone-500">{shortDate.format(new Date(order.created_at))}</p><p className="mt-2 truncate text-xs text-stone-600">{order.items.map((item) => `${item.quantity} x ${item.name}`).join(", ")}</p></div><div className="flex items-center gap-3"><span className="font-display font-semibold tabular-nums text-stone-950">{currency.format(order.grand_total)}</span><ChevronRight className="h-5 w-5 text-stone-300 group-hover:text-orange-600" aria-hidden="true" /></div></button>)}</div> : <Empty icon={<ReceiptText size={20} />} title="No orders yet" text="Your completed visits will appear here." />}</section>;
+function OrderHistory({ orders, unavailable, onOpen }: { orders: CustomerOrder[]; unavailable: boolean; onOpen: (order: CustomerOrder) => void }) {
+  return <section><h2 className="text-lg font-semibold text-stone-950">Order history</h2><p className="mt-1 text-sm text-stone-600">Your past visits and itemized estimates.</p>{orders.length ? <div className="mt-3 overflow-hidden rounded-2xl border border-stone-200 bg-white">{orders.map((order) => <button type="button" key={order.id} onClick={() => onOpen(order)} className="group grid w-full grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-stone-200 p-4 text-left last:border-0 hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-semibold text-stone-950">Order #{order.id}</span><span className="text-xs font-medium capitalize text-stone-500">{order.status}</span></div><p className="mt-1 text-sm text-stone-500">{shortDate.format(new Date(order.created_at))}</p><p className="mt-2 truncate text-xs text-stone-600">{order.items.map((item) => `${item.quantity} x ${item.name}`).join(", ")}</p></div><div className="flex items-center gap-3"><span className="font-display font-semibold tabular-nums text-stone-950">{currency.format(order.grand_total)}</span><ChevronRight className="h-5 w-5 text-stone-300 group-hover:text-orange-600" aria-hidden="true" /></div></button>)}</div> : <Empty icon={<ReceiptText size={20} />} title={unavailable ? "Orders unavailable" : "No orders yet"} text={unavailable ? "Your account is still available. Refresh to try loading orders again." : "Your completed visits will appear here."} />}</section>;
 }
 
 function Receivables({ summary }: { summary: CustomerReceivableSummary | null }) {
@@ -528,14 +558,14 @@ function PreferenceSwitch({ label, icon, enabled, available, busy, onChange }: {
   return <div className="flex items-center gap-3 px-4 py-3"><span className="shrink-0 text-stone-500" aria-hidden="true">{icon}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{label}</p><p className="mt-1 text-xs text-stone-500">{!available ? enabled ? "You can turn off existing consent" : "Not offered by this restaurant" : enabled ? "On" : "Off"}</p></div><button type="button" role="switch" aria-label={label} aria-checked={enabled} disabled={busy || (!available && !enabled)} onClick={() => onChange(!enabled)} className="grid h-11 w-12 shrink-0 place-items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-40"><span className={`flex h-6 w-10 items-center rounded-full p-0.5 ${enabled ? "bg-orange-600" : "bg-stone-300"}`}><span className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform motion-reduce:transition-none ${enabled ? "translate-x-4" : ""}`} /></span></button></div>;
 }
 
-function Rewards({ membership, offers, busy, onApply }: { membership: CustomerRestaurantMembership | null; offers: CustomerOffer[]; busy: boolean; onApply: (offer: CustomerOffer) => void }) {
+function Rewards({ membership, offers, offersUnavailable, busy, onApply }: { membership: CustomerRestaurantMembership | null; offers: CustomerOffer[]; offersUnavailable: boolean; busy: boolean; onApply: (offer: CustomerOffer) => void }) {
   const spendRemaining = membership?.next_level_spend_remaining ?? 0;
   const visitsRemaining = membership?.next_level_visits_remaining ?? 0;
   const nextLevelRequirements = [
     spendRemaining > 0 ? `${currency.format(spendRemaining)} more spend` : null,
     visitsRemaining > 0 ? `${visitsRemaining} more ${visitsRemaining === 1 ? "visit" : "visits"}` : null,
   ].filter(Boolean).join(" and ");
-  return <section><h2 className="text-lg font-semibold text-stone-950">Rewards</h2><div className="mt-3 rounded-2xl bg-stone-950 p-5 text-white"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-300">{membership?.level_name || "Member"}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{membership?.loyalty_points ?? 0} <span className="text-sm font-medium text-white/60">points</span></p></div><Gift size={22} className="text-orange-400" aria-hidden="true" /></div>{membership?.level_benefit ? <p className="mt-4 break-words text-sm leading-6 text-white/70">{membership.level_benefit}</p> : null}{membership?.level_points_multiplier && membership.level_points_multiplier > 1 ? <p className="mt-2 text-xs font-medium text-orange-300">Earn {membership.level_points_multiplier}× points on new orders</p> : null}{membership?.next_level_name ? <div className="mt-5 border-t border-white/15 pt-4"><p className="text-xs text-white/55">Next level: <span className="font-semibold text-white">{membership.next_level_name}</span></p><p className="mt-2 text-xs leading-5 text-white/70">{nextLevelRequirements || "Requirements reached. Your level updates after the next completed order."}</p></div> : membership?.level_name ? <p className="mt-5 border-t border-white/15 pt-4 text-xs text-orange-300">You reached the highest level.</p> : null}</div>{offers.length ? <div className="mt-3 grid gap-3 sm:grid-cols-2">{offers.map(offer => <article key={offer.recipient_id} className="rounded-xl border border-stone-200 bg-white p-4"><h3 className="flex items-center gap-2 text-sm font-semibold"><Tag size={16} className="shrink-0 text-orange-600" aria-hidden="true" />{offer.name}</h3><p className="mt-2 text-xs leading-5 text-stone-500">{offer.discount_type === "percentage" ? `${offer.value}% off` : currency.format(offer.value)} · Expires {shortDate.format(new Date(offer.valid_until))}</p><div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-stone-50 px-3 py-2"><span className="text-xs text-stone-500">Offer code</span><code className="select-all text-sm font-bold tracking-[0.14em] text-stone-950">{offer.offer_code}</code></div><button type="button" disabled={busy} onClick={() => onApply(offer)} className="mt-3 min-h-11 rounded-lg bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">Use on current order</button></article>)}</div> : <Empty icon={<Tag size={20} />} title="No offers right now" text="New restaurant offers will appear here." />}</section>;
+  return <section><h2 className="text-lg font-semibold text-stone-950">Rewards</h2><div className="mt-3 rounded-2xl bg-stone-950 p-5 text-white"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-300">{membership?.level_name || "Member"}</p><p className="mt-2 text-3xl font-semibold tabular-nums">{membership?.loyalty_points ?? 0} <span className="text-sm font-medium text-white/60">points</span></p></div><Gift size={22} className="text-orange-400" aria-hidden="true" /></div>{membership?.level_benefit ? <p className="mt-4 break-words text-sm leading-6 text-white/70">{membership.level_benefit}</p> : null}{membership?.level_points_multiplier && membership.level_points_multiplier > 1 ? <p className="mt-2 text-xs font-medium text-orange-300">Earn {membership.level_points_multiplier}× points on new orders</p> : null}{membership?.next_level_name ? <div className="mt-5 border-t border-white/15 pt-4"><p className="text-xs text-white/55">Next level: <span className="font-semibold text-white">{membership.next_level_name}</span></p><p className="mt-2 text-xs leading-5 text-white/70">{nextLevelRequirements || "Requirements reached. Your level updates after the next completed order."}</p></div> : membership?.level_name ? <p className="mt-5 border-t border-white/15 pt-4 text-xs text-orange-300">You reached the highest level.</p> : null}</div>{offers.length ? <div className="mt-3 grid gap-3 sm:grid-cols-2">{offers.map(offer => <article key={offer.recipient_id} className="rounded-xl border border-stone-200 bg-white p-4"><h3 className="flex items-center gap-2 text-sm font-semibold"><Tag size={16} className="shrink-0 text-orange-600" aria-hidden="true" />{offer.name}</h3><p className="mt-2 text-xs leading-5 text-stone-500">{offer.discount_type === "percentage" ? `${offer.value}% off` : currency.format(offer.value)} · Expires {shortDate.format(new Date(offer.valid_until))}</p><div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-stone-50 px-3 py-2"><span className="text-xs text-stone-500">{offer.offer_code ? "Offer code" : "In-app offer"}</span>{offer.offer_code ? <code className="select-all text-sm font-bold tracking-[0.14em] text-stone-950">{offer.offer_code}</code> : <span className="text-xs font-semibold text-stone-950">Ready to use on your order</span>}</div><button type="button" disabled={busy} onClick={() => onApply(offer)} className="mt-3 min-h-11 rounded-lg bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">Use on current order</button></article>)}</div> : <Empty icon={<Tag size={20} />} title={offersUnavailable ? "Offers unavailable" : "No offers right now"} text={offersUnavailable ? "Your rewards are still available. Refresh to try loading offers again." : "New restaurant offers will appear here."} />}</section>;
 }
 
 function SignIn({ invitation, step, identifier, password, usePassword, code, busy, error, setIdentifier, setPassword, setUsePassword, setCode, sendCode, signIn, signInWithPassword, signInWithGoogle }: any) {
