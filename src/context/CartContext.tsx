@@ -93,6 +93,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!getStoredCustomerToken()) return;
     try {
       const context = await getMyActiveTable(routeRestaurantId);
+      if (!context) return;
       const linkedSession: QRSession = {
         restaurantId: context.restaurant_id,
         restaurantName: context.restaurant_name,

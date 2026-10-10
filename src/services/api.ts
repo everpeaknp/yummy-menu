@@ -247,11 +247,12 @@ export const verifyQRToken = async (token: string): Promise<QRTableContext | nul
   }
 };
 
-export const getMyActiveTable = async (restaurantId: number): Promise<QRTableContext> => {
+export const getMyActiveTable = async (restaurantId: number): Promise<QRTableContext | null> => {
   const response = await apiClient.get('/qr/customer/active-table', {
     params: { restaurant_id: restaurantId },
     headers: customerHeaders(),
   });
+  if (response.status === 204 || response.data == null) return null;
   const data = response.data as QRTableContext;
   if (data.ordered_items && Array.isArray(data.ordered_items)) {
     data.ordered_items = data.ordered_items.map(item => ({
