@@ -295,7 +295,7 @@ export const requestOrder = async (
     console.error("Failed to request order", error);
     return { 
       error: "Request failed", 
-      detail: error.response?.data?.detail || error.message,
+      detail: error.response?.data?.detail || error.response?.data?.message || error.message,
       statusCode: error.response?.status
     };
   }

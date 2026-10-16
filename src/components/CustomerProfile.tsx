@@ -340,7 +340,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
       const result = await applyCustomerOffer(activeRestaurantId, offer.recipient_id, session.qrToken);
       setNotice(`${offer.name} applied. New total: ${currency.format(result.projected_grand_total)}.`);
       setOffers((current) => current.filter((item) => item.recipient_id !== offer.recipient_id));
-    } catch (requestError: any) { setError(requestError.response?.data?.detail || "This offer could not be applied."); }
+    } catch (requestError: any) { setError(apiErrorMessage(requestError, "This offer could not be applied.")); }
     finally { setBusy(false); }
   };
 
