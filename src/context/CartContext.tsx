@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { MenuItem, QRTableContext } from "@/services/api";
-import { addCartLine, CartLine, cartTotal, changeLineNotes, changeLineQuantity, shouldEndTableSession } from "@/lib/cart";
+import { addCartLine, CartLine, cartTotal, changeLineNotes, changeLineQuantity, hasEndedTableSession, shouldEndTableSession } from "@/lib/cart";
 
 export interface QRSession {
   restaurantId: number;
@@ -64,13 +64,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!current) return;
     refreshing.current = (async () => {
       try {
-        const { getMyActiveTable, verifyQRToken } = await import('@/services/api');
-        const context = current.accountLinked
+        const { getMyActiveTable, getStoredCustomerToken, verifyQRToken } = await import('@/services/api');
+        const context = getStoredCustomerToken()
           ? await getMyActiveTable(current.restaurantId)
           : await verifyQRToken(current.qrToken);
-        if (!context || readSession()?.qrToken !== current.qrToken) return;
+        if (readSession()?.qrToken !== current.qrToken) return;
         const hadOrders = Boolean(current.activeOrderIds?.length || current.orderedItems?.length);
-        if (hadOrders && !context.active_orders?.length && !context.ordered_items?.length) { resetSession(); return; }
+        if (hasEndedTableSession(hadOrders, context)) { resetSession(); return; }
+        if (!context) return;
         const updated: QRSession = {
           ...current, orderedItems: context.ordered_items || [],
           activeOrderIds: (context.active_orders || []).map(order => order.id),

@@ -402,6 +402,31 @@ export interface TableServiceRequest {
   acknowledged_at?: string;
 }
 
+export interface CustomerFonepayCheckout {
+  order_id: number;
+  prn: string;
+  status: string;
+  amount: number;
+  currency: string;
+  restaurant_name: string;
+  table_name: string;
+  qr_payload: {
+    qrMessage?: string;
+    qrImage?: string;
+  };
+}
+
+export interface CustomerFonepayStatus {
+  order_id: number;
+  prn: string;
+  status: string;
+  is_terminal: boolean;
+  is_success: boolean;
+  amount: number;
+  currency: string;
+  message?: string;
+}
+
 const CUSTOMER_TOKEN_KEY = "yummy_customer_token";
 
 export const getStoredCustomerToken = () => {
@@ -562,6 +587,24 @@ export const getCustomerOrders = async (restaurantId: number) => {
     headers: customerHeaders(),
   });
   return unwrap<CustomerOrder[]>(response);
+};
+
+export const startCustomerFonepayCheckout = async (qrToken: string) => {
+  const response = await apiClient.post(
+    "/qr/customer/table-orders/fonepay/checkout",
+    { qr_token: qrToken },
+    { headers: customerHeaders() },
+  );
+  return unwrap<CustomerFonepayCheckout>(response);
+};
+
+export const verifyCustomerFonepayCheckout = async (prn: string, qrToken: string) => {
+  const response = await apiClient.post(
+    `/qr/customer/table-orders/fonepay/${encodeURIComponent(prn)}/verify`,
+    { qr_token: qrToken },
+    { headers: customerHeaders() },
+  );
+  return unwrap<CustomerFonepayStatus>(response);
 };
 
 export const getCustomerReceivables = async (restaurantId: number) => {

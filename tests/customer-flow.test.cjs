@@ -10,7 +10,7 @@ const compiled = ts.transpileModule(fs.readFileSync(path, 'utf8'), {
 }).outputText;
 const loaded = new Module(path);
 loaded._compile(compiled, path);
-const { addCartLine, changeLineNotes, changeLineQuantity, cartTotal, shouldEndTableSession } = loaded.exports;
+const { addCartLine, changeLineNotes, changeLineQuantity, cartTotal, hasEndedTableSession, shouldEndTableSession } = loaded.exports;
 const dish = { id: 1, name: 'Burger', price: 300, is_available: true };
 const cheese = [{ modifier_id: 9, modifier_name_snapshot: 'Cheese', price_adjustment_snapshot: 50 }];
 
@@ -44,4 +44,11 @@ test('a temporary network failure does not end the table session', () => {
   assert.equal(shouldEndTableSession({ response: { status: 401 } }), false);
   assert.equal(shouldEndTableSession({ response: { status: 404 } }), true);
   assert.equal(shouldEndTableSession({ response: { status: 410 } }), true);
+});
+
+test('a customer table session ends when its previous order is no longer active', () => {
+  assert.equal(hasEndedTableSession(true, null), true);
+  assert.equal(hasEndedTableSession(true, { active_orders: [], ordered_items: [] }), true);
+  assert.equal(hasEndedTableSession(true, { active_orders: [{ id: 7 }], ordered_items: [] }), false);
+  assert.equal(hasEndedTableSession(false, null), false);
 });

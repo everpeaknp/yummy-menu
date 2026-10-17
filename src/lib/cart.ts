@@ -42,3 +42,10 @@ export function shouldEndTableSession(error: unknown): boolean {
   const status = (error as { response?: { status?: number } })?.response?.status;
   return status === 404 || status === 410;
 }
+
+export function hasEndedTableSession(
+  hadOrders: boolean,
+  context: { active_orders?: unknown[]; ordered_items?: unknown[] } | null,
+): boolean {
+  return hadOrders && (!context || (!context.active_orders?.length && !context.ordered_items?.length));
+}
