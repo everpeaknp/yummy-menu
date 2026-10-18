@@ -1,11 +1,16 @@
 import axios from 'axios';
 
 const getInitialBaseUrl = () => {
+  // The deployment environment is authoritative. A stale browser override can
+  // otherwise keep a production browser pinned to a previous API host.
+  const configured = process.env.NEXT_PUBLIC_API_URL;
+  if (configured) return configured;
+
   if (typeof window !== 'undefined') {
     const persisted = localStorage.getItem('yummy_api_url');
     if (persisted) return persisted;
   }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+  return 'http://127.0.0.1:8001';
 };
 
 const INITIAL_API_URL = getInitialBaseUrl();
