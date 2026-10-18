@@ -9,7 +9,12 @@ import type { CustomerFonepayCheckout as CustomerFonepayCheckoutData } from "@/s
 import { useDialog } from "@/lib/useDialog";
 
 const money = (amount: number) => new Intl.NumberFormat("en-NP", { style: "currency", currency: "NPR", maximumFractionDigits: 2 }).format(amount);
-const errorMessage = (error: any, fallback: string) => error?.response?.data?.detail || error?.response?.data?.message || error?.message || fallback;
+export const customerFonepayErrorMessage = (error: any, fallback: string) => {
+  const message = error?.response?.data?.detail || error?.response?.data?.message || error?.message || fallback;
+  return /\bfonepay\b.*\b(plan|integration)\b|\b(plan|integration)\b.*\bfonepay\b/i.test(message)
+    ? "Online payment is not available at this restaurant. Please ask the restaurant for help."
+    : message;
+};
 
 function providerImage(value?: string) {
   const image = value?.trim();
@@ -61,7 +66,7 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
       })
       .catch((requestError) => {
         if (createRequest.current?.promise === request) createRequest.current = null;
-        if (!cancelled) setError(errorMessage(requestError, "Could not start Fonepay checkout."));
+        if (!cancelled) setError(customerFonepayErrorMessage(requestError, "Could not start Fonepay checkout."));
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -86,7 +91,7 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
       else if (result.status === "review_required") setError("Payment was received but needs restaurant review before this bill can close.");
       else if (result.is_terminal) setError(result.message || "This Fonepay checkout is no longer active.");
     } catch (requestError) {
-      if (!silent && version === operationVersion.current) setError(errorMessage(requestError, "Could not check the payment yet."));
+      if (!silent && version === operationVersion.current) setError(customerFonepayErrorMessage(requestError, "Could not check the payment yet."));
     } finally {
       verifyInFlight.current = false;
       if (!silent) setChecking(false);
@@ -110,7 +115,7 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
       setQrImage(null); setConfirmCancel(false);
       await onCancelled();
     } catch (requestError) {
-      setError(errorMessage(requestError, "Could not cancel checkout. Check payment status or ask the restaurant for help."));
+      setError(customerFonepayErrorMessage(requestError, "Could not cancel checkout. Check payment status or ask the restaurant for help."));
     } finally { cancellingRef.current = false; setCancelling(false); }
   };
 

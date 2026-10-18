@@ -48,7 +48,8 @@ export default function TableVisitAccess() {
   const generate = async () => {
     const version = contextVersion.current;
     const result = await createTableInvite(access!.visit_id!);
-    const url = `${window.location.origin}/join-table#${encodeURIComponent(result.token)}`;
+    const menuBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://menu.yummyever.com').replace(/\/+$/, '');
+    const url = `${menuBaseUrl}/join-table#${encodeURIComponent(result.token)}`;
     const image = await QRCode.toDataURL(url, { width: 280, margin: 3 });
     if (version !== contextVersion.current) return;
     setInvite({ image, url, expires: result.expires_at });

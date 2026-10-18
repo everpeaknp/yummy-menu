@@ -9,6 +9,21 @@ const source = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/c
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 const flush = () => new Promise(resolve => setImmediate(resolve));
+test('customer checkout hides internal Fonepay plan details', () => {
+  const exports = {};
+  vm.runInNewContext(source, { exports, require: name => {
+    if (name === '@/services/api') return {};
+    if (name === '@/lib/useDialog') return { useDialog: () => ({ current: null }) };
+    return require(name);
+  } });
+  assert.equal(
+    exports.customerFonepayErrorMessage(
+      { response: { data: { detail: 'This plan does not include Fonepay integration.' } } },
+      'Could not start Fonepay checkout.',
+    ),
+    'Online payment is not available at this restaurant. Please ask the restaurant for help.',
+  );
+});
 function harness({ cancel, verify } = {}) {
   const checkout = { prn: 'saved', order_id: 1, status: 'pending', amount: 100, restaurant_name: 'Yummy', table_name: 'g' };
   const states = [checkout, 'qr-image', '', false, false, false, false];
