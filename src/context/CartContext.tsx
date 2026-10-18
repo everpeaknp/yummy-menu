@@ -30,7 +30,7 @@ interface CartContextType {
   totalPrice: number;
   session: QRSession | null;
   sessionWarning: string;
-  refreshSession: () => Promise<void>;
+  refreshSession: (force?: boolean) => Promise<void>;
   resetSession: () => void;
 }
 
@@ -59,8 +59,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setSessionWarning('');
     window.dispatchEvent(new Event('yummy_qr_session_updated'));
   }, []);
-  const refreshSession = useCallback(async () => {
-    if (refreshing.current) return refreshing.current;
+  const refreshSession = useCallback(async (force = false) => {
+    if (force) {
+      // A conflict can mean the cached snapshot predates an approval. Wait for
+      // any older poll to finish, then make a new request against the server.
+      while (refreshing.current) await refreshing.current;
+    } else if (refreshing.current) {
+      return refreshing.current;
+    }
     const current = readSession();
     if (!current) return;
     refreshing.current = (async () => {

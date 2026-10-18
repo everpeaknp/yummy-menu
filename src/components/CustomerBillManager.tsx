@@ -9,10 +9,25 @@ import type { CustomerBillOverview, CustomerBillRequest } from '@/services/api';
 const money = (amount: number) => new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', maximumFractionDigits: 2 }).format(amount);
 const button = 'inline-flex min-h-11 touch-manipulation items-center justify-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 const primary = `${button} border-orange-600 bg-orange-600 text-white hover:bg-orange-700`;
-const errorText = (error: any) => typeof error?.response?.data?.detail === 'string' ? error.response.data.detail : 'Could not update your bill. Refresh and try again.';
+export const customerBillErrorText = (error: any) => {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  const message = error?.response?.data?.message;
+  if (typeof message === 'string' && message.trim()) return message;
+  if (typeof error?.response?.status === 'number') {
+    const status = error.response.status;
+    const statusText = typeof error.response.statusText === 'string' ? error.response.statusText : '';
+    return `Bill service returned HTTP ${status}${statusText ? ` (${statusText})` : ''}. Refresh and try again.`;
+  }
+  if (error?.request || error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
+    return 'Could not reach the bill service. Check the API connection and try again.';
+  }
+  return 'Could not load your bill options. Refresh and try again.';
+};
+export const shouldRefreshTableAccessAfterBillFailure = (error: any) => error?.response?.status === 410;
 const states: Record<CustomerBillRequest['status'], string> = { pending: 'Waiting for consent', accepted: 'Accepted', rejected: 'Declined', canceled: 'Canceled', expired: 'Expired', stale: 'Bill changed — send a new request' };
 
-export default function CustomerBillManager({ qrToken, onChanged, onResumePayment }: { qrToken: string; onChanged: () => Promise<void>; onResumePayment?: () => void }) {
+export default function CustomerBillManager({ qrToken, onChanged, onRefreshAccess, onResumePayment }: { qrToken: string; onChanged: () => Promise<void>; onRefreshAccess: () => Promise<void>; onResumePayment?: () => void }) {
   const [data, setData] = useState<CustomerBillOverview | null>(null);
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'merge' | 'transfer'>('transfer');
@@ -21,6 +36,7 @@ export default function CustomerBillManager({ qrToken, onChanged, onResumePaymen
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const version = useRef(0);
+  const accessRefreshAttempted = useRef(false);
   const invalidate = useCallback(() => { ++version.current; }, []);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -30,13 +46,21 @@ export default function CustomerBillManager({ qrToken, onChanged, onResumePaymen
     const token = getStoredCustomerToken();
     try {
       const value = await getCustomerBills(qrToken);
-      if (current === version.current && getStoredCustomerToken() === token) { setData(value); setError(''); }
-    } catch (error) { if (current === version.current) setError(errorText(error)); }
-  }, [qrToken]);
+      if (current === version.current && getStoredCustomerToken() === token) { accessRefreshAttempted.current = false; setData(value); setError(''); }
+    } catch (error) {
+      if (current === version.current) {
+        setError(customerBillErrorText(error));
+        if (shouldRefreshTableAccessAfterBillFailure(error) && !accessRefreshAttempted.current) {
+          accessRefreshAttempted.current = true;
+          await onRefreshAccess();
+        }
+      }
+    }
+  }, [qrToken, onRefreshAccess]);
   useEffect(() => {
-    setData(null); setOpen(false); setNotice(''); setError(''); setRecipient(null); setQuantities({});
+    setData(null); setOpen(false); setNotice(''); setError(''); setRecipient(null); setQuantities({}); accessRefreshAttempted.current = false;
     void refresh();
-    const timer = setInterval(() => { if (document.visibilityState === 'visible' && !inFlight.current) void refresh(); }, 5000);
+    const timer = setInterval(() => { if (document.visibilityState === 'visible' && !inFlight.current && !accessRefreshAttempted.current) void refresh(); }, 5000);
     return () => { invalidate(); clearInterval(timer); };
   }, [refresh, invalidate]);
   const run = async (task: () => Promise<void>) => {
@@ -44,7 +68,7 @@ export default function CustomerBillManager({ qrToken, onChanged, onResumePaymen
     inFlight.current = true; setBusy(true); setError(''); setNotice('');
     const token = getStoredCustomerToken();
     try { await task(); if (getStoredCustomerToken() === token) { await refresh(); await onChanged(); } }
-    catch (error) { setError(errorText(error)); }
+    catch (error) { setError(customerBillErrorText(error)); }
     finally { inFlight.current = false; setBusy(false); }
   };
   const incoming = data?.requests.filter(request => request.incoming && request.status === 'pending') || [];
@@ -75,7 +99,7 @@ export default function CustomerBillManager({ qrToken, onChanged, onResumePaymen
     {notice && <p role="status" className="mt-3 text-sm text-green-800">{notice}</p>}
     {!data && !error && <p role="status" className="mt-3 text-xs text-stone-500">Loading bill options…</p>}
     {mergedIntoHost && <p className="mt-3 text-sm leading-6 text-stone-600">Your previous bill is combined with the host’s bill. The host pays that combined bill; new orders you place will have their own bill.</p>}
-    {error && !open && <div role="alert" className="mt-3 text-sm text-red-700">{error}<button type="button" className={`${button} ml-2`} disabled={busy} onClick={() => void refresh()}>Retry</button></div>}
+    {error && !open && <div role="alert" className="mt-3 text-sm text-red-700">{error}<button type="button" className={`${button} ml-2`} disabled={busy} onClick={() => { accessRefreshAttempted.current = false; void refresh(); }}>Retry</button></div>}
     {incoming.length > 0 && <div className="mt-4 space-y-4 border-t border-stone-100 pt-4">
       <h4 className="text-sm font-semibold">Friends need your approval</h4>
       {incoming.map(request => <article key={request.id} className="border-b border-stone-100 pb-4 last:border-0 last:pb-0">

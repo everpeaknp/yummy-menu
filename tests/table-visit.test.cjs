@@ -30,6 +30,21 @@ test('unverified guests can request access, not generate invitations', () => {
   assert.match(html, /Request table access/);
   assert.ok(!html.includes('Generate friend invite'));
 });
+test('table access errors show the backend message envelope', () => {
+  const exports = {};
+  vm.runInNewContext(source, { exports, require: name => {
+    if (name === 'react') return React;
+    if (name === '@/context/CartContext') return {};
+    if (name === '@/services/api') return {};
+    if (name === '@/lib/useDialog') return { useDialog: () => ({ current: null }) };
+    return require(name);
+  } });
+  assert.equal(exports.tableAccessErrorText({ response: { data: { status: 'error', message: 'Please wait a minute before requesting table access again.' } } }), 'Please wait a minute before requesting table access again.');
+  assert.equal(exports.shouldRefreshAccessAfterRequestFailure({ response: { status: 409 } }), true);
+  assert.equal(exports.shouldRefreshAccessAfterRequestFailure({ response: { status: 500 } }), false);
+  const component = fs.readFileSync(path.join(__dirname, '../src/components/TableVisitAccess.tsx'), 'utf8');
+  assert.match(component, /await refreshSession\(true\)/);
+});
 test('occupied table directs outsiders to host rather than offering takeover', () => {
   const html = render({ access: 'occupied', is_host: false, members: [] });
   assert.match(html, /Ask them for an invite QR/);

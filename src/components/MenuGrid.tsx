@@ -4,13 +4,14 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { BookOpen, ChevronRight, Home, Loader2, ScanLine, Search, ShoppingBag, UserRound, Utensils, X } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronRight, Home, Loader2, ScanLine, Search, ShoppingBag, UserRound, Utensils, X } from 'lucide-react';
 import { getGroupedMenu, getImageUrl, getModifierGroups, MenuCategoryGroup, Restaurant } from '@/services/api';
 import { useCart } from '@/context/CartContext';
 import CategoryNav from './CategoryNav';
 import CustomerGate from './CustomerGate';
 import CustomerProfile from './CustomerProfile';
 import FloatingCart from './FloatingCart';
+import ExistingTableReturn from './ExistingTableReturn';
 import MenuItemCard from './MenuItemCard';
 import TableQrScanner from './TableQrScanner';
 import TableServiceActions from './TableServiceActions';
@@ -39,6 +40,20 @@ export default function MenuGrid({ restaurantId, restaurant }: { initialCategori
 
 function Workspace({ restaurantId, restaurant, onScan }: { restaurantId: string; restaurant?: Restaurant; onScan: () => void }) {
   const { totalItems, totalPrice, session, sessionWarning } = useCart();
+  const tableAccess = session?.tableAccess;
+  const tableAccessLabel = tableAccess?.is_host
+    ? 'You’re the host'
+    : tableAccess?.access === 'approved'
+      ? 'Connected'
+      : tableAccess?.access === 'pending'
+        ? 'Awaiting approval'
+        : tableAccess?.access === 'occupied'
+          ? 'Ask host to invite you'
+          : tableAccess?.access === 'removed'
+            ? 'Access removed'
+            : tableAccess?.access === 'expired' && tableAccess.visit_id
+              ? 'Visit expired'
+              : 'Tap to request';
   const [view, setView] = useState<View>('menu');
   const [profileSection, setProfileSection] = useState<'overview' | 'orders' | 'rewards'>('overview');
   useEffect(() => {
@@ -59,7 +74,16 @@ function Workspace({ restaurantId, restaurant, onScan }: { restaurantId: string;
   const navigation = (mobile = false) => <nav aria-label="Customer navigation" className={mobile ? 'fixed inset-x-0 bottom-0 z-50 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden' : 'mx-auto hidden max-w-7xl justify-center gap-2 border-b border-stone-200 px-6 py-3 lg:flex'}><div className={mobile ? 'mx-auto grid h-16 max-w-lg grid-cols-3' : 'flex gap-2'}>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-current={view === id ? 'page' : undefined} onClick={() => goTo(id)} className={`${mobile ? 'flex flex-col items-center justify-center gap-1 text-[11px]' : 'flex min-h-11 items-center gap-2 rounded-xl px-5 text-sm'} font-semibold focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500 ${view === id ? 'text-orange-600 lg:bg-orange-50' : 'text-stone-500 hover:bg-stone-50'}`}><span className="relative"><Icon size={20} />{id === 'order' && totalItems > 0 && <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-orange-600 px-1 text-[9px] text-white">{totalItems}</span>}</span>{label}</button>)}</div></nav>;
   return <div className="pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8">
     {navigation()}
-    {view !== 'profile' && <div className="px-4 sm:px-6"><TableVisitAccess /></div>}
+    {view !== 'profile' && <>
+      {session?.tableAccess?.access !== 'approved' && session?.tableId != null && <ExistingTableReturn restaurantId={Number(restaurantId)} currentTableId={session.tableId} />}
+      {view === 'order' && session ? <details aria-label="Table and guest controls" className="group mx-auto my-3 max-w-7xl rounded-2xl border border-stone-200 bg-white px-4 sm:mx-6 sm:px-5">
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 text-sm marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">
+          <span className="min-w-0 truncate font-semibold text-stone-900">Table {session.tableName} · {tableAccessLabel}</span>
+          <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-orange-700">Manage table<ChevronDown size={16} className="transition-transform group-open:rotate-180" aria-hidden="true" /></span>
+        </summary>
+        <div className="border-t border-stone-100 pt-1"><TableVisitAccess /></div>
+      </details> : <div className="px-4 sm:px-6"><TableVisitAccess /></div>}
+    </>}
     {sessionWarning && <p role="status" className="mx-auto max-w-7xl bg-amber-50 px-4 py-3 text-xs text-amber-800 sm:px-6">{sessionWarning}</p>}
     {view === 'menu' && <MenuView restaurantId={restaurantId} />}
     {view === 'order' && <FloatingCart onBrowse={() => goTo('menu')} onScan={onScan} />}

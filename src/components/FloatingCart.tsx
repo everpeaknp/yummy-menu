@@ -21,6 +21,7 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const paymentConfirmed = useCallback(async () => { await refreshSession(); }, [refreshSession]);
+  const refreshBillAccess = useCallback(() => refreshSession(true), [refreshSession]);
   useEffect(() => {
     if (!session?.qrToken) return;
     void refreshSession();
@@ -31,6 +32,7 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
   const canOrder = session?.tableAccess?.access === 'approved';
   const ownBill = session?.tableAccess?.billing;
   const canPay = canOrder && ownBill?.can_pay === true;
+  const canShowPayAction = orderedTotal > 0 && canPay;
   const checkout = async () => {
     if (!session || !canOrder || submittingRef.current || !cart.length) return;
     submittingRef.current = true; setSubmitting(true); setError(''); setSuccess(false);
@@ -48,9 +50,28 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
       setError(requestError?.message || 'We could not confirm that you are at the restaurant.');
     } finally { submittingRef.current = false; setSubmitting(false); }
   };
-  return <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
+  const orderSummary = <>
+    <h3 className="font-semibold">Table summary</h3>
+    <dl className="mt-4 space-y-3 text-sm">
+      {orderedTotal > 0 && <div className="flex justify-between"><dt className="text-stone-500">Table requests</dt><dd className="font-semibold">{money(orderedTotal)}</dd></div>}
+      {cart.length > 0 && <div className="flex justify-between"><dt className="text-stone-500">Your private draft</dt><dd className="font-semibold">{money(totalPrice)}</dd></div>}
+      <div className="flex justify-between border-t border-stone-100 pt-3"><dt className="font-semibold">Estimated total</dt><dd className="font-bold">{money(orderedTotal + totalPrice)}</dd></div>
+    </dl>
+    <p className="mt-3 text-xs leading-5 text-stone-500">Final taxes, discounts and charges are confirmed by the restaurant.</p>
+    {ownBill && <div className="mt-4 rounded-xl border border-stone-200 p-3 text-sm"><h4 className="font-semibold">Your bill</h4><div className="mt-2 flex justify-between gap-3"><span className="text-stone-500">Accepted items</span><span>{money(ownBill.accepted_total)}</span></div>{ownBill.request_total > 0 && <div className="mt-2 flex justify-between gap-3"><span className="text-orange-700">Awaiting approval</span><span>{money(ownBill.request_total)}</span></div>}<p className="mt-2 text-xs leading-5 text-stone-500">The table estimate above includes everyone. Your payment covers only your own bill; the final remaining amount appears at checkout.</p></div>}
+    {orderedTotal > 0 && !canPay && <p className="mt-3 text-xs leading-5 text-stone-600">You can pay your own bill after your requests are accepted. Other guests’ bills are separate; staff can help with combined billing.</p>}
+  </>;
+  const sendOrderButton = (compact = false) => <button type="button" onClick={() => void checkout()} disabled={submitting || !canOrder} className={`${compact ? 'flex min-h-14 flex-1 flex-col gap-0.5' : 'mt-3 flex min-h-12 w-full'} items-center justify-center rounded-xl bg-orange-600 px-2 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-60`}>
+    <span className="flex items-center justify-center gap-1.5">{submitting ? <Loader2 aria-hidden="true" size={18} className="animate-spin motion-reduce:animate-none" /> : <Send aria-hidden="true" size={17} />}{submitting ? 'Sending…' : canOrder ? compact ? 'Send order' : 'Send order request' : 'Waiting for approval'}</span>
+    {compact && <span className="text-[11px] font-medium text-white/85">{money(totalPrice)}</span>}
+  </button>;
+  const payBillButton = (compact = false) => <button type="button" onClick={() => setPaymentOpen(true)} className={`${compact ? 'flex min-h-14 flex-1 flex-col gap-0.5' : 'mt-5 flex min-h-12 w-full'} items-center justify-center gap-1.5 rounded-xl ${compact ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-stone-950 text-white hover:bg-orange-700'} px-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500`}>
+    <span className="flex items-center justify-center gap-1.5"><QrCode size={18} aria-hidden="true" />{compact ? 'Pay bill' : 'Pay your bill with Fonepay'}</span>
+    {compact && <span className="text-[11px] font-medium opacity-75">{money(ownBill?.accepted_total ?? orderedTotal)}</span>}
+  </button>;
+  return <div className="mx-auto max-w-4xl px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:py-8 lg:pb-8">
     <div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">Your order</h2><button type="button" onClick={onBrowse} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-600"><ChevronLeft size={16} />Add dishes</button></div>
-    {canOrder && session?.qrToken && <CustomerBillManager key={session.qrToken} qrToken={session.qrToken} onChanged={refreshSession} onResumePayment={() => setPaymentOpen(true)} />}
+    {canOrder && session?.qrToken && <CustomerBillManager key={session.qrToken} qrToken={session.qrToken} onChanged={refreshSession} onRefreshAccess={refreshBillAccess} onResumePayment={() => setPaymentOpen(true)} />}
     {success && <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900"><Check size={20} className="mt-0.5 shrink-0" /><div><p className="font-semibold">Request sent to the restaurant</p><p className="mt-1 text-sm">The team will review and accept your order before preparation starts.</p></div></div>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
@@ -59,19 +80,26 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
         {Boolean(session?.orderedItems?.length) && <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5"><div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-sm font-bold">Sent to the restaurant</h3><button type="button" onClick={() => setReceiptOpen(true)} className="flex min-h-11 items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><Receipt size={16} aria-hidden="true" />Table estimate</button></div><OrderedBillItems items={session?.orderedItems || []} /></section>}
         {!cart.length && !session?.orderedItems?.length && <div className="rounded-2xl border border-stone-200 bg-white px-5 py-14 text-center"><ShoppingBag className="mx-auto h-9 w-9 text-stone-300" /><h3 className="mt-4 font-semibold">Your order is empty</h3><p className="mt-2 text-sm text-stone-500">Choose something from the menu to get started.</p><button type="button" onClick={onBrowse} className="mt-5 min-h-12 rounded-xl bg-orange-600 px-6 text-sm font-semibold text-white">Browse menu</button></div>}
       </div>
-      {(cart.length > 0 || orderedTotal > 0) && <aside><div className="rounded-2xl border border-stone-200 bg-white p-4 lg:sticky lg:top-24">
-        <h3 className="font-semibold">Table summary</h3>
-        <dl className="mt-4 space-y-3 text-sm">
-          {orderedTotal > 0 && <div className="flex justify-between"><dt className="text-stone-500">Table requests</dt><dd className="font-semibold">{money(orderedTotal)}</dd></div>}
-          {cart.length > 0 && <div className="flex justify-between"><dt className="text-stone-500">Your private draft</dt><dd className="font-semibold">{money(totalPrice)}</dd></div>}
-          <div className="flex justify-between border-t border-stone-100 pt-3"><dt className="font-semibold">Estimated total</dt><dd className="font-bold">{money(orderedTotal + totalPrice)}</dd></div>
-        </dl>
-        <p className="mt-3 text-xs leading-5 text-stone-500">Final taxes, discounts and charges are confirmed by the restaurant.</p>
-        {ownBill && <div className="mt-4 rounded-xl border border-stone-200 p-3 text-sm"><h4 className="font-semibold">Your bill</h4><div className="mt-2 flex justify-between gap-3"><span className="text-stone-500">Accepted items</span><span>{money(ownBill.accepted_total)}</span></div>{ownBill.request_total > 0 && <div className="mt-2 flex justify-between gap-3"><span className="text-orange-700">Awaiting approval</span><span>{money(ownBill.request_total)}</span></div>}<p className="mt-2 text-xs leading-5 text-stone-500">The table estimate above includes everyone. Your payment covers only your own bill; the final remaining amount appears at checkout.</p></div>}
-        {orderedTotal > 0 && canPay && <><button type="button" onClick={() => setPaymentOpen(true)} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><QrCode size={18} aria-hidden="true" />Pay your bill with Fonepay</button>{cart.length > 0 && <p className="mt-2 text-xs leading-5 text-stone-500">Your unsent draft is not included in this payment.</p>}</>}
-        {orderedTotal > 0 && !canPay && <p className="mt-3 text-xs leading-5 text-stone-600">You can pay your own bill after your requests are accepted. Other guests’ bills are separate; staff can help with combined billing.</p>}
-        {cart.length > 0 && (session ? <button type="button" onClick={() => void checkout()} disabled={submitting || !canOrder} className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-60">{submitting ? <Loader2 aria-hidden="true" size={18} className="animate-spin motion-reduce:animate-none" /> : <Send aria-hidden="true" size={17} />}{submitting ? 'Sending request…' : canOrder ? 'Send order request' : 'Table approval required'}</button> : <button type="button" onClick={onScan} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-semibold text-white"><ScanLine size={18} />Scan table QR to order</button>)}
-      </div></aside>}
-    </div><ReceiptModal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} session={session} /><CustomerFonepayCheckout open={paymentOpen} qrToken={session?.qrToken || ''} onClose={() => setPaymentOpen(false)} onPaid={paymentConfirmed} />
+      {(cart.length > 0 || orderedTotal > 0) && <>
+        <details className="rounded-2xl border border-stone-200 bg-white p-4 lg:hidden">
+          <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-3 font-semibold marker:hidden"><span>Order summary</span><span className="text-sm tabular-nums">{money(orderedTotal + totalPrice)}</span></summary>
+          <div className="mt-3 border-t border-stone-100 pt-3">{orderSummary}</div>
+        </details>
+        <aside className="hidden lg:block"><div className="rounded-2xl border border-stone-200 bg-white p-4 lg:sticky lg:top-24">
+          {orderSummary}
+          {orderedTotal > 0 && canPay && <>{payBillButton()}{cart.length > 0 && <p className="mt-2 text-xs leading-5 text-stone-500">Your unsent draft is not included in this payment.</p>}</>}
+          {cart.length > 0 && (session ? sendOrderButton() : <button type="button" onClick={onScan} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-semibold text-white"><ScanLine size={18} />Scan table QR to order</button>)}
+        </div></aside>
+      </>}
+    </div>
+    {(cart.length > 0 || canShowPayAction) && <div data-mobile-order-actions role="group" aria-label="Order actions" className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-stone-200 bg-white/95 p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
+      <div className="mx-auto flex max-w-lg gap-2">
+        {cart.length > 0 ? session ? sendOrderButton(true) : <button type="button" onClick={onScan} className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-orange-600 px-3 text-sm font-semibold text-white"><ScanLine size={18} />Scan table QR to order</button> : null}
+        {canShowPayAction && payBillButton(true)}
+      </div>
+      {cart.length > 0 && !canOrder && session && <p className="mt-1 text-center text-[11px] text-stone-500">Send unlocks when your table is approved.</p>}
+      {cart.length > 0 && canShowPayAction && <p className="mt-1 text-center text-[11px] text-stone-500">Your draft isn’t included in payment.</p>}
+    </div>}
+    <ReceiptModal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} session={session} /><CustomerFonepayCheckout open={paymentOpen} qrToken={session?.qrToken || ''} onClose={() => setPaymentOpen(false)} onPaid={paymentConfirmed} />
   </div>;
 }

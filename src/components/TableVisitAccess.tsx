@@ -11,6 +11,14 @@ const control = 'inline-flex min-h-11 touch-manipulation items-center justify-ce
 const button = `${control} border-stone-200 hover:bg-stone-50`;
 const primary = `${control} border-orange-600 bg-orange-600 text-white hover:bg-orange-700`;
 const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase() || '?';
+export const tableAccessErrorText = (error: any) => {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  const message = error?.response?.data?.message;
+  if (typeof message === 'string' && message.trim()) return message;
+  return 'Could not update table access. Try again; your cart is saved.';
+};
+export const shouldRefreshAccessAfterRequestFailure = (error: any) => error?.response?.status === 409;
 
 export default function TableVisitAccess() {
   const { session, refreshSession } = useCart();
@@ -42,7 +50,7 @@ export default function TableVisitAccess() {
     if (inFlight.current) return;
     inFlight.current = true; setBusy(true); setError('');
     try { await task(); await refreshSession(); }
-    catch (e: any) { setError(typeof e.response?.data?.detail === 'string' ? e.response.data.detail : 'Could not update table access. Try again; your cart is saved.'); }
+    catch (e: any) { setError(tableAccessErrorText(e)); if (shouldRefreshAccessAfterRequestFailure(e)) await refreshSession(true); }
     finally { inFlight.current = false; setBusy(false); }
   };
   const generate = async () => {
