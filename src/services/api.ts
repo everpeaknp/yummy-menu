@@ -213,6 +213,8 @@ export interface QRTableContext {
   ordered_items?: {
     id: number;
     is_yours?: boolean;
+    bill_customer_id?: number | null;
+    bill_customer_name?: string | null;
     menu_item_id: number;
     name: string;
     quantity: number;
@@ -420,6 +422,7 @@ export interface CustomerFonepayCheckout {
   currency: string;
   restaurant_name: string;
   table_name: string;
+  items?: { id: number; name: string; quantity: number; line_total: number; modifiers: string[] }[];
   qr_payload: {
     qrMessage?: string;
     qrImage?: string;

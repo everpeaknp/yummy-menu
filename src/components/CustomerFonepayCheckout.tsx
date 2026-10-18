@@ -159,10 +159,18 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
             <aside aria-label="Bill details" className="min-w-0 border-t border-stone-200 pt-5 sm:border-l sm:border-t-0 sm:pl-7 sm:pt-0">
               <h3 className="font-display text-base font-semibold text-stone-950">Your bill</h3>
               <p className="mt-1 break-words text-sm text-stone-600">{checkout.restaurant_name}</p>
+              {Boolean(checkout.items?.length) && <section className="mt-4" aria-label="Items on this bill">
+                <h4 className="text-sm font-semibold text-stone-950">Items on this bill</h4>
+                <ul className="mt-2 divide-y divide-stone-100">{checkout.items?.map(item => <li key={item.id} className="flex items-start justify-between gap-3 py-3 text-sm">
+                  <div className="min-w-0"><p className="break-words text-stone-950"><span className="tabular-nums">{item.quantity}×</span> {item.name}</p>{Boolean(item.modifiers?.length) && <p className="mt-1 break-words text-xs text-stone-600">{item.modifiers.join(', ')}</p>}</div>
+                  <span className="shrink-0 font-medium tabular-nums text-stone-950">{money(item.line_total)}</span>
+                </li>)}</ul>
+                <p className="mt-1 text-xs leading-5 text-stone-600">Item amounts are before bill-level taxes, discounts and previous payments. The amount due below is the exact amount to pay.</p>
+              </section>}
               <dl className="mt-4 space-y-3 border-y border-stone-200 py-4 text-sm">
                 <div className="flex items-start justify-between gap-4"><dt className="text-stone-600">Table</dt><dd className="min-w-0 break-words text-right font-medium text-stone-950">{checkout.table_name}</dd></div>
                 <div className="flex items-start justify-between gap-4"><dt className="text-stone-600">Order</dt><dd className="min-w-0 break-words text-right font-medium text-stone-950">#{checkout.order_id}</dd></div>
-                <div className="flex items-start justify-between gap-4 border-t border-dashed border-stone-200 pt-3"><dt className="font-medium text-stone-950">Total</dt><dd className="min-w-0 break-words text-right font-semibold tabular-nums text-stone-950">{money(checkout.amount)}</dd></div>
+                <div className="flex items-start justify-between gap-4 border-t border-dashed border-stone-200 pt-3"><dt className="font-medium text-stone-950">{paid ? 'Amount paid' : 'Amount due'}</dt><dd className="min-w-0 break-words text-right font-semibold tabular-nums text-stone-950">{money(checkout.amount)}</dd></div>
               </dl>
 
               {!paid ? (
