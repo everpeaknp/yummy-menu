@@ -620,6 +620,15 @@ export const verifyCustomerFonepayCheckout = async (prn: string, qrToken: string
   return unwrap<CustomerFonepayStatus>(response);
 };
 
+export const cancelCustomerFonepayCheckout = async (prn: string, qrToken: string) => {
+  const response = await apiClient.post(
+    `/qr/customer/table-orders/fonepay/${encodeURIComponent(prn)}/cancel`,
+    { qr_token: qrToken },
+    { headers: customerHeaders() },
+  );
+  return unwrap<{ status: 'cancelled' }>(response);
+};
+
 export const getCustomerReceivables = async (restaurantId: number) => {
   const response = await apiClient.get("/public/customer/me/receivables", {
     params: { restaurant_id: restaurantId },

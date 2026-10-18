@@ -12,7 +12,7 @@ const primary = `${button} border-orange-600 bg-orange-600 text-white hover:bg-o
 const errorText = (error: any) => typeof error?.response?.data?.detail === 'string' ? error.response.data.detail : 'Could not update your bill. Refresh and try again.';
 const states: Record<CustomerBillRequest['status'], string> = { pending: 'Waiting for consent', accepted: 'Accepted', rejected: 'Declined', canceled: 'Canceled', expired: 'Expired', stale: 'Bill changed — send a new request' };
 
-export default function CustomerBillManager({ qrToken, onChanged }: { qrToken: string; onChanged: () => Promise<void> }) {
+export default function CustomerBillManager({ qrToken, onChanged, onResumePayment }: { qrToken: string; onChanged: () => Promise<void>; onResumePayment?: () => void }) {
   const [data, setData] = useState<CustomerBillOverview | null>(null);
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<'merge' | 'transfer'>('transfer');
@@ -91,6 +91,7 @@ export default function CustomerBillManager({ qrToken, onChanged }: { qrToken: s
         <div className="flex items-start justify-between gap-3"><h2 id="manage-bill-title" className="text-xl font-bold">Manage your bill</h2><button type="button" disabled={busy} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-orange-500" aria-label="Close bill management" onClick={() => setOpen(false)}><X size={20} aria-hidden="true" /></button></div>
         <p id="manage-bill-description" className="mt-1 text-sm leading-6 text-stone-500">Nothing moves until your friend accepts. Each person can pay separately; whole bills combine into the host’s bill.</p>
         {data?.blocked_reason && <p className="mt-4 rounded-xl bg-orange-50 p-3 text-sm text-orange-900">{data.blocked_reason}</p>}
+        {data?.blocked_reason?.includes('payment checkout') && onResumePayment && <button type="button" className={`${button} mt-3`} onClick={() => { setOpen(false); onResumePayment(); }}>Resume payment checkout</button>}
         {!data?.own_bill && !data?.blocked_reason && <p className="mt-4 text-sm text-stone-600">You do not have an accepted bill yet. You can still receive items assigned by a friend.</p>}
         {data?.own_bill && <div className="mt-5 space-y-4">
           <p className="flex justify-between text-sm"><span className="text-stone-500">Your accepted bill</span><strong className="tabular-nums">{money(data.own_bill.total)}</strong></p>

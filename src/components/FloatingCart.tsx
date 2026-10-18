@@ -50,7 +50,7 @@ export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }:
   };
   return <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 lg:py-8">
     <div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">Your order</h2><button type="button" onClick={onBrowse} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-600"><ChevronLeft size={16} />Add dishes</button></div>
-    {canOrder && session?.qrToken && <CustomerBillManager key={session.qrToken} qrToken={session.qrToken} onChanged={refreshSession} />}
+    {canOrder && session?.qrToken && <CustomerBillManager key={session.qrToken} qrToken={session.qrToken} onChanged={refreshSession} onResumePayment={() => setPaymentOpen(true)} />}
     {success && <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900"><Check size={20} className="mt-0.5 shrink-0" /><div><p className="font-semibold">Request sent to the restaurant</p><p className="mt-1 text-sm">The team will review and accept your order before preparation starts.</p></div></div>}
     {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
