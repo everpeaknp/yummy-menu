@@ -42,6 +42,7 @@ export default function QRVerifyPage() {
         if (cancelled) return;
         localStorage.setItem('yummy_qr_session', JSON.stringify({
           restaurantId: context.restaurant_id, restaurantName: context.restaurant_name,
+          tableAccess: context.table_access,
           tableId: context.table_id, tableName: context.table_name, qrToken: context.token,
           orderedItems: context.ordered_items || [], activeOrderIds: (context.active_orders || []).map(order => order.id),
           activeOrderTotal: (context.active_orders || []).reduce((sum, order) => sum + Number(order.grand_total ?? order.total ?? 0), 0), startTime: Date.now(),

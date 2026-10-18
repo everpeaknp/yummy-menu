@@ -193,7 +193,16 @@ export const getModifierGroups = async (restaurantId: string): Promise<any[]> =>
   }
 };
 
+export interface TableAccess {
+  visit_id: number | null;
+  access: 'unverified' | 'pending' | 'approved' | 'rejected' | 'removed' | 'occupied' | 'expired';
+  is_host: boolean;
+  billing?: { can_pay: boolean; accepted_total: number; request_total: number };
+  members: { account_id: number; name: string; status: string; is_host: boolean; is_you?: boolean }[];
+}
+
 export interface QRTableContext {
+  table_access?: TableAccess;
   restaurant_id: number;
   restaurant_name: string;
   table_id: number;
@@ -203,6 +212,7 @@ export interface QRTableContext {
   cloud_url?: string;
   ordered_items?: {
     id: number;
+    is_yours?: boolean;
     menu_item_id: number;
     name: string;
     quantity: number;
@@ -222,7 +232,7 @@ export interface QRTableContext {
 
 export const verifyQRToken = async (token: string): Promise<QRTableContext | null> => {
   try {
-    const response = await apiClient.get(`/qr/verify/${token}`);
+    const response = await apiClient.get(`/qr/verify/${token}`, { headers: customerHeaders() });
     const data = response.data;
     
     // Map image URLs for ordered items
@@ -280,7 +290,7 @@ export const requestOrder = async (
       price_adjustment_snapshot: number;
     }[];
   }[],
-  location: { latitude: number; longitude: number; accuracy_meters: number },
+  location?: { latitude: number; longitude: number; accuracy_meters: number },
 ) => {
   try {
     const response = await apiClient.post('/qr/orders/request', {
@@ -671,7 +681,7 @@ export const applyCustomerOffer = async (restaurantId: number, recipientId: numb
 export const createTableServiceRequest = async (
   qrToken: string,
   requestType: string,
-  location: { latitude: number; longitude: number; accuracy_meters: number },
+  location?: { latitude: number; longitude: number; accuracy_meters: number },
 ) => {
   const response = await apiClient.post(
     "/public/table-service/requests", { qr_token: qrToken, request_type: requestType, ...location },
@@ -681,6 +691,43 @@ export const createTableServiceRequest = async (
 };
 
 export const getTableServiceRequests = async (qrToken: string) => {
-  const response = await apiClient.get("/public/table-service/requests", { params: { qr_token: qrToken } });
+  const response = await apiClient.get("/public/table-service/requests", { params: { qr_token: qrToken }, headers: customerHeaders() });
   return unwrap<TableServiceRequest[]>(response);
 };
+
+export const requestTableAccess = async (qrToken: string) =>
+  (await apiClient.post('/qr/customer/table-access', { qr_token: qrToken }, { headers: customerHeaders() })).data;
+export const createTableInvite = async (visitId: number) =>
+  (await apiClient.post(`/qr/customer/table-visits/${visitId}/invite`, {}, { headers: customerHeaders() })).data as { token: string; expires_at: string };
+export const revokeTableInvite = async (visitId: number) =>
+  apiClient.delete(`/qr/customer/table-visits/${visitId}/invite`, { headers: customerHeaders() });
+export const joinTableVisit = async (token: string) =>
+  (await apiClient.post('/qr/customer/table-visits/join', { token }, { headers: customerHeaders() })).data as QRTableContext;
+export const manageTableGuest = async (visitId: number, accountId: number, action: 'approve' | 'remove' | 'transfer') =>
+  apiClient.patch(`/qr/customer/table-visits/${visitId}/members/${accountId}`, { action }, { headers: customerHeaders() });
+
+export interface CustomerBillRequest {
+  id: number;
+  kind: 'merge' | 'transfer';
+  status: 'pending' | 'accepted' | 'rejected' | 'canceled' | 'expired' | 'stale';
+  incoming: boolean;
+  from_name: string;
+  to_name: string;
+  amount: number;
+  items: { name: string; qty: number; notes?: string | null; modifiers: string[] }[];
+  expires_at: string;
+}
+export interface CustomerBillOverview {
+  blocked_reason: string | null;
+  is_host: boolean;
+  own_bill: null | { id: number; total: number; items: { id: number; name: string; qty: number; total: number; notes?: string | null; modifiers: string[] }[] };
+  friends: { account_id: number; name: string; is_host: boolean }[];
+  requests: CustomerBillRequest[];
+}
+export const getCustomerBills = async (qrToken: string): Promise<CustomerBillOverview> =>
+  (await apiClient.get('/qr/customer/bills', { params: { qr_token: qrToken }, headers: customerHeaders() })).data;
+export const proposeCustomerBill = async (qrToken: string, proposal: {
+  recipient_account_id: number; kind: 'merge' | 'transfer'; lines: { order_item_id: number; qty: number }[];
+}) => (await apiClient.post('/qr/customer/bills/requests', { qr_token: qrToken, ...proposal }, { headers: customerHeaders() })).data;
+export const decideCustomerBill = async (qrToken: string, requestId: number, action: 'accept' | 'reject' | 'cancel') =>
+  (await apiClient.post(`/qr/customer/bills/requests/${requestId}/decision`, { qr_token: qrToken, action }, { headers: customerHeaders() })).data as { status: CustomerBillRequest['status'] };

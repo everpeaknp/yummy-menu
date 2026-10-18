@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { BellRing, Check, CircleDollarSign, GlassWater, Loader2, UtensilsCrossed } from "lucide-react";
 import { createTableServiceRequest, getTableServiceRequests, TableServiceRequest } from "@/services/api";
-import { getTableActionLocation } from "@/lib/location";
+import { useCart } from '@/context/CartContext';
 
 const actions = [
   { type: "call_waiter", label: "Call Waiter", icon: BellRing },
@@ -14,6 +14,8 @@ const actions = [
 const REQUEST_COOLDOWN_MS = 5 * 60 * 1000;
 
 export default function TableServiceActions({ restaurantId }: { restaurantId?: number }) {
+  const { session } = useCart();
+  const approved = session?.tableAccess?.access === 'approved';
   const [token, setToken] = useState<string | null>(null);
   const [requests, setRequests] = useState<TableServiceRequest[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export default function TableServiceActions({ restaurantId }: { restaurantId?: n
   }, [restaurantId]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !approved) return;
     let cancelled = false;
     const refresh = async () => {
       if (pollInFlight.current || document.visibilityState !== "visible") return;
@@ -61,14 +63,14 @@ export default function TableServiceActions({ restaurantId }: { restaurantId?: n
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [token]);
+  }, [token, approved]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  if (!token) return null;
+  if (!token || !approved) return null;
 
   const request = async (type: string) => {
     const activeRequest = requests.find((item) => item.request_type === type && item.status !== "completed");
@@ -77,8 +79,7 @@ export default function TableServiceActions({ restaurantId }: { restaurantId?: n
     requestInFlight.current = true;
     setBusy(type); setError("");
     try {
-      const location = await getTableActionLocation();
-      const item = await createTableServiceRequest(token, type, location);
+      const item = await createTableServiceRequest(token, type);
       setLastSentAt((current) => ({ ...current, [type]: Date.now() }));
       setRequests((current) => [item, ...current.filter((entry) => entry.id !== item.id)]);
     } catch (requestError: any) {

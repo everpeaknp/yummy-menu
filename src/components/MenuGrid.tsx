@@ -14,6 +14,7 @@ import FloatingCart from './FloatingCart';
 import MenuItemCard from './MenuItemCard';
 import TableQrScanner from './TableQrScanner';
 import TableServiceActions from './TableServiceActions';
+import TableVisitAccess from './TableVisitAccess';
 
 type View = 'menu' | 'order' | 'profile';
 const tabs = [{ id: 'menu', label: 'Menu', icon: BookOpen }, { id: 'order', label: 'Order', icon: ShoppingBag }, { id: 'profile', label: 'Profile', icon: UserRound }] as const;
@@ -58,6 +59,7 @@ function Workspace({ restaurantId, restaurant, onScan }: { restaurantId: string;
   const navigation = (mobile = false) => <nav aria-label="Customer navigation" className={mobile ? 'fixed inset-x-0 bottom-0 z-50 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden' : 'mx-auto hidden max-w-7xl justify-center gap-2 border-b border-stone-200 px-6 py-3 lg:flex'}><div className={mobile ? 'mx-auto grid h-16 max-w-lg grid-cols-3' : 'flex gap-2'}>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-current={view === id ? 'page' : undefined} onClick={() => goTo(id)} className={`${mobile ? 'flex flex-col items-center justify-center gap-1 text-[11px]' : 'flex min-h-11 items-center gap-2 rounded-xl px-5 text-sm'} font-semibold focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500 ${view === id ? 'text-orange-600 lg:bg-orange-50' : 'text-stone-500 hover:bg-stone-50'}`}><span className="relative"><Icon size={20} />{id === 'order' && totalItems > 0 && <span className="absolute -right-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-orange-600 px-1 text-[9px] text-white">{totalItems}</span>}</span>{label}</button>)}</div></nav>;
   return <div className="pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8">
     {navigation()}
+    {view !== 'profile' && <div className="px-4 sm:px-6"><TableVisitAccess /></div>}
     {sessionWarning && <p role="status" className="mx-auto max-w-7xl bg-amber-50 px-4 py-3 text-xs text-amber-800 sm:px-6">{sessionWarning}</p>}
     {view === 'menu' && <MenuView restaurantId={restaurantId} />}
     {view === 'order' && <FloatingCart onBrowse={() => goTo('menu')} onScan={onScan} />}

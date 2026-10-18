@@ -16,6 +16,7 @@ export interface QRSession {
   activeOrderTotal?: number;
   activeOrderIds?: number[];
   accountLinked?: boolean;
+  tableAccess?: QRTableContext['table_access'];
 }
 
 interface CartContextType {
@@ -64,16 +65,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!current) return;
     refreshing.current = (async () => {
       try {
-        const { getMyActiveTable, getStoredCustomerToken, verifyQRToken } = await import('@/services/api');
-        const context = getStoredCustomerToken()
-          ? await getMyActiveTable(current.restaurantId)
-          : await verifyQRToken(current.qrToken);
+        const { verifyQRToken, getStoredCustomerToken } = await import('@/services/api');
+        const observedToken = getStoredCustomerToken();
+        const context = await verifyQRToken(current.qrToken);
+        if (getStoredCustomerToken() !== observedToken) return;
         if (readSession()?.qrToken !== current.qrToken) return;
         const hadOrders = Boolean(current.activeOrderIds?.length || current.orderedItems?.length);
-        if (hasEndedTableSession(hadOrders, context)) { resetSession(); return; }
+        if (!context?.table_access && hasEndedTableSession(hadOrders, context)) { resetSession(); return; }
         if (!context) return;
         const updated: QRSession = {
-          ...current, orderedItems: context.ordered_items || [],
+          ...current, tableAccess: context.table_access, orderedItems: context.ordered_items || [],
           activeOrderIds: (context.active_orders || []).map(order => order.id),
           activeOrderTotal: (context.active_orders || []).reduce((sum, order) => sum + Number(order.grand_total ?? order.total ?? 0), 0),
         };
@@ -91,10 +92,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const resumeLinkedTable = useCallback(async () => {
     if (!routeRestaurantId) return;
     const { getMyActiveTable, getStoredCustomerToken } = await import('@/services/api');
-    if (!getStoredCustomerToken()) return;
+    const observedToken = getStoredCustomerToken();
+    if (!observedToken) return;
     try {
       const context = await getMyActiveTable(routeRestaurantId);
+      if (getStoredCustomerToken() !== observedToken) return;
       if (!context) return;
+      const saved = readSession();
+      if (saved && saved.tableId !== context.table_id) return;
       const linkedSession: QRSession = {
         restaurantId: context.restaurant_id,
         restaurantName: context.restaurant_name,
@@ -109,6 +114,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           0,
         ),
         accountLinked: true,
+        tableAccess: context.table_access,
       };
       localStorage.setItem('yummy_qr_session', JSON.stringify(linkedSession));
       setSession(linkedSession);
@@ -135,7 +141,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('storage', sync);
     window.addEventListener('yummy_qr_session_updated', sync);
-    const resume = () => { void resumeLinkedTable(); };
+    const resume = () => {
+      const saved = readSession();
+      if (saved) {
+        const cleared = { ...saved, orderedItems: [], activeOrderIds: [], activeOrderTotal: 0, tableAccess: undefined };
+        localStorage.setItem('yummy_qr_session', JSON.stringify(cleared));
+        setSession(cleared);
+        void refreshSession();
+      } else void resumeLinkedTable();
+    };
     window.addEventListener('yummy_customer_session_updated', resume);
     void resumeLinkedTable();
     return () => {

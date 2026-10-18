@@ -37,6 +37,15 @@ export default function TableQrScanner({ open, onClose }: { open: boolean; onClo
         scannerRef.current = scanner;
         await scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1 }, async (decodedText) => {
           if (handlingRef.current) return;
+          try {
+            const invite = new URL(decodedText);
+            if (invite.pathname === '/join-table' && invite.hash) {
+              handlingRef.current = true;
+              await scanner.stop(); scanner.clear(); scannerRef.current = null;
+              window.location.assign(`/join-table${invite.hash}`);
+              return;
+            }
+          } catch { /* Continue with a normal table token. */ }
           const token = tokenFromScan(decodedText);
           if (!token) { setError("This is not a Yummy table QR code."); return; }
           handlingRef.current = true; setStatus("verifying"); setError("");
@@ -44,7 +53,7 @@ export default function TableQrScanner({ open, onClose }: { open: boolean; onClo
             const context = await verifyQRToken(token);
             if (!context) throw new Error("This table QR is invalid or has expired.");
             const activeOrderTotal = (context.active_orders || []).reduce((sum, order) => sum + Number(order.grand_total ?? order.total ?? 0), 0);
-            localStorage.setItem("yummy_qr_session", JSON.stringify({ restaurantId: context.restaurant_id, restaurantName: context.restaurant_name, tableId: context.table_id, tableName: context.table_name, qrToken: context.token, orderedItems: context.ordered_items, activeOrderTotal, activeOrderIds: (context.active_orders || []).map((order) => order.id), startTime: Date.now() }));
+            localStorage.setItem("yummy_qr_session", JSON.stringify({ restaurantId: context.restaurant_id, restaurantName: context.restaurant_name, tableId: context.table_id, tableName: context.table_name, qrToken: context.token, tableAccess: context.table_access, orderedItems: context.ordered_items, activeOrderTotal, activeOrderIds: (context.active_orders || []).map((order) => order.id), startTime: Date.now() }));
             window.dispatchEvent(new Event("yummy_qr_session_updated"));
             await scanner.stop(); scanner.clear(); scannerRef.current = null;
             window.location.assign(`/${context.restaurant_id}/${slugify(context.restaurant_name || "restaurant")}?view=menu`);
