@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MenuItem } from "@/services/api";
 import { X, Check } from "lucide-react";
+import { useDialog } from '@/lib/useDialog';
 
 interface ItemCustomizationDrawerProps {
   isOpen: boolean;
@@ -23,15 +24,14 @@ export default function ItemCustomizationDrawer({
   const [notes, setNotes] = useState("");
   // Local state to manage the mount status for animation
   const [isMounted, setIsMounted] = useState(false);
+  const dialogRef = useDialog(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedModifiers({});
       setNotes("");
       setIsMounted(true);
-      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "unset";
       // Delay unmounting to let the slide-down animation play out
       const timer = setTimeout(() => setIsMounted(false), 400);
       return () => clearTimeout(timer);
@@ -75,7 +75,7 @@ export default function ItemCustomizationDrawer({
   // Basic validation for required groups
   let isValid = true;
   for (const group of itemGroups) {
-    if (group.is_required && (!selectedModifiers[group.id] || selectedModifiers[group.id].length === 0)) {
+    if ((selectedModifiers[group.id] || []).length < Math.max(group.min_selections || 0, group.is_required ? 1 : 0)) {
       isValid = false;
       break;
     }
@@ -88,7 +88,7 @@ export default function ItemCustomizationDrawer({
 
   return (
     <div 
-        className={`fixed inset-0 z-[100] flex items-end justify-center transition-all duration-400 ${isOpen ? 'visible' : 'invisible delay-400'}`}
+        className={`fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-6 ${isOpen ? 'visible' : 'invisible'}`}
     >
       {/* Overlay */}
       <div 
@@ -98,19 +98,21 @@ export default function ItemCustomizationDrawer({
       
       {/* Content */}
       <div 
-        className={`relative w-full max-w-xl rounded-t-[32px] bg-white p-6 pt-4 pb-8 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transition-transform duration-400 ease-[cubic-bezier(0.25,1,0.5,1)] ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+        ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`dish-title-${item?.id}`}
+        className={`relative w-full max-w-xl rounded-t-2xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl sm:rounded-2xl sm:p-6 ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
       >
         <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-gray-200" />
         
         {item && (
-          <div className="flex flex-col h-full max-h-[85vh]">
+          <div className="flex flex-col h-full max-h-[80dvh]">
             {/* Header */}
             <div className="flex items-start justify-between mb-4 shrink-0">
               <div>
-                <h2 className="text-[24px] font-bold tracking-tight text-gray-900">{item.name}</h2>
+                <h2 id={`dish-title-${item.id}`} className="text-xl font-bold text-stone-950">{item.name}</h2>
                 <p className="mt-1 text-[15px] font-semibold text-gray-500">NPR {item.price}</p>
               </div>
               <button 
+                type="button" aria-label="Close customization"
                 onClick={onClose}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900"
               >
@@ -140,8 +142,9 @@ export default function ItemCustomizationDrawer({
                       return (
                         <button
                           key={mod.id}
+                          type="button" aria-pressed={isSelected}
                           onClick={() => handleToggle(group.id, mod, group.max_selections)}
-                          className={`flex w-full items-center justify-between rounded-2xl py-4 px-5 bg-white transition-all active:scale-[0.98] select-none border-2 ${
+                          className={`flex min-h-12 w-full items-center justify-between rounded-xl p-3 bg-white select-none border ${
                             isSelected ? 'border-black shadow-sm' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'
                           }`}
                         >
@@ -167,7 +170,7 @@ export default function ItemCustomizationDrawer({
               {/* Notes Input */}
               <div className="mt-8 mb-2">
                   <h3 className="mb-3 text-[16px] font-bold text-gray-900">Special Instructions</h3>
-                  <textarea
+                  <textarea aria-label="Special instructions" maxLength={500}
                     placeholder="Ex: No onions, extra spicy, etc."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -181,7 +184,7 @@ export default function ItemCustomizationDrawer({
                 <button
                   onClick={handleConfirm}
                   disabled={!isValid}
-                  className="flex w-full items-center justify-between rounded-full bg-black px-8 py-5 text-white transition-all hover:bg-gray-900 active:scale-[0.98] disabled:bg-gray-200 disabled:text-gray-400"
+                  className="flex min-h-12 w-full items-center justify-between rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-700 disabled:bg-stone-200 disabled:text-stone-400"
                 >
                   <span className="text-[17px] font-bold tracking-tight">Add to Cart</span>
                   <span className="text-[17px] font-bold tracking-tight">NPR {item.price + additivePrice}</span>
@@ -193,4 +196,3 @@ export default function ItemCustomizationDrawer({
     </div>
   );
 }
-

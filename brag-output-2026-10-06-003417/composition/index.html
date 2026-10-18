@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <title>Yummy Menu — One Complete Restaurant Visit</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-regular.ttf") format("truetype"); font-weight: 400; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-medium.ttf") format("truetype"); font-weight: 500; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-semibold.ttf") format("truetype"); font-weight: 600; }
+      @font-face { font-family: "Inter"; src: url("assets/fonts/inter-bold.ttf") format("truetype"); font-weight: 700; }
+      @font-face { font-family: "Outfit"; src: url("assets/fonts/outfit-medium.ttf") format("truetype"); font-weight: 500; }
+      @font-face { font-family: "Outfit"; src: url("assets/fonts/outfit-semibold.ttf") format("truetype"); font-weight: 600; }
+      @font-face { font-family: "Outfit"; src: url("assets/fonts/outfit-bold.ttf") format("truetype"); font-weight: 700; }
+
+      :root {
+        --warm: #f6f6f4;
+        --ink: #10131a;
+        --orange: #ff6929;
+        --orange-text: #a83e16;
+        --paper: #fffdf9;
+        --stone-1: #ece9e4;
+        --stone-2: #d6d3d1;
+        --stone-3: #746f69;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--warm); }
+      body { font-family: "Inter", Arial, sans-serif; color: var(--ink); }
+      h1, h2, h3, p { margin: 0; }
+      button { font: inherit; }
+      img { display: block; }
+      .display { font-family: "Outfit", Arial, sans-serif; letter-spacing: -0.04em; }
+      .scene { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; opacity: 0; background: var(--warm); }
+      #scene-1 { opacity: 1; }
+      .camera { position: absolute; inset: 0; transform-origin: 50% 50%; }
+      .eyebrow { color: var(--orange-text); font-size: 18px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+      .muted { color: #625f5a; }
+      .touch { position: absolute; z-index: 12; width: 54px; height: 54px; border: 3px solid rgba(255,105,41,.72); border-radius: 50%; background: rgba(255,253,249,.82); box-shadow: 0 0 0 10px rgba(255,105,41,.10); opacity: 0; }
+      .touch::after { content: ""; position: absolute; inset: 17px; border-radius: 50%; background: var(--orange); }
+      .journey-line { height: 4px; border-radius: 999px; background: var(--orange); transform-origin: left center; }
+      .surface { background: var(--paper); border: 1px solid var(--stone-2); }
+      .product-shadow { box-shadow: 0 28px 80px rgba(16,19,26,.10); }
+
+      /* Scene 1 — physical table */
+      #scene-1 { background: #d9cabb; }
+      .table-seam { position: absolute; left: 0; right: 0; top: 740px; height: 2px; background: rgba(66,49,37,.14); }
+      .plate { position: absolute; left: -110px; top: 620px; width: 450px; height: 450px; border: 28px solid #ece7df; border-radius: 50%; background: #c9b9aa; box-shadow: inset 0 0 0 2px rgba(70,54,42,.08), 0 26px 50px rgba(70,54,42,.10); }
+      .napkin { position: absolute; left: 320px; top: 690px; width: 280px; height: 160px; border-radius: 20px; background: #8e6e5c; transform: rotate(-8deg); box-shadow: 0 20px 38px rgba(70,54,42,.14); }
+      .napkin::after { content: ""; position: absolute; left: 22px; right: 22px; top: 34px; height: 1px; background: rgba(255,255,255,.26); }
+      .glass { position: absolute; right: 120px; top: 96px; width: 150px; height: 210px; border: 5px solid rgba(255,253,249,.58); border-radius: 24px 24px 42px 42px; background: rgba(255,253,249,.10); box-shadow: 0 22px 40px rgba(70,54,42,.10); }
+      .glass::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 28px; height: 60px; border-top: 2px solid rgba(255,253,249,.56); background: rgba(255,253,249,.12); }
+      .table-copy { position: absolute; left: 112px; top: 100px; z-index: 8; max-width: 680px; color: #2f251f; }
+      .table-copy h1 { display: flex; flex-direction: column; gap: 8px; font-size: 92px; line-height: 1; font-weight: 600; }
+      .table-copy span { display: block; }
+      .table-copy .line-two { color: #563c2f; }
+      .table-copy p { margin-top: 28px; font-size: 19px; font-weight: 600; letter-spacing: .04em; color: #685345; }
+      #s1-copy-a, #s1-copy-b, #s1-sub { opacity: 0; }
+      .qr-stand { position: absolute; left: 990px; top: 210px; width: 300px; height: 430px; padding: 26px; border-radius: 22px 22px 30px 30px; background: #f1eadf; border: 1px solid rgba(71,52,41,.18); box-shadow: 0 30px 60px rgba(70,54,42,.18); transform: rotate(-2deg); }
+      .qr-stand::after { content: ""; position: absolute; left: 24px; right: 24px; bottom: -26px; height: 34px; border-radius: 0 0 18px 18px; background: #7e604f; }
+      .stand-brand { display: flex; align-items: center; gap: 12px; font-family: "Outfit", sans-serif; font-size: 22px; font-weight: 700; }
+      .stand-brand img { width: 42px; height: 42px; object-fit: contain; }
+      .stand-title { margin-top: 18px; font-family: "Outfit", sans-serif; font-size: 25px; font-weight: 600; }
+      .fake-qr { margin: 20px auto 0; width: 202px; height: 202px; border: 12px solid #fff; background: #fff; }
+      .fake-qr svg { width: 100%; height: 100%; }
+      .stand-foot { margin-top: 13px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #6d5b50; }
+      .hand { position: absolute; right: 126px; bottom: -90px; z-index: 5; width: 340px; height: 500px; border-radius: 48% 48% 14% 14%; background: #9d6950; transform: rotate(-15deg); box-shadow: 0 30px 70px rgba(69,43,30,.20); }
+      .hand::before { content: ""; position: absolute; left: -56px; top: -44px; width: 122px; height: 320px; border-radius: 64px; background: #a87358; transform: rotate(27deg); }
+      .phone { position: absolute; right: 245px; top: 180px; z-index: 7; width: 360px; height: 720px; padding: 15px; border-radius: 56px; background: #111319; border: 3px solid #393c43; box-shadow: 0 40px 90px rgba(28,20,16,.30); transform: rotate(-7deg); }
+      .phone::before { content: ""; position: absolute; left: 128px; top: 18px; width: 104px; height: 23px; border-radius: 20px; background: #050608; z-index: 4; }
+      .phone-screen { position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden; background: #3b332e; }
+      .phone-screen .camera-qr { position: absolute; left: 78px; top: 188px; width: 176px; height: 176px; padding: 13px; background: rgba(246,246,244,.92); }
+      .phone-screen .camera-qr svg { width: 100%; height: 100%; }
+      .scanner-corner { position: absolute; width: 52px; height: 52px; border-color: var(--orange); border-style: solid; z-index: 3; }
+      .scanner-corner.tl { left: 58px; top: 168px; border-width: 5px 0 0 5px; border-radius: 16px 0 0 0; }
+      .scanner-corner.tr { right: 58px; top: 168px; border-width: 5px 5px 0 0; border-radius: 0 16px 0 0; }
+      .scanner-corner.bl { left: 58px; top: 324px; border-width: 0 0 5px 5px; border-radius: 0 0 0 16px; }
+      .scanner-corner.br { right: 58px; top: 324px; border-width: 0 5px 5px 0; border-radius: 0 0 16px 0; }
+      .camera-label { position: absolute; left: 0; right: 0; bottom: 84px; text-align: center; color: rgba(255,255,255,.82); font-size: 16px; font-weight: 600; }
+      #qr-transition { position: absolute; left: 1166px; top: 384px; z-index: 30; width: 176px; height: 176px; border: 5px solid var(--orange); background: var(--ink); opacity: 0; transform-origin: center; }
+
+      /* Scene 2 — restaurant home */
+      #scene-2 { background: var(--warm); }
+      .home-shell { position: absolute; inset: 72px 92px; display: grid; grid-template-rows: 128px 1fr 190px; overflow: hidden; border-radius: 38px; background: var(--paper); border: 1px solid var(--stone-2); box-shadow: 0 32px 80px rgba(16,19,26,.10); }
+      .restaurant-header { display: flex; align-items: center; gap: 20px; padding: 0 42px; background: var(--ink); color: #fffdf9; }
+      .restaurant-logo { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 18px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.08); }
+      .restaurant-logo img { width: 52px; height: 52px; object-fit: contain; }
+      .restaurant-name { font-family: "Outfit", sans-serif; font-size: 29px; font-weight: 600; }
+      .restaurant-location { margin-top: 6px; color: rgba(255,253,249,.55); font-size: 15px; }
+      .home-hero { display: grid; grid-template-columns: 1.1fr .9fr; background: var(--ink); color: #fffdf9; }
+      .home-copy { display: flex; flex-direction: column; justify-content: center; padding: 55px 70px 66px; }
+      .visit-pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; color: rgba(255,253,249,.74); font-size: 14px; font-weight: 600; }
+      .visit-pill::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--orange); }
+      .home-copy h2 { margin-top: 30px; max-width: 820px; font-size: 71px; line-height: .99; font-weight: 600; }
+      .home-copy p { margin-top: 22px; max-width: 660px; color: rgba(255,253,249,.62); font-size: 19px; line-height: 1.55; }
+      .browse-button { align-self: flex-start; display: flex; align-items: center; gap: 14px; margin-top: 32px; padding: 19px 26px; border: 0; border-radius: 15px; background: var(--orange); color: var(--ink); font-size: 18px; font-weight: 700; box-shadow: 0 12px 28px rgba(255,105,41,.15); }
+      .home-image { position: relative; overflow: hidden; }
+      .home-image img { width: 100%; height: 100%; object-fit: cover; }
+      .home-image::after { content: ""; position: absolute; inset: 0; background: rgba(16,19,26,.22); }
+      .table-strip { display: grid; grid-template-columns: 1fr 1fr; background: var(--paper); border-top: 1px solid var(--stone-2); }
+      .table-connected, .profile-preview { padding: 34px 48px; }
+      .table-connected { border-right: 1px solid var(--stone-2); }
+      .status-line { display: flex; align-items: center; gap: 12px; color: #4e4a46; font-size: 14px; font-weight: 700; }
+      .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--orange); }
+      .status-rule { margin-top: 13px; width: 180px; height: 4px; border-radius: 999px; background: var(--orange); }
+      .table-connected h3, .profile-preview h3 { margin-top: 12px; font-family: "Outfit", sans-serif; font-size: 26px; font-weight: 600; }
+      .table-connected p, .profile-preview p { margin-top: 8px; color: #66615c; font-size: 14px; line-height: 1.5; }
+      #touch-browse { left: 410px; top: 692px; }
+
+      /* Scene 3 — menu */
+      .menu-shell { position: absolute; inset: 56px 130px; overflow: hidden; border-radius: 34px; background: var(--paper); border: 1px solid var(--stone-2); box-shadow: 0 30px 90px rgba(16,19,26,.10); }
+      .menu-topbar { display: flex; align-items: center; gap: 18px; height: 108px; padding: 0 38px; background: var(--ink); color: var(--paper); }
+      .menu-topbar img { width: 50px; height: 50px; object-fit: contain; }
+      .menu-topbar h3 { font-family: "Outfit", sans-serif; font-size: 25px; font-weight: 600; }
+      .menu-topbar p { margin-top: 4px; color: rgba(255,253,249,.55); font-size: 13px; }
+      .menu-body { display: grid; grid-template-columns: 1fr 430px; height: calc(100% - 108px); }
+      .menu-primary { padding: 38px 44px 32px; }
+      .menu-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; }
+      .menu-heading h2 { margin-top: 8px; font-size: 52px; font-weight: 600; }
+      .search-box { width: 355px; padding: 16px 22px; border: 1px solid var(--stone-2); border-radius: 999px; color: #77716b; font-size: 15px; }
+      .categories { display: flex; gap: 26px; margin-top: 28px; border-bottom: 1px solid var(--stone-2); }
+      .category-tab { position: relative; padding: 13px 2px 16px; color: #706a64; font-size: 15px; font-weight: 650; }
+      .category-tab.active { color: var(--ink); }
+      .category-tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 4px; border-radius: 999px; background: var(--orange); }
+      .dish-list { margin-top: 9px; }
+      .dish-row { position: relative; display: grid; grid-template-columns: 112px 1fr 52px; align-items: center; gap: 22px; min-height: 174px; padding: 18px 12px 18px 0; border-bottom: 1px solid var(--stone-1); }
+      .dish-row img { width: 112px; height: 112px; border-radius: 18px; object-fit: cover; }
+      .dish-row h3 { font-family: "Outfit", sans-serif; font-size: 25px; font-weight: 600; }
+      .dish-row p { margin-top: 8px; color: #6f6963; font-size: 14px; line-height: 1.45; }
+      .add-button { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 27px; line-height: 1; }
+      #dish-chicken { border-radius: 19px; }
+      #dish-focus { position: absolute; left: -12px; right: -12px; top: 4px; bottom: 4px; border: 3px solid var(--orange); border-radius: 22px; opacity: 0; pointer-events: none; }
+      #add-ring { position: absolute; right: 0; top: 63px; width: 52px; height: 52px; border: 4px solid var(--orange); border-radius: 50%; opacity: 0; }
+      .menu-story { display: flex; flex-direction: column; justify-content: space-between; padding: 48px 42px; background: #eeebe6; border-left: 1px solid var(--stone-2); }
+      .menu-story h2 { max-width: 340px; font-size: 57px; line-height: 1; font-weight: 600; }
+      .menu-story p { max-width: 310px; color: #625c56; font-size: 18px; line-height: 1.55; }
+      .story-line { width: 170px; }
+      #touch-add { left: 1330px; top: 427px; }
+
+      /* Scene 4 — customization */
+      #scene-4 { background: #d9d6d1; }
+      .menu-ghost { position: absolute; inset: 54px 122px 0; border-radius: 34px 34px 0 0; background: var(--paper); opacity: .48; }
+      .menu-ghost .ghost-bar { height: 112px; border-radius: 34px 34px 0 0; background: var(--ink); }
+      .menu-ghost .ghost-row { width: 55%; height: 135px; margin: 32px 0 0 62px; border-bottom: 1px solid #bdb8b2; }
+      .custom-copy { position: absolute; left: 150px; top: 190px; width: 520px; z-index: 3; }
+      .custom-copy h2 { margin-top: 16px; font-size: 75px; line-height: .98; font-weight: 600; }
+      .custom-copy p { margin-top: 26px; max-width: 430px; color: #5f5a55; font-size: 20px; line-height: 1.55; }
+      .sheet { position: absolute; right: 140px; bottom: 0; z-index: 5; width: 930px; height: 940px; padding: 22px 52px 44px; border-radius: 42px 42px 0 0; background: #fff; box-shadow: 0 -26px 80px rgba(16,19,26,.16); }
+      .sheet-handle { width: 82px; height: 7px; margin: 0 auto 30px; border-radius: 999px; background: var(--orange); }
+      .sheet-head { display: grid; grid-template-columns: 118px 1fr auto; align-items: center; gap: 22px; padding-bottom: 26px; border-bottom: 1px solid var(--stone-1); }
+      .sheet-head img { width: 118px; height: 106px; border-radius: 18px; object-fit: cover; }
+      .sheet-head h2 { font-size: 42px; font-weight: 600; }
+      .required { padding: 8px 12px; border-radius: 9px; background: #fef0eb; color: #92380f; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+      .choice-title { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
+      .choice-title h3 { font-size: 18px; font-weight: 700; }
+      .options { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 15px; }
+      .option { display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 0 22px; border: 2px solid var(--stone-1); border-radius: 20px; font-size: 17px; font-weight: 700; }
+      .radio { width: 24px; height: 24px; border: 2px solid #b7b2ac; border-radius: 50%; background: #fff; }
+      #extra-option { position: relative; }
+      #extra-option.selected { border-color: var(--orange); background: #fff6f1; }
+      #extra-option.selected .radio { border: 7px solid var(--orange); }
+      .instructions { margin-top: 24px; }
+      .instructions h3 { font-size: 17px; }
+      .notes { margin-top: 12px; min-height: 78px; padding: 19px 22px; border: 1px solid var(--stone-2); border-radius: 20px; background: #faf9f7; color: #625d57; font-size: 15px; }
+      .add-cart { display: flex; align-items: center; justify-content: space-between; margin-top: 25px; padding: 21px 30px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 18px; font-weight: 750; }
+      .cart-token { position: absolute; right: 520px; bottom: 88px; z-index: 9; display: grid; place-items: center; width: 62px; height: 62px; border: 4px solid var(--orange); border-radius: 50%; background: var(--paper); opacity: 0; }
+      .cart-token img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+      #touch-extra { right: 188px; top: 401px; }
+      #touch-cart { right: 500px; bottom: 56px; }
+
+      /* Scene 5 — cart and order */
+      #scene-5 { background: var(--warm); }
+      .cart-layout { display: grid; grid-template-columns: 520px 1fr; gap: 70px; height: 100%; padding: 78px 120px; }
+      .cart-narrative { display: flex; flex-direction: column; justify-content: space-between; padding: 38px 0; }
+      .cart-narrative h2 { margin-top: 18px; font-size: 76px; line-height: .98; font-weight: 600; }
+      .cart-narrative p { margin-top: 24px; color: #625d57; font-size: 20px; line-height: 1.5; }
+      .table-context { align-self: flex-start; display: flex; align-items: center; gap: 12px; padding: 13px 18px; border: 1px solid var(--stone-2); border-radius: 999px; background: var(--paper); font-size: 15px; font-weight: 700; }
+      .table-context::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--orange); }
+      .cart-panel { position: relative; display: flex; flex-direction: column; overflow: hidden; border-radius: 36px; background: #fff; border: 1px solid var(--stone-2); box-shadow: 0 30px 80px rgba(16,19,26,.10); }
+      .cart-head { display: flex; align-items: center; justify-content: space-between; padding: 36px 42px; border-bottom: 1px solid var(--stone-1); }
+      .cart-head h2 { font-size: 38px; font-weight: 600; }
+      .draft-pill { padding: 8px 13px; border-radius: 999px; background: #efeeeb; color: #55514c; font-size: 12px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+      .cart-item { display: grid; grid-template-columns: 122px 1fr auto; align-items: center; gap: 24px; margin: 34px 42px 0; padding-bottom: 30px; border-bottom: 1px solid var(--stone-1); }
+      .cart-item img { width: 122px; height: 112px; border-radius: 20px; object-fit: cover; }
+      .cart-item h3 { font-family: "Outfit", sans-serif; font-size: 27px; font-weight: 600; }
+      .cart-item p { margin-top: 8px; color: #6b655f; font-size: 15px; }
+      .quantity { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 800; }
+      .total-area { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding: 28px 42px 18px; }
+      .total-area p { color: #6b655f; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+      .total-area strong { display: block; margin-top: 7px; font-family: "Outfit", sans-serif; font-size: 32px; }
+      .place-order { position: relative; display: flex; align-items: center; justify-content: center; min-height: 74px; margin: 0 42px 36px; border-radius: 20px; background: var(--ink); color: #fff; font-size: 16px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; overflow: hidden; }
+      .button-label { position: absolute; }
+      #sending-label, #order-success-label { opacity: 0; }
+      .loader { position: absolute; left: calc(50% - 120px); width: 24px; height: 24px; border: 3px solid rgba(255,255,255,.32); border-top-color: var(--orange); border-radius: 50%; opacity: 0; }
+      .order-status { position: absolute; inset: 0; display: grid; place-items: center; padding: 80px; background: #fff; opacity: 0; }
+      .success-mark { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 50%; background: #fff7f2; color: var(--ink); font-size: 44px; font-weight: 800; }
+      .success-stroke { margin-top: -4px; width: 0; height: 5px; border-radius: 999px; background: var(--orange); }
+      .order-status h2 { margin-top: 30px; font-family: "Outfit", sans-serif; font-size: 47px; font-weight: 600; }
+      .order-status p { margin-top: 15px; color: #655f59; font-size: 18px; }
+      #touch-order { right: 475px; bottom: 89px; }
+
+      /* Scene 6 — service */
+      .service-layout { height: 100%; padding: 82px 118px; }
+      .service-copy { display: flex; align-items: end; justify-content: space-between; }
+      .service-copy h2 { margin-top: 18px; max-width: 950px; font-size: 76px; line-height: 1; font-weight: 600; }
+      .service-copy p { max-width: 430px; color: #625d57; font-size: 19px; line-height: 1.55; }
+      .context-strip { display: flex; align-items: center; justify-content: space-between; margin-top: 56px; padding: 24px 32px; border: 1px solid var(--stone-2); border-bottom: 0; border-radius: 26px 26px 0 0; background: var(--paper); }
+      .context-strip strong { font-family: "Outfit", sans-serif; font-size: 24px; }
+      .context-strip span { color: #6b655f; font-size: 15px; }
+      .service-panel { overflow: hidden; border-radius: 0 0 28px 28px; background: var(--ink); color: #fff; }
+      .service-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 34px 38px; }
+      .service-panel-head h3 { font-family: "Outfit", sans-serif; font-size: 28px; font-weight: 600; }
+      .service-panel-head p { margin-top: 7px; color: rgba(255,253,249,.52); font-size: 14px; }
+      .service-actions { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid rgba(255,255,255,.1); }
+      .service-action { position: relative; display: grid; place-items: center; min-height: 164px; border-right: 1px solid rgba(255,255,255,.1); color: rgba(255,253,249,.76); font-size: 17px; font-weight: 700; }
+      .service-action:last-child { border-right: 0; }
+      .service-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.16); border-radius: 50%; color: var(--orange); }
+      #bill-action { color: #ffd1bd; }
+      .bill-status { position: absolute; left: 26px; right: 26px; bottom: 18px; height: 4px; border-radius: 999px; background: var(--orange); transform: scaleX(0); transform-origin: left center; }
+      .profile-nav { position: absolute; right: 118px; bottom: 45px; display: flex; align-items: center; gap: 12px; padding: 13px 18px; border-radius: 999px; background: var(--paper); border: 1px solid var(--stone-2); font-size: 14px; font-weight: 700; }
+      .profile-nav span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--orange); }
+      #touch-bill { left: 742px; top: 747px; }
+
+      /* Scene 7 — profile */
+      .profile-layout { display: grid; grid-template-columns: 700px 1fr; gap: 54px; height: 100%; padding: 76px 88px; }
+      .profile-copy { display: flex; flex-direction: column; justify-content: space-between; padding: 24px 10px 14px; }
+      .profile-copy h2 { margin-top: 18px; max-width: 650px; font-size: 82px; line-height: .96; font-weight: 600; }
+      .profile-copy p { margin-top: 28px; max-width: 580px; color: #5f5a55; font-size: 21px; line-height: 1.55; }
+      .profile-mini-brand { display: flex; align-items: center; gap: 15px; padding-top: 25px; border-top: 1px solid var(--stone-2); font-family: "Outfit", sans-serif; font-size: 26px; font-weight: 700; }
+      .profile-mini-brand img { width: 48px; height: 48px; object-fit: contain; }
+      .profile-ui { display: grid; grid-template-rows: 1.02fr .98fr; gap: 22px; }
+      .profile-top { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+      .points-card { position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 38px; border-radius: 32px; background: var(--ink); color: #fff; }
+      .points-card h3 { margin-top: 10px; font-size: 46px; font-weight: 600; }
+      .points-card p { color: rgba(255,253,249,.58); font-size: 15px; line-height: 1.5; }
+      .points-circle { position: absolute; right: -70px; top: -75px; width: 250px; height: 250px; border: 38px solid rgba(255,105,41,.25); border-radius: 50%; }
+      .rewards-card { display: flex; flex-direction: column; justify-content: space-between; padding: 38px; border-radius: 32px; background: var(--paper); border: 1px solid var(--stone-2); }
+      .rewards-card h3 { font-size: 43px; font-weight: 600; }
+      .rewards-card p { color: #6a645e; font-size: 16px; line-height: 1.5; }
+      .reward-chip { align-self: flex-start; padding: 10px 14px; border-radius: 999px; background: #fff2eb; color: #8f350f; font-size: 13px; font-weight: 800; }
+      .orders-card { padding: 34px 38px; border-radius: 32px; background: var(--paper); border: 1px solid var(--stone-2); }
+      .orders-card > header { display: flex; justify-content: space-between; align-items: end; padding-bottom: 20px; border-bottom: 1px solid var(--stone-1); }
+      .orders-card h3 { font-size: 38px; font-weight: 600; }
+      .orders-card header span { color: #716b65; font-size: 14px; }
+      .history-row { display: grid; grid-template-columns: 82px 1fr auto; align-items: center; gap: 20px; margin-top: 24px; }
+      .history-row img { width: 82px; height: 74px; border-radius: 16px; object-fit: cover; }
+      .history-row h4 { margin: 0; font-family: "Outfit", sans-serif; font-size: 22px; font-weight: 600; }
+      .history-row p { margin-top: 6px; color: #6b655f; font-size: 14px; }
+      .saved-pill { padding: 9px 13px; border-radius: 999px; background: #fff2eb; color: #8f350f; font-size: 12px; font-weight: 800; }
+
+      /* Scene 8 — brand */
+      #scene-8 { background: var(--warm); }
+      .final-lockup { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+      .logo-line { display: flex; align-items: center; gap: 22px; }
+      .final-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--orange); }
+      .final-logo { width: 100px; height: 100px; object-fit: contain; }
+      .final-wordmark { font-family: "Outfit", sans-serif; font-size: 94px; font-weight: 700; letter-spacing: -.055em; }
+      .final-divider { width: 520px; height: 1px; margin: 34px auto 0; background: var(--stone-2); }
+      .final-tagline { margin-top: 30px; font-family: "Outfit", sans-serif; font-size: 42px; font-weight: 600; letter-spacing: -.025em; }
+      .final-label { margin-top: 13px; color: #77716b; font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+
+      #carry-line { position: absolute; z-index: 40; left: 0; top: 536px; width: 100%; height: 5px; background: var(--orange); transform-origin: left center; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="yummy-menu-visit" data-start="0" data-duration="25" data-width="1920" data-height="1080">
+      <section id="scene-1" class="scene">
+        <div id="s1-camera" class="camera">
+          <div class="table-seam"></div>
+          <div class="plate" data-layout-allow-overflow></div>
+          <div class="napkin"></div>
+          <div class="glass"></div>
+          <div class="table-copy"><h1 class="display"><span id="s1-copy-a">Your table</span><span id="s1-copy-b" class="line-two">is ready.</span></h1><p id="s1-sub">A Yummy restaurant visit starts here.</p></div>
+          <div class="qr-stand">
+            <div class="stand-brand"><img src="assets/yummy_logo.png" alt="">Yummy</div>
+            <div class="stand-title">Scan to connect your table</div>
+            <div class="fake-qr" aria-label="Illustrative table QR">
+              <svg viewBox="0 0 21 21" aria-hidden="true">
+                <rect width="21" height="21" fill="#fff"/><g fill="#10131a">
+                  <rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/>
+                  <rect x="14" y="0" width="7" height="7"/><rect x="15" y="1" width="5" height="5" fill="#fff"/><rect x="16" y="2" width="3" height="3"/>
+                  <rect x="0" y="14" width="7" height="7"/><rect x="1" y="15" width="5" height="5" fill="#fff"/><rect x="2" y="16" width="3" height="3"/>
+                  <rect x="8" y="1" width="2" height="2"/><rect x="11" y="1" width="2" height="4"/><rect x="8" y="5" width="4" height="2"/>
+                  <rect x="8" y="8" width="2" height="2"/><rect x="11" y="8" width="3" height="2"/><rect x="15" y="8" width="2" height="3"/><rect x="18" y="8" width="3" height="2"/>
+                  <rect x="7" y="11" width="3" height="3"/><rect x="11" y="11" width="2" height="5"/><rect x="14" y="12" width="3" height="2"/><rect x="18" y="11" width="3" height="3"/>
+                  <rect x="8" y="16" width="2" height="4"/><rect x="14" y="15" width="2" height="2"/><rect x="17" y="15" width="4" height="2"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="2" height="2"/>
+                </g><rect x="9" y="9" width="3" height="3" rx="1.5" fill="#ff6929"/>
+              </svg>
+            </div>
+            <div class="stand-foot">Table 8</div>
+          </div>
+          <div id="s1-hand" class="hand" data-layout-allow-overflow></div>
+          <div id="s1-phone" class="phone">
+            <div class="phone-screen">
+              <div class="camera-qr">
+                <svg viewBox="0 0 21 21" aria-hidden="true"><rect width="21" height="21" fill="#fff"/><g fill="#10131a"><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/><rect x="14" y="0" width="7" height="7"/><rect x="15" y="1" width="5" height="5" fill="#fff"/><rect x="16" y="2" width="3" height="3"/><rect x="0" y="14" width="7" height="7"/><rect x="1" y="15" width="5" height="5" fill="#fff"/><rect x="2" y="16" width="3" height="3"/><rect x="8" y="2" width="4" height="3"/><rect x="9" y="7" width="2" height="5"/><rect x="12" y="8" width="5" height="2"/><rect x="15" y="11" width="2" height="4"/><rect x="8" y="14" width="4" height="2"/><rect x="12" y="17" width="3" height="3"/><rect x="17" y="16" width="4" height="2"/></g></svg>
+              </div>
+              <span class="scanner-corner tl"></span><span class="scanner-corner tr"></span><span class="scanner-corner bl"></span><span class="scanner-corner br"></span>
+              <div class="camera-label">Hold steady</div>
+            </div>
+          </div>
+          <div id="qr-transition"></div>
+        </div>
+      </section>
+
+      <section id="scene-2" class="scene">
+        <div id="s2-camera" class="camera">
+          <div class="home-shell">
+            <header class="restaurant-header"><div class="restaurant-logo"><img src="assets/yummy_logo.png" alt="Yummy logo"></div><div><div class="restaurant-name">Yummy Kitchen</div><div class="restaurant-location">Table 8 · connected</div></div></header>
+            <div class="home-hero">
+              <div class="home-copy"><div class="visit-pill">Dine, earn, return</div><h2 id="home-headline" class="display">Everything for your visit, in one place.</h2><p>Browse the menu from your table. Keep the visit connected when you want orders, points and rewards.</p><button id="browse-button" class="browse-button">Browse menu <span aria-hidden="true">→</span></button></div>
+              <div class="home-image"><img src="assets/jholmomo.webp" alt="Momo served at the restaurant"></div>
+            </div>
+            <div class="table-strip"><div class="table-connected"><div id="table-status" class="status-line"><span class="status-dot"></span>Table connected</div><div id="table-status-rule" class="status-rule"></div><h3>Table 8 · Yummy Kitchen</h3><p>Your current table session stays with you as you browse.</p></div><div class="profile-preview"><div class="eyebrow">Your visit</div><h3>One place for the whole table.</h3><p>Menu, order, service and your Yummy profile.</p></div></div>
+          </div>
+          <div id="touch-browse" class="touch"></div>
+        </div>
+      </section>
+
+      <section id="scene-3" class="scene">
+        <div id="s3-camera" class="camera">
+          <div class="menu-shell">
+            <header class="menu-topbar"><img src="assets/yummy_logo.png" alt="Yummy logo"><div><h3>Yummy Kitchen</h3><p>Table 8 · menu</p></div></header>
+            <div class="menu-body">
+              <div class="menu-primary">
+                <div class="menu-heading"><div><div class="eyebrow">Browse menu</div><h2 class="display">Find your next favourite.</h2></div><div class="search-box">Search the menu…</div></div>
+                <nav class="categories" aria-label="Menu categories"><span class="category-tab">Popular</span><span id="momo-tab" class="category-tab active">Momo</span><span class="category-tab">Main dishes</span><span class="category-tab">Drinks</span></nav>
+                <div class="dish-list">
+                  <article id="dish-chicken" class="dish-row"><img src="assets/chicken-momo.webp" alt="Chicken momo"><div><h3>Chicken momo</h3><p>Choose your preference before adding it to the table order.</p></div><div class="add-button">+</div><span id="dish-focus"></span><span id="add-ring"></span></article>
+                  <article id="dish-fry" class="dish-row"><img src="assets/fry-momo.webp" alt="Fry momo"><div><h3>Fry momo</h3><p>A crisp momo option from the menu gallery.</p></div><div class="add-button">+</div></article>
+                  <article id="dish-jhol" class="dish-row"><img src="assets/jholmomo.webp" alt="Jhol momo"><div><h3>Jhol momo</h3><p>Momo served in a warming jhol.</p></div><div class="add-button">+</div></article>
+                </div>
+              </div>
+              <aside class="menu-story"><div><div class="eyebrow">Momo</div><h2 class="display">Choose what feels right.</h2></div><div><div class="journey-line story-line"></div><p style="margin-top:22px">The menu updates in place, so the table context never disappears.</p></div></aside>
+            </div>
+          </div>
+          <div id="touch-add" class="touch"></div>
+        </div>
+      </section>
+
+      <section id="scene-4" class="scene">
+        <div id="s4-camera" class="camera">
+          <div class="menu-ghost"><div class="ghost-bar"></div><div class="ghost-row"></div><div class="ghost-row"></div><div class="ghost-row"></div></div>
+          <div class="custom-copy"><div class="eyebrow">Make it yours</div><h2 class="display">The next step stays close to the menu.</h2><p>One required choice, one clear action, and the table order remains in context.</p></div>
+          <section id="custom-sheet" class="sheet">
+            <div class="sheet-handle"></div>
+            <div class="sheet-head"><img src="assets/chicken-momo.webp" alt="Chicken momo"><div><div class="eyebrow">Customize</div><h2 class="display">Chicken momo</h2></div><span class="required">Required</span></div>
+            <div class="choice-title"><h3>Spice level</h3><span class="muted">Choose one</span></div>
+            <div class="options"><div class="option"><span>Regular</span><span class="radio"></span></div><div id="extra-option" class="option"><span>Extra spicy</span><span class="radio"></span></div></div>
+            <div class="instructions"><h3>Special Instructions</h3><div class="notes">Ex: No onions, extra spicy, etc.</div></div>
+            <div id="add-cart-button" class="add-cart"><span>Add to Cart</span><span>Ready</span></div>
+          </section>
+          <div id="cart-token" class="cart-token"><img src="assets/chicken-momo.webp" alt=""></div>
+          <div id="touch-extra" class="touch"></div><div id="touch-cart" class="touch"></div>
+        </div>
+      </section>
+
+      <section id="scene-5" class="scene">
+        <div id="s5-camera" class="camera">
+          <div class="cart-layout">
+            <div class="cart-narrative"><div><div class="eyebrow">Active table order</div><h2 class="display">Send it to the table.</h2><p>The draft stays distinct until the customer sends the request to the restaurant.</p></div><div class="table-context">Table 8 · Yummy Kitchen</div></div>
+            <section id="cart-panel" class="cart-panel">
+              <header class="cart-head"><div><div class="eyebrow">Current order</div><h2 class="display">In your cart</h2></div><span class="draft-pill">Draft</span></header>
+              <article class="cart-item"><img src="assets/chicken-momo.webp" alt="Chicken momo"><div><h3>Chicken momo</h3><p>Extra spicy · Special instructions available</p></div><div class="quantity">1</div></article>
+              <div class="total-area"><div><p>Grand total</p><strong>—</strong></div><span class="muted">Confirmed in the active table session</span></div>
+              <div id="place-order" class="place-order"><span id="place-label" class="button-label">Place Order</span><span id="sending-label" class="button-label">Sending Request</span><span id="order-success-label" class="button-label">Order sent</span><span id="order-loader" class="loader"></span></div>
+              <div id="order-status" class="order-status" data-layout-allow-occlusion><div><div class="success-mark">✓</div><div id="success-stroke" class="success-stroke"></div><h2>Order sent to the restaurant.</h2><p>Table 8 remains active for the rest of the visit.</p></div></div>
+            </section>
+          </div>
+          <div id="touch-order" class="touch"></div>
+        </div>
+      </section>
+
+      <section id="scene-6" class="scene">
+        <div id="s6-camera" class="camera">
+          <div class="service-layout">
+            <div class="service-copy"><div><div class="eyebrow">Table service</div><h2 class="display">Still your table.<br>Still one place.</h2></div><p>The order is already with the restaurant. The same table session can now ask the floor team for what comes next.</p></div>
+            <div class="context-strip"><strong>Order sent · Table 8</strong><span>Yummy Kitchen</span></div>
+            <section class="service-panel">
+              <header class="service-panel-head"><div><h3>Need something?</h3><p>Send a request directly to the floor team.</p></div><span id="latest-request">Table connected</span></header>
+              <div class="service-actions">
+                <div class="service-action"><span class="service-icon">↗</span><span>Call Waiter</span></div>
+                <div id="bill-action" class="service-action"><span class="service-icon">₹</span><span id="bill-label">Request Bill</span><span id="bill-status" class="bill-status"></span></div>
+                <div class="service-action"><span class="service-icon">◌</span><span>Water</span></div>
+                <div class="service-action"><span class="service-icon">∥</span><span>Cutlery</span></div>
+              </div>
+            </section>
+          </div>
+          <div id="profile-nav" class="profile-nav"><span>○</span>Profile</div>
+          <div id="touch-bill" class="touch"></div>
+        </div>
+      </section>
+
+      <section id="scene-7" class="scene">
+        <div id="s7-camera" class="camera">
+          <div class="profile-layout">
+            <div class="profile-copy"><div><div class="eyebrow">Your profile</div><h2 class="display">This visit stays with you.</h2><p>Orders, points, rewards and restaurant updates in one place.</p></div><div class="profile-mini-brand"><img src="assets/yummy_logo.png" alt="Yummy logo">Your dining life, together.</div></div>
+            <div class="profile-ui">
+              <div class="profile-top"><section id="points-card" class="points-card"><span class="points-circle" data-layout-allow-overflow></span><div><div class="eyebrow" style="color:#ff9a70">Available balance</div><h3 class="display">Yummy points</h3></div><p>Earn points every time you return.</p></section><section class="rewards-card"><div><div class="eyebrow">Restaurant offers</div><h3 class="display">Rewards</h3></div><p>New rewards from this restaurant appear here.</p><span class="reward-chip">Ready for your next visit</span></section></div>
+              <section class="orders-card"><header><h3 class="display">Orders</h3><span>Past orders</span></header><article id="history-row" class="history-row"><img src="assets/chicken-momo.webp" alt="Chicken momo"><div><h4>Chicken momo</h4><p>Yummy Kitchen · Table visit</p></div><span class="saved-pill">Visit saved</span></article></section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-8" class="scene">
+        <div class="final-lockup"><div><div class="logo-line"><span id="final-dot" class="final-dot"></span><img id="final-logo" class="final-logo" src="assets/yummy_logo.png" alt="Yummy logo"><span id="final-wordmark" class="final-wordmark">Yummy</span></div><div id="final-divider" class="final-divider"></div><div id="final-tagline" class="final-tagline">Dine, earn, return.</div><div id="final-label" class="final-label">Yummy Menu</div></div></div>
+      </section>
+
+      <div id="carry-line"></div>
+
+      <audio id="room-tone" data-start="0" data-duration="4" data-track-index="9" data-volume="0.12" data-fade-out="1.3" src="assets/ambience.wav"></audio>
+      <audio id="music" data-start="0" data-duration="25" data-track-index="10" data-volume="0.25" data-fade-in="1.2" data-fade-out="0.8" src="assets/music/happy-beats-business-moves-vol-12-by-ende-dot-app.mp3"></audio>
+      <audio id="sfx-lift" data-start="0.70" data-duration="0.25" data-track-index="11" data-volume="0.20" src="assets/sfx/impactWood_light_002.ogg"></audio>
+      <audio id="sfx-qr" data-start="2.30" data-duration="0.18" data-track-index="12" data-volume="0.28" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx-browse" data-start="5.00" data-duration="0.01" data-track-index="13" data-volume="0.26" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx-dish" data-start="8.74" data-duration="0.05" data-track-index="14" data-volume="0.25" src="assets/sfx/select_008.ogg"></audio>
+      <audio id="sfx-spice" data-start="10.45" data-duration="0.01" data-track-index="15" data-volume="0.25" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx-cart" data-start="12.05" data-duration="0.12" data-track-index="16" data-volume="0.23" src="assets/sfx/drop_001.ogg"></audio>
+      <audio id="sfx-order" data-start="15.20" data-duration="0.18" data-track-index="17" data-volume="0.30" src="assets/sfx/impactSoft_medium_001.ogg"></audio>
+      <audio id="sfx-bill" data-start="17.75" data-duration="0.01" data-track-index="18" data-volume="0.24" src="assets/sfx/click_003.ogg"></audio>
+      <audio id="sfx-history" data-start="20.25" data-duration="0.35" data-track-index="19" data-volume="0.18" src="assets/sfx/card-place-1.ogg"></audio>
+      <audio id="sfx-logo" data-start="23.46" data-duration="0.90" data-track-index="20" data-volume="0.25" src="assets/sfx/impactBell_heavy_000.ogg"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      gsap.set("#carry-line", { scaleX: 0, opacity: 0 });
+      const tl = gsap.timeline({ paused: true });
+
+      tl.set("#scene-2, #scene-3, #scene-4, #scene-5, #scene-6, #scene-7, #scene-8", { opacity: 0 }, 0)
+        .fromTo("#s1-copy-a", { x: -44, opacity: 0 }, { x: 0, opacity: 1, duration: .55, ease: "power3.out" }, .16)
+        .fromTo("#s1-copy-b", { x: -44, opacity: 0 }, { x: 0, opacity: 1, duration: .55, ease: "power3.out" }, .48)
+        .fromTo("#s1-sub", { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .45, ease: "power2.out" }, .72)
+        .fromTo("#s1-hand", { y: 170, x: 85 }, { y: 0, x: 0, duration: .9, ease: "power3.out" }, .40)
+        .fromTo("#s1-phone", { y: 190, rotation: -12 }, { y: 0, rotation: -7, duration: .95, ease: "power3.out" }, .42)
+        .to("#s1-camera", { scale: 1.03, duration: 2.5, ease: "none" }, .15)
+        .to(".scanner-corner", { scale: .94, duration: .24, ease: "power2.inOut" }, 1.56)
+        .to(".scanner-corner", { scale: 1, duration: .24, ease: "power2.inOut" }, 1.80)
+        .to(".scanner-corner", { x: 5, y: 5, duration: .22, ease: "power2.inOut" }, 2.20)
+        .to(".scanner-corner.tr", { x: -5 }, 2.20)
+        .to(".scanner-corner.bl", { x: 5, y: -5 }, 2.20)
+        .to(".scanner-corner.br", { x: -5, y: -5 }, 2.20)
+        .set("#carry-line", { opacity: 1, scaleX: 0, y: 0 }, 2.30)
+        .to("#carry-line", { scaleX: 1, duration: .34, ease: "power3.inOut" }, 2.30)
+        .set("#qr-transition", { opacity: 1 }, 2.31)
+        .to("#qr-transition", { scale: 12, duration: .48, ease: "power3.inOut" }, 2.31)
+        .fromTo("#scene-2", { opacity: 0, scale: 1.02 }, { opacity: 1, scale: 1, duration: .34, ease: "power2.out" }, 2.56)
+        .set("#scene-1", { opacity: 0 }, 2.56)
+        .to("#carry-line", { opacity: 0, duration: .16 }, 2.64);
+
+      tl.fromTo("#table-status", { x: -28, opacity: 0 }, { x: 0, opacity: 1, duration: .42, ease: "power3.out" }, 2.96)
+        .fromTo("#table-status-rule", { scaleX: 0 }, { scaleX: 1, duration: .48, ease: "power3.out" }, 3.12)
+        .fromTo("#home-headline", { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: .68, ease: "power3.out" }, 3.15)
+        .to("#s2-camera", { scale: 1.015, x: -10, duration: 2.45, ease: "none" }, 3.20)
+        .set("#touch-browse", { opacity: 1, scale: .8 }, 4.76)
+        .to("#touch-browse", { scale: 1, duration: .18, ease: "power2.out" }, 4.76)
+        .to("#browse-button", { scale: .975, duration: .12, ease: "power2.in" }, 5.00)
+        .to("#browse-button", { scale: 1, duration: .14, ease: "power2.out" }, 5.12)
+        .to("#touch-browse", { opacity: 0, duration: .16 }, 5.22)
+        .to("#browse-button", { scaleX: 1.55, transformOrigin: "left center", duration: .36, ease: "power3.inOut" }, 5.42)
+        .set("#carry-line", { opacity: 1, scaleX: 0, y: -184 }, 5.42)
+        .to("#carry-line", { scaleX: 1, duration: .34, ease: "power3.inOut" }, 5.42)
+        .set("#scene-3", { opacity: 1, x: 1920 }, 5.42)
+        .to("#scene-2", { x: -420, duration: .44, ease: "power3.inOut" }, 5.42)
+        .to("#scene-3", { x: 0, duration: .44, ease: "power3.inOut" }, 5.42)
+        .set("#scene-2", { opacity: 0, x: 0 }, 5.87)
+        .to("#carry-line", { opacity: 0, duration: .14 }, 5.78);
+
+      tl.fromTo("#momo-tab", { x: 40 }, { x: 0, duration: .36, ease: "power3.out" }, 5.92)
+        .fromTo("#dish-chicken", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: .44, ease: "power3.out" }, 6.08)
+        .fromTo("#dish-fry", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: .44, ease: "power3.out" }, 6.56)
+        .fromTo("#dish-jhol", { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: .44, ease: "power3.out" }, 7.04)
+        .to("#s3-camera", { scale: 1.018, x: -14, duration: 2.8, ease: "none" }, 6.10)
+        .to("#dish-focus", { opacity: 1, duration: .28, ease: "power2.out" }, 8.24)
+        .to("#dish-chicken", { scale: 1.015, duration: .28, ease: "power2.out" }, 8.24)
+        .set("#touch-add", { opacity: 1, scale: .8 }, 8.50)
+        .to("#touch-add", { scale: 1, duration: .16, ease: "power2.out" }, 8.50)
+        // beat-locked: 8.74s
+        .to("#add-ring", { opacity: 1, scale: 1.06, duration: .2, ease: "power2.out" }, 8.74)
+        .to("#dish-chicken .add-button", { scale: .975, duration: .11, ease: "power2.in" }, 8.74)
+        .to("#dish-chicken .add-button", { scale: 1, duration: .13, ease: "power2.out" }, 8.85)
+        .to("#touch-add", { opacity: 0, duration: .14 }, 8.90)
+        .set("#carry-line", { opacity: 1, scaleX: 0, y: -78 }, 8.88)
+        .to("#carry-line", { scaleX: 1, duration: .28, ease: "power3.inOut" }, 8.88)
+        .set("#scene-4", { opacity: 1 }, 8.98)
+        .fromTo("#custom-sheet", { y: 900 }, { y: 0, duration: .56, ease: "power3.out" }, 8.98)
+        .to("#add-ring", { scale: 7, opacity: 0, duration: .42, ease: "power3.inOut" }, 8.98)
+        .set("#scene-3", { opacity: 0 }, 8.99)
+        .to("#carry-line", { opacity: 0, duration: .12 }, 9.18);
+
+      tl.fromTo("#s4-camera", { scale: 1.015 }, { scale: 1, duration: .5, ease: "power2.out" }, 9.20)
+        .set("#touch-extra", { opacity: 1, scale: .8 }, 10.23)
+        .to("#touch-extra", { scale: 1, duration: .16, ease: "power2.out" }, 10.23)
+        .set("#extra-option", { className: "option selected" }, 10.45)
+        .to("#extra-option", { scale: .985, duration: .10, ease: "power2.in" }, 10.45)
+        .to("#extra-option", { scale: 1, duration: .14, ease: "power2.out" }, 10.55)
+        .to("#touch-extra", { opacity: 0, duration: .14 }, 10.66)
+        .set("#touch-cart", { opacity: 1, scale: .8 }, 11.67)
+        .to("#touch-cart", { scale: 1, duration: .16, ease: "power2.out" }, 11.67)
+        .to("#add-cart-button", { scale: .975, y: 2, duration: .12, ease: "power2.in" }, 11.90)
+        .to("#add-cart-button", { scale: 1, y: 0, duration: .14, ease: "power2.out" }, 12.02)
+        .to("#touch-cart", { opacity: 0, duration: .12 }, 12.04)
+        .set("#cart-token", { opacity: 1, scale: .72 }, 12.04)
+        .to("#cart-token", { x: 430, y: -670, scale: .42, duration: .46, ease: "power3.inOut" }, 12.04)
+        .set("#carry-line", { opacity: 1, scaleX: 0, y: 180 }, 12.08)
+        .to("#carry-line", { scaleX: 1, duration: .30, ease: "power3.inOut" }, 12.08)
+        .set("#scene-5", { opacity: 1, scale: 1.02 }, 12.22)
+        .to("#scene-5", { scale: 1, duration: .34, ease: "power2.out" }, 12.22)
+        .set("#scene-4", { opacity: 0 }, 12.22)
+        .to("#carry-line", { opacity: 0, duration: .12 }, 12.38);
+
+      tl.fromTo("#cart-panel", { x: 90 }, { x: 0, duration: .5, ease: "power3.out" }, 12.48)
+        .to("#s5-camera", { scale: 1.012, x: -8, duration: 3.2, ease: "none" }, 12.60)
+        .set("#touch-order", { opacity: 1, scale: .8 }, 13.88)
+        .to("#touch-order", { scale: 1, duration: .16, ease: "power2.out" }, 13.88)
+        .to("#place-order", { scale: .975, duration: .12, ease: "power2.in" }, 14.08)
+        .to("#place-order", { scale: 1, duration: .14, ease: "power2.out" }, 14.20)
+        .to("#place-label", { opacity: 0, duration: .12 }, 14.18)
+        .to("#sending-label, #order-loader", { opacity: 1, duration: .16 }, 14.25)
+        .to("#order-loader", { rotation: 360, duration: .72, ease: "none" }, 14.25)
+        .to("#touch-order", { opacity: 0, duration: .16 }, 14.35)
+        .to("#sending-label, #order-loader", { opacity: 0, duration: .12 }, 15.04)
+        .to("#order-success-label", { opacity: 1, duration: .16 }, 15.08)
+        .to("#order-status", { opacity: 1, duration: .24, ease: "power2.out" }, 15.20)
+        .to("#success-stroke", { width: 112, duration: .42, ease: "power3.out" }, 15.20)
+        .set("#carry-line", { opacity: 1, scaleX: 0, y: -44 }, 16.04)
+        .to("#carry-line", { scaleX: 1, duration: .34, ease: "power3.inOut" }, 16.04)
+        .set("#scene-6", { opacity: 1, y: 1080 }, 16.04)
+        .to("#scene-5", { y: -280, duration: .44, ease: "power3.inOut" }, 16.04)
+        .to("#scene-6", { y: 0, duration: .44, ease: "power3.inOut" }, 16.04)
+        .set("#scene-5", { opacity: 0, y: 0 }, 16.49)
+        .to("#carry-line", { opacity: 0, duration: .12 }, 16.40);
+
+      tl.fromTo(".service-copy", { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: .48, ease: "power3.out" }, 16.40)
+        .to("#s6-camera", { scale: 1.012, y: -8, duration: 2.9, ease: "none" }, 16.50)
+        .set("#touch-bill", { opacity: 1, scale: .8 }, 17.55)
+        .to("#touch-bill", { scale: 1, duration: .16, ease: "power2.out" }, 17.55)
+        .to("#bill-action", { scale: .975, duration: .12, ease: "power2.in" }, 17.75)
+        .to("#bill-action", { scale: 1, duration: .14, ease: "power2.out" }, 17.87)
+        .set("#bill-label", { textContent: "Request Bill · 5:00" }, 17.90)
+        .to("#bill-status", { scaleX: 1, duration: .46, ease: "power3.out" }, 17.90)
+        .set("#latest-request", { textContent: "Latest request: requested" }, 18.10)
+        .to("#touch-bill", { opacity: 0, duration: .14 }, 18.18)
+        .fromTo("#profile-nav", { x: 40, opacity: .3 }, { x: 0, opacity: 1, duration: .42, ease: "power3.out" }, 19.15)
+        .to("#profile-nav span", { scale: 1.2, duration: .22, ease: "power2.out" }, 19.42)
+        .set("#carry-line", { opacity: 1, scaleX: 0, y: 242 }, 19.42)
+        .to("#carry-line", { scaleX: 1, duration: .30, ease: "power3.inOut" }, 19.42)
+        .set("#scene-7", { opacity: 1, scale: .975 }, 19.54)
+        .to("#scene-7", { scale: 1, duration: .42, ease: "power2.out" }, 19.54)
+        .set("#scene-6", { opacity: 0 }, 19.54)
+        .to("#carry-line", { opacity: 0, duration: .12 }, 19.74);
+
+      // beat-locked: 19.66s profile arrival
+      tl.fromTo("#s7-camera", { x: 32 }, { x: 0, duration: .45, ease: "power3.out" }, 19.66)
+        // beat-grid: order row at 20.19s, points at 20.75s; readable labels then hold
+        .fromTo("#history-row", { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: .46, ease: "power3.out" }, 20.19)
+        .fromTo("#points-card", { x: 42, opacity: 0 }, { x: 0, opacity: 1, duration: .52, ease: "power3.out" }, 20.75)
+        .to(".points-circle", { scale: 1.04, duration: .8, ease: "power2.inOut" }, 21.20)
+        .to("#s7-camera", { scale: .985, duration: 2.1, ease: "none" }, 20.90)
+        // beat-locked: 22.93s focus pull to final lockup
+        .fromTo("#scene-8", { opacity: 0, scale: 1.035 }, { opacity: 1, scale: 1, duration: .34, ease: "power2.out" }, 22.93)
+        .to("#scene-7", { opacity: 0, scale: .96, duration: .42, ease: "power2.in" }, 22.93)
+        .set("#carry-line", { opacity: 1, scaleX: 1, y: 0 }, 22.93)
+        .to("#carry-line", { scaleX: 0, opacity: 0, duration: .30, ease: "power3.inOut", transformOrigin: "center center" }, 22.93);
+
+      tl.fromTo("#final-dot", { x: -120, scale: .45, opacity: 0 }, { x: 0, scale: 1, opacity: 1, duration: .48, ease: "power3.out" }, 23.20)
+        // beat-grid: 23.46s final logo landing, then still hold through 25s
+        .fromTo("#final-logo", { x: -42, opacity: 0 }, { x: 0, opacity: 1, duration: .42, ease: "power3.out" }, 23.46)
+        .fromTo("#final-wordmark", { x: 46, opacity: 0 }, { x: 0, opacity: 1, duration: .42, ease: "power3.out" }, 23.46)
+        .fromTo("#final-divider", { scaleX: 0 }, { scaleX: 1, duration: .45, ease: "power3.out" }, 23.56)
+        .fromTo("#final-tagline", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: .36, ease: "power2.out" }, 23.62)
+        .fromTo("#final-label", { opacity: 0 }, { opacity: 1, duration: .30, ease: "power1.out" }, 23.76);
+
+      window.__timelines["yummy-menu-visit"] = tl;
+    </script>
+  </body>
+</html>

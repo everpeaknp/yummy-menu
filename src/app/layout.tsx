@@ -12,17 +12,17 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "https://menu.yummyever.com"
   ),
   title: {
-    template: "%s | Yummyever Menu",
-    default: "Yummyever Menu - All Your Favorite Menus, One Place",
+    template: "%s | Yummy",
+    default: "Yummy - Your dining life, together",
   },
-  applicationName: "Yummyever Menu",
+  applicationName: "Yummy",
   description:
-    "Browse digital menus from top restaurants in Nepal. Find what you crave, check prices, and visit your favorite spots.",
+    "Keep your restaurants, orders, rewards and offers together in one Yummy customer profile.",
   keywords: [
-    "restaurant menu",
-    "digital menu",
+    "restaurant rewards",
+    "customer dining profile",
     "Nepal food",
-    "menu prices",
+    "order history",
     "Yummyever",
     "food delivery",
   ],
@@ -40,27 +40,27 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Yummyever Menu - All Your Favorite Menus, One Place",
+    title: "Yummy - Your dining life, together",
     description:
-      "Browse digital menus from top restaurants in Nepal. Find what you crave, check prices, and visit your favorite spots.",
+      "Keep your restaurants, orders, rewards and offers together in one Yummy customer profile.",
     type: "website",
     locale: "en_US",
-    siteName: "Yummyever Menu",
+    siteName: "Yummy",
     url: "https://menu.yummyever.com",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Yummyever Menu Preview",
+        alt: "Yummy customer experience",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Yummyever Menu - All Your Favorite Menus, One Place",
+    title: "Yummy - Your dining life, together",
     description:
-      "Browse digital menus from top restaurants in Nepal. Find what you crave, check prices, and visit your favorite spots.",
+      "Keep your restaurants, orders, rewards and offers together in one Yummy customer profile.",
     images: ["/og-image.png"],
   },
   alternates: {
@@ -71,8 +71,8 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "Yummyever Menu",
-  "applicationCategory": "BusinessApplication",
+  "name": "Yummy",
+  "applicationCategory": "LifestyleApplication",
   "operatingSystem": "Web, Android, iOS",
   "offers": {
     "@type": "Offer",

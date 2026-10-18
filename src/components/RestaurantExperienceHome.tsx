@@ -1,0 +1,29 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+import { ArrowRight, MapPin, ReceiptText, ScanLine, UserRound, Utensils } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { getImageUrl, Restaurant } from "@/services/api";
+import TableQrScanner from "./TableQrScanner";
+
+export default function RestaurantExperienceHome({ restaurant, onOpenMenu, onOpenProfile }: { restaurant: Restaurant; onOpenMenu: () => void; onOpenProfile: () => void }) {
+  const { session } = useCart();
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const isHere = session?.restaurantId === restaurant.id;
+
+  return <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
+    <section className="grid overflow-hidden rounded-[1.75rem] bg-[#10131a] text-white lg:min-h-[29rem] lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="flex flex-col justify-between p-5 sm:p-9 lg:p-12">
+        <div><span className="inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70"><Utensils className="h-3.5 w-3.5 text-orange-400" aria-hidden="true" /> Dine, earn, return</span><h1 className="mt-6 max-w-xl text-balance font-display text-[2.15rem] font-semibold leading-[1.05] tracking-tight sm:mt-8 sm:text-5xl lg:text-6xl">Everything for your visit, in one place.</h1><p className="mt-4 max-w-lg text-sm leading-6 text-white/65 sm:mt-5 sm:text-base sm:leading-7"><span className="sm:hidden">Browse, order and earn rewards from your table.</span><span className="hidden sm:inline">Browse the menu without signing in. Join Yummy when you want rewards, offers and your order history.</span></p></div>
+        <div className="mt-6 flex flex-wrap gap-3 sm:mt-9"><button type="button" onClick={onOpenMenu} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-orange-600 px-5 font-semibold text-white hover:bg-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#10131a]">Browse menu <ArrowRight className="h-4 w-4" aria-hidden="true" /></button>{restaurant.address && <span className="hidden min-h-12 max-w-xs items-center gap-2 rounded-xl border border-white/15 px-4 text-sm text-white/65 sm:inline-flex"><MapPin className="h-4 w-4 shrink-0 text-orange-400" aria-hidden="true" /><span className="truncate">{restaurant.address}</span></span>}</div>
+      </div>
+      <div className={`relative min-h-52 border-t border-white/10 lg:border-l lg:border-t-0 ${restaurant.cover_image ? "block" : "hidden lg:block"}`}>{restaurant.cover_image ? <Image src={getImageUrl(restaurant.cover_image)!} alt="" fill priority className="object-cover" sizes="(min-width: 1024px) 45vw, 100vw" /> : <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-[#17191f]"><div className="absolute h-72 w-72 rounded-full border border-white/5" /><div className="absolute h-52 w-52 rounded-full border border-orange-500/10" />{restaurant.logo ? <Image src={getImageUrl(restaurant.logo)!} alt="" width={88} height={88} className="relative h-20 w-20 rounded-2xl object-cover ring-1 ring-white/15" /> : <Utensils className="relative h-12 w-12 text-orange-400" aria-hidden="true" />}<p className="relative mt-5 font-display text-xl font-semibold">{restaurant.name}</p><p className="relative mt-1 text-sm text-white/45">Powered by Yummy</p></div>}{restaurant.cover_image && <div className="absolute inset-0 bg-gradient-to-t from-[#10131a]/70 via-transparent to-transparent" />}</div>
+    </section>
+
+    <section className="mt-5 grid border-y border-stone-300 lg:grid-cols-[1.35fr_1fr]">
+      <div className="border-b border-stone-300 py-6 pr-3 lg:border-b-0 lg:border-r lg:pr-8"><div className="flex items-center gap-2 text-sm font-medium text-stone-600">{isHere ? <ReceiptText className="h-4 w-4 text-orange-600" aria-hidden="true" /> : <ScanLine className="h-4 w-4 text-orange-600" aria-hidden="true" />}{isHere ? `Table ${session?.tableName || "order"}` : "Dining here?"}</div><p className="mt-4 text-balance font-display text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl">{isHere ? `NPR ${Number(session?.activeOrderTotal ?? 0).toLocaleString("en-NP")}` : "Scan the table QR to order"}</p><p className="mt-2 text-sm leading-6 text-stone-600">{isHere ? "Your current table bill updates as items are added." : "Connect this menu to your table and call a waiter when needed."}</p>{isHere ? <button type="button" onClick={onOpenMenu} className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Add another dish <ArrowRight className="h-4 w-4" aria-hidden="true" /></button> : <button type="button" onClick={() => setScannerOpen(true)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-stone-950 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><ScanLine className="h-4 w-4" aria-hidden="true" />Scan Table QR</button>}</div>
+      <button type="button" onClick={onOpenProfile} className="group py-6 text-left hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500 sm:px-8"><UserRound className="h-5 w-5 text-orange-600" aria-hidden="true" /><h2 className="mt-5 font-display text-xl font-semibold text-stone-950 group-hover:text-orange-700">Your profile</h2><p className="mt-2 max-w-sm text-sm leading-6 text-stone-600">Orders, points, rewards and restaurant updates in one place.</p><ArrowRight className="mt-5 h-4 w-4 text-stone-400 group-hover:text-orange-600" aria-hidden="true" /></button>
+    </section><TableQrScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
+  </div>;
+}

@@ -1,279 +1,180 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { MenuItem } from "@/services/api";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import type { MenuItem, QRTableContext } from "@/services/api";
+import { addCartLine, CartLine, cartTotal, changeLineNotes, changeLineQuantity, hasEndedTableSession, shouldEndTableSession } from "@/lib/cart";
 
-interface CartItem extends MenuItem {
-  quantity: number;
-  notes?: string;
-  modifiers?: {
-    modifier_id: number;
-    modifier_name_snapshot: string;
-    price_adjustment_snapshot: number;
-  }[];
-}
-
-interface QRSession {
+export interface QRSession {
   restaurantId: number;
   restaurantName: string;
   tableId: number;
   tableName: string;
   qrToken: string;
   startTime: number;
-  orderedItems?: {
-    id: number;
-    menu_item_id: number;
-    name: string;
-    quantity: number;
-    status: string;
-    unit_price?: number;
-    line_total?: number;
-    notes?: string;
-    image?: string;
-  }[];
+  orderedItems?: NonNullable<QRTableContext['ordered_items']>;
   activeOrderTotal?: number;
+  activeOrderIds?: number[];
+  accountLinked?: boolean;
+  tableAccess?: QRTableContext['table_access'];
 }
 
 interface CartContextType {
-  cart: CartItem[];
-  addToCart: (item: MenuItem, notes?: string, modifiers?: CartItem['modifiers']) => void;
-  removeFromCart: (itemId: number) => void;
-  updateQuantity: (itemId: number, delta: number) => void;
-  updateNotes: (itemId: number, notes: string) => void;
+  cart: CartLine[];
+  addToCart: (item: MenuItem, notes?: string, modifiers?: CartLine['modifiers']) => void;
+  removeFromCart: (lineId: string) => void;
+  updateQuantity: (lineId: string, delta: number) => void;
+  updateNotes: (lineId: string, notes: string) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
   session: QRSession | null;
+  sessionWarning: string;
   refreshSession: () => Promise<void>;
   resetSession: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+function readSession(): QRSession | null {
+  try {
+    const raw = localStorage.getItem('yummy_qr_session');
+    if (!raw) return null;
+    const value = JSON.parse(raw);
+    return value.qrToken && Number.isInteger(value.restaurantId) && Number.isInteger(value.tableId) ? value : null;
+  } catch { return null; }
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const pathname = usePathname();
+  const routeRestaurantId = Number(pathname.match(/^\/(\d+)(?:\/|$)/)?.[1] || 0);
+  const [drafts, setDrafts] = useState<CartLine[]>([]);
   const [session, setSession] = useState<QRSession | null>(null);
-
-  // Load session from localStorage on mount and stay in sync
-  useEffect(() => {
-    let isMounted = true;
-
-    const initSession = async () => {
-      const savedSession = localStorage.getItem("yummy_qr_session");
-      if (!savedSession) {
-        setSession(null);
-        return;
-      }
-
-      const parsed = JSON.parse(savedSession);
-      setSession(parsed);
-      console.log("[CartContext] QR Session loaded locally:", parsed.tableName);
-
-      // Verify with server in background
-      try {
-        const { verifyQRToken } = await import("@/services/api");
-        const context = await verifyQRToken(parsed.qrToken);
-        if (!context) throw new Error("Invalid token");
-
-        const hadActiveBefore =
-          Number(parsed.activeOrderTotal ?? 0) > 0 ||
-          (Array.isArray(parsed.orderedItems) && parsed.orderedItems.length > 0);
-        const hasActiveNow = Array.isArray(context.active_orders) && context.active_orders.length > 0;
-        const hasOrderedItemsNow = Array.isArray(context.ordered_items) && context.ordered_items.length > 0;
-
-        if (hadActiveBefore && !hasActiveNow && !hasOrderedItemsNow) {
-          console.log("[CartContext] Table cleared by server. Resetting session.");
-          if (isMounted) {
-            localStorage.removeItem("yummy_qr_session");
-            setSession(null);
-          }
-        } else {
-          // Update with fresh items
-          const totalFromActiveOrders = Array.isArray(context.active_orders)
-            ? context.active_orders.reduce(
-                (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
-                0
-              )
-            : 0;
-
-          const totalFromOrderedItems = Array.isArray(context.ordered_items)
-            ? context.ordered_items.reduce((sum, item: any) => {
-                const itemLineTotal = Number(item.line_total ?? 0);
-                if (itemLineTotal > 0) return sum + itemLineTotal;
-                const itemUnitPrice = Number(item.unit_price ?? 0);
-                return sum + (itemUnitPrice * Number(item.quantity ?? 0));
-              }, 0)
-            : 0;
-
-          const updatedSession = {
-            ...parsed,
-            orderedItems: context.ordered_items,
-            activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems
-          };
-
-          if (isMounted) {
-            localStorage.setItem("yummy_qr_session", JSON.stringify(updatedSession));
-            setSession(updatedSession);
-          }
-        }
-      } catch (error) {
-        console.error("[CartContext] Background verification failed:", error);
-        if (isMounted) {
-          localStorage.removeItem("yummy_qr_session");
-          setSession(null);
-        }
-      }
-    };
-
-    initSession();
-
-    const onStorageChange = () => {
-      const saved = localStorage.getItem("yummy_qr_session");
-      if (saved) setSession(JSON.parse(saved));
-      else setSession(null);
-    };
-
-    window.addEventListener("storage", onStorageChange);
-    window.addEventListener("yummy_qr_session_updated", onStorageChange as EventListener);
-    
-    return () => {
-      isMounted = false;
-      window.removeEventListener("storage", onStorageChange);
-      window.removeEventListener("yummy_qr_session_updated", onStorageChange as EventListener);
-    };
-  }, []);
-
-  const addToCart = (item: MenuItem, notes?: string, modifiers?: CartItem['modifiers']) => {
-    setCart((prev) => {
-      // Create a unique key for the item based on its ID, notes, and modifiers
-      const modifierKey = (modifiers || []).map(m => m.modifier_id).sort().join(',');
-      const itemKey = `${item.id}-${notes || ""}-${modifierKey}`;
-      
-      // We check if an item with the same ID AND same customization already exists
-      // Wait, currently we don't store a separate 'cartItemId', we use the item's ID.
-      // This is a problem if we want multiple customized versions of the same item.
-      // I should change CartItem to have a unique 'id' separate from 'menuItemId'.
-      
-      const existingIndex = prev.findIndex((i) => {
-        const iModKey = (i.modifiers || []).map(m => m.modifier_id).sort().join(',');
-        return i.id === item.id && (i.notes || "") === (notes || "") && iModKey === modifierKey;
-      });
-
-      if (existingIndex > -1) {
-        const newCart = [...prev];
-        newCart[existingIndex].quantity += 1;
-        return newCart;
-      }
-      return [...prev, { ...item, quantity: 1, notes, modifiers }];
-    });
-  };
-
-  const removeFromCart = (itemId: number) => {
-    setCart((prev) => prev.filter((i) => i.id !== itemId));
-  };
-
-  const updateQuantity = (itemId: number, delta: number) => {
-    setCart((prev) =>
-      prev.map((i) =>
-        i.id === itemId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i
-      ).filter(i => i.quantity > 0)
-    );
-  };
-
-  const updateNotes = (itemId: number, notes: string) => {
-    setCart((prev) =>
-      prev.map((i) => (i.id === itemId ? { ...i, notes } : i))
-    );
-  };
-
-  const clearCart = () => setCart([]);
-
-  const resetSession = () => {
-    localStorage.removeItem("yummy_qr_session");
+  const [sessionWarning, setSessionWarning] = useState('');
+  const [restored, setRestored] = useState(false);
+  const refreshing = useRef<Promise<void> | null>(null);
+  const cart = drafts.filter(line => line.restaurantId === routeRestaurantId);
+  const resetSession = useCallback(() => {
+    localStorage.removeItem('yummy_qr_session');
     setSession(null);
-    window.dispatchEvent(new Event("yummy_qr_session_updated"));
-  };
-
-  const refreshSession = async () => {
-    if (!session?.qrToken) return;
-    try {
-      const { verifyQRToken } = await import("@/services/api");
-      const context = await verifyQRToken(session.qrToken);
-      if (context) {
-        const hadActiveBefore =
-          Number(session.activeOrderTotal ?? 0) > 0 ||
-          (Array.isArray(session.orderedItems) && session.orderedItems.length > 0);
-        const hasActiveNow = Array.isArray(context.active_orders) && context.active_orders.length > 0;
-        const hasOrderedItemsNow = Array.isArray(context.ordered_items) && context.ordered_items.length > 0;
-
-        // If this device had an active/ordered session before but server now reports none,
-        // the table session has ended (order completed/table freed). Force re-scan.
-        if (hadActiveBefore && !hasActiveNow && !hasOrderedItemsNow) {
-          resetSession();
-          return;
-        }
-
-        const totalFromActiveOrders = Array.isArray(context.active_orders)
-          ? context.active_orders.reduce(
-              (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
-              0
-            )
-          : 0;
-
-        const totalFromOrderedItems = Array.isArray(context.ordered_items)
-          ? context.ordered_items.reduce((sum, item: any) => {
-              const itemLineTotal = Number(item.line_total ?? 0);
-              if (itemLineTotal > 0) return sum + itemLineTotal;
-              const itemUnitPrice = Number(item.unit_price ?? 0);
-              return sum + (itemUnitPrice * Number(item.quantity ?? 0));
-            }, 0)
-          : 0;
-
-        const updatedSession = {
-          ...session,
-          orderedItems: context.ordered_items,
-          activeOrderTotal: totalFromActiveOrders || totalFromOrderedItems
+    setSessionWarning('');
+    window.dispatchEvent(new Event('yummy_qr_session_updated'));
+  }, []);
+  const refreshSession = useCallback(async () => {
+    if (refreshing.current) return refreshing.current;
+    const current = readSession();
+    if (!current) return;
+    refreshing.current = (async () => {
+      try {
+        const { verifyQRToken, getStoredCustomerToken } = await import('@/services/api');
+        const observedToken = getStoredCustomerToken();
+        const context = await verifyQRToken(current.qrToken);
+        if (getStoredCustomerToken() !== observedToken) return;
+        if (readSession()?.qrToken !== current.qrToken) return;
+        const hadOrders = Boolean(current.activeOrderIds?.length || current.orderedItems?.length);
+        if (!context?.table_access && hasEndedTableSession(hadOrders, context)) { resetSession(); return; }
+        if (!context) return;
+        const updated: QRSession = {
+          ...current, tableAccess: context.table_access, orderedItems: context.ordered_items || [],
+          activeOrderIds: (context.active_orders || []).map(order => order.id),
+          activeOrderTotal: (context.active_orders || []).reduce((sum, order) => sum + Number(order.grand_total ?? order.total ?? 0), 0),
         };
-        localStorage.setItem("yummy_qr_session", JSON.stringify(updatedSession));
-        setSession(updatedSession);
-        window.dispatchEvent(new Event("yummy_qr_session_updated"));
+        localStorage.setItem('yummy_qr_session', JSON.stringify(updated));
+        setSession(updated);
+        setSessionWarning('');
+      } catch (error) {
+        if (readSession()?.qrToken !== current.qrToken) return;
+        if (shouldEndTableSession(error)) resetSession();
+        else setSessionWarning('Connection interrupted. Your table and draft are saved.');
       }
-    } catch (err) {
-      console.error("[CartContext] Refresh session failed (token likely invalid):", err);
-      // If refresh fails, it means the token is likely regenerated/expired.
-      // Clear session to prevent further ordering attempts.
-      resetSession();
+    })().finally(() => { refreshing.current = null; });
+    return refreshing.current;
+  }, [resetSession]);
+  const resumeLinkedTable = useCallback(async () => {
+    if (!routeRestaurantId) return;
+    const { getMyActiveTable, getStoredCustomerToken } = await import('@/services/api');
+    const observedToken = getStoredCustomerToken();
+    if (!observedToken) return;
+    try {
+      const context = await getMyActiveTable(routeRestaurantId);
+      if (getStoredCustomerToken() !== observedToken) return;
+      if (!context) return;
+      const saved = readSession();
+      if (saved && saved.tableId !== context.table_id) return;
+      const linkedSession: QRSession = {
+        restaurantId: context.restaurant_id,
+        restaurantName: context.restaurant_name,
+        tableId: context.table_id,
+        tableName: context.table_name,
+        qrToken: context.token,
+        startTime: Date.now(),
+        orderedItems: context.ordered_items || [],
+        activeOrderIds: (context.active_orders || []).map(order => order.id),
+        activeOrderTotal: (context.active_orders || []).reduce(
+          (sum, order) => sum + Number(order.grand_total ?? order.total ?? 0),
+          0,
+        ),
+        accountLinked: true,
+        tableAccess: context.table_access,
+      };
+      localStorage.setItem('yummy_qr_session', JSON.stringify(linkedSession));
+      setSession(linkedSession);
+      setSessionWarning('');
+      window.dispatchEvent(new Event('yummy_qr_session_updated'));
+    } catch (error: any) {
+      if (error?.response?.status !== 401 && error?.response?.status !== 404) {
+        setSessionWarning('We could not check your active table. Try again shortly.');
+      }
     }
+  }, [routeRestaurantId]);
+  useEffect(() => {
+    setSession(readSession());
+    try {
+      const stored = JSON.parse(localStorage.getItem('yummy_cart') || '[]');
+      if (Array.isArray(stored)) setDrafts(stored.filter(line => typeof line.lineId === 'string' && Number.isInteger(line.restaurantId) && line.quantity > 0 && Number.isFinite(line.price)));
+    } catch { /* An unreadable draft must not prevent opening the menu. */ }
+    setRestored(true);
+    void refreshSession();
+    const sync = (event: Event) => {
+      if (event instanceof StorageEvent && event.key !== 'yummy_qr_session') return;
+      setSession(readSession());
+      setSessionWarning('');
+    };
+    window.addEventListener('storage', sync);
+    window.addEventListener('yummy_qr_session_updated', sync);
+    const resume = () => {
+      const saved = readSession();
+      if (saved) {
+        const cleared = { ...saved, orderedItems: [], activeOrderIds: [], activeOrderTotal: 0, tableAccess: undefined };
+        localStorage.setItem('yummy_qr_session', JSON.stringify(cleared));
+        setSession(cleared);
+        void refreshSession();
+      } else void resumeLinkedTable();
+    };
+    window.addEventListener('yummy_customer_session_updated', resume);
+    void resumeLinkedTable();
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('yummy_qr_session_updated', sync);
+      window.removeEventListener('yummy_customer_session_updated', resume);
+    };
+  }, [refreshSession, resumeLinkedTable]);
+  useEffect(() => { if (restored) localStorage.setItem('yummy_cart', JSON.stringify(drafts)); }, [drafts, restored]);
+  const value: CartContextType = {
+    cart,
+    addToCart: (item, notes, modifiers) => setDrafts(previous => addCartLine(previous, item, notes, modifiers, routeRestaurantId)),
+    removeFromCart: lineId => setDrafts(previous => previous.filter(line => line.lineId !== lineId)),
+    updateQuantity: (lineId, delta) => setDrafts(previous => changeLineQuantity(previous, lineId, delta)),
+    updateNotes: (lineId, notes) => setDrafts(previous => changeLineNotes(previous, lineId, notes)),
+    clearCart: () => setDrafts(previous => previous.filter(line => line.restaurantId !== routeRestaurantId)),
+    totalItems: cart.reduce((sum, line) => sum + line.quantity, 0), totalPrice: cartTotal(cart),
+    session: routeRestaurantId && session?.restaurantId !== routeRestaurantId ? null : session,
+    sessionWarning, refreshSession, resetSession,
   };
-
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-  return (
-    <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        updateNotes,
-        clearCart,
-        totalItems,
-        totalPrice,
-        session,
-        refreshSession,
-        resetSession,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export function useCart() {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
+  if (!context) throw new Error('useCart must be used within a CartProvider');
   return context;
 }
