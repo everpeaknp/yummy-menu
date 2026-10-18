@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Yummyever" }],
   icons: {
-    icon: "/logos/yummy_logo.png",
-    apple: "/logos/yummy_logo.png",
+    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   robots: {
     index: true,
