@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { MenuItem, QRTableContext } from "@/services/api";
-import { addCartLine, CartLine, cartTotal, changeLineNotes, changeLineQuantity, hasEndedTableSession, shouldEndTableSession } from "@/lib/cart";
+import { addCartLine, changeLineConfiguration, CartLine, cartTotal, changeLineNotes, changeLineQuantity, hasEndedTableSession, shouldEndTableSession } from "@/lib/cart";
 
 export interface QRSession {
   restaurantId: number;
@@ -25,6 +25,7 @@ interface CartContextType {
   removeFromCart: (lineId: string) => void;
   updateQuantity: (lineId: string, delta: number) => void;
   updateNotes: (lineId: string, notes: string) => void;
+  updateConfiguration: (lineId: string, item: MenuItem, notes: string, modifiers: CartLine['modifiers']) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -171,6 +172,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     removeFromCart: lineId => setDrafts(previous => previous.filter(line => line.lineId !== lineId)),
     updateQuantity: (lineId, delta) => setDrafts(previous => changeLineQuantity(previous, lineId, delta)),
     updateNotes: (lineId, notes) => setDrafts(previous => changeLineNotes(previous, lineId, notes)),
+    updateConfiguration: (lineId, item, notes, modifiers) => setDrafts(previous => changeLineConfiguration(previous, lineId, item, notes, modifiers)),
     clearCart: () => setDrafts(previous => previous.filter(line => line.restaurantId !== routeRestaurantId)),
     totalItems: cart.reduce((sum, line) => sum + line.quantity, 0), totalPrice: cartTotal(cart),
     session: routeRestaurantId && session?.restaurantId !== routeRestaurantId ? null : session,

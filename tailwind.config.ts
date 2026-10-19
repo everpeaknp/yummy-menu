@@ -13,6 +13,7 @@ const config: Config = {
         body: ["var(--font-body)", "sans-serif"],
       },
       colors: {
+        orange: { 500: '#EA580C', 600: '#C2410C', 700: '#9A3412' },
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {

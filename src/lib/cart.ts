@@ -34,6 +34,14 @@ export function cartUnitPrice(line: CartLine): number {
   return Number(line.price) + (line.modifiers || []).reduce((sum, modifier) => sum + Number(modifier.price_adjustment_snapshot || 0), 0);
 }
 
+export function changeLineConfiguration(lines: CartLine[], lineId: string, item: MenuItem, notes: string, modifiers: CartLine['modifiers']): CartLine[] {
+  const target = lines.find(line => line.lineId === lineId);
+  if (!target) return lines;
+  let updated = lines.filter(line => line.lineId !== lineId);
+  for (let quantity = 0; quantity < target.quantity; quantity++) updated = addCartLine(updated, item, notes, modifiers, target.restaurantId);
+  return updated;
+}
+
 export function cartTotal(lines: CartLine[]): number {
   return Math.round(lines.reduce((sum, line) => sum + cartUnitPrice(line) * line.quantity, 0) * 100) / 100;
 }

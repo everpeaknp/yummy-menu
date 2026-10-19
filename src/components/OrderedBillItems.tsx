@@ -21,11 +21,11 @@ export default function OrderedBillItems({ items }: { items: Item[] }) {
         <h4 className="min-w-0 break-words text-sm font-semibold">{index === 0 ? group.name : `${group.name}’s items`}</h4>
         {group.items.length > 0 && <p className="shrink-0 text-sm font-semibold tabular-nums">{money(group.items.reduce((sum, item) => sum + lineTotal(item), 0))}</p>}
       </div>
-      <p className="mt-1 text-xs text-stone-500">{index === 0 ? 'Items on your bill. Pending requests are estimates.' : 'Separate bill. Not included in your payment.'}</p>
+      <p className="mt-1 text-xs text-stone-600">{index === 0 ? 'Items on your bill. Pending requests are estimates.' : 'Separate bill. Not included in your payment.'}</p>
       {!group.items.length && <p className="py-4 text-sm text-stone-600">You haven’t sent any items yet.</p>}
       <ul className="divide-y divide-stone-100">{group.items.map(item => <li key={item.id} className="flex items-start gap-3 py-4">
         <span className="grid h-8 min-w-8 place-items-center rounded-lg bg-stone-100 text-xs font-semibold tabular-nums">{item.quantity}×</span>
-        <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{item.name}</p><p className={`mt-1 text-xs ${item.status === 'requested' ? 'text-orange-700' : 'text-stone-500'}`}>{statuses[item.status] || item.status}</p>{item.notes && <p className="mt-1 break-words text-xs text-stone-500">{item.notes}</p>}</div>
+        <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{item.name}</p><p className={`mt-1 text-xs ${item.status === 'requested' ? 'text-orange-700' : 'text-stone-600'}`}>{statuses[item.status] || item.status}</p>{item.notes && <p className="mt-1 break-words text-xs text-stone-600">{item.notes}</p>}</div>
         <p className="shrink-0 text-sm font-medium tabular-nums">{money(lineTotal(item))}</p>
       </li>)}</ul>
     </section>)}

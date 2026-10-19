@@ -14,7 +14,7 @@ interface ReceiptModalProps {
 export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [restaurantData, setRestaurantData] = useState<any>(null);
-  const dialogRef = useDialog(isOpen, onClose);
+  const dialogRef = useDialog(isOpen, onClose, 'estimate');
 
   useEffect(() => {
     if (isOpen) {
@@ -46,7 +46,7 @@ export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalP
   });
 
   return (
-    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-all duration-400 ${isOpen ? 'visible' : 'invisible delay-400'}`}>
+    <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-opacity duration-300 ${isOpen ? 'visible' : 'invisible delay-400'}`}>
       {/* Overlay */}
       <div 
         className={`absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-400 ease-out ${isOpen ? 'opacity-100' : 'opacity-0'}`}
@@ -69,7 +69,7 @@ export default function ReceiptModal({ isOpen, onClose, session }: ReceiptModalP
         <button 
           type="button" aria-label="Close order estimate"
           onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black/10 text-black/50 hover:bg-black/20 hover:text-black transition-colors z-10"
+          className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-black/10 text-black/50 hover:bg-black/20 hover:text-black transition-colors z-10"
         >
           <X size={16} />
         </button>

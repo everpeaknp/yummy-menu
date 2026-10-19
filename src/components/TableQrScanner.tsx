@@ -17,7 +17,7 @@ function tokenFromScan(value: string) {
 }
 
 export default function TableQrScanner({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dialogRef = useDialog(open, onClose);
+  const dialogRef = useDialog(open, onClose, 'scanner');
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
   const handlingRef = useRef(false);
   const [status, setStatus] = useState<"idle" | "starting" | "scanning" | "verifying">("idle");

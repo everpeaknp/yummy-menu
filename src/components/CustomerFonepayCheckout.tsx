@@ -31,6 +31,8 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
   const [checking, setChecking] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [device, setDevice] = useState<'phone' | 'other'>('phone');
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const cancellingRef = useRef(false);
   const operationVersion = useRef(0);
   const checkoutToken = useRef("");
@@ -88,7 +90,7 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
       if (cancellingRef.current || version !== operationVersion.current) return;
       setCheckout((current) => current ? { ...current, status: result.status, amount: result.amount } : current);
       if (result.is_success) await onPaid();
-      else if (result.status === "review_required") setError("Payment was received but needs restaurant review before this bill can close.");
+      else if (result.status === "review_required") setError("Payment was received but needs restaurant review before this bill can close. Do not pay again. Ask the restaurant team for help.");
       else if (result.is_terminal) setError(result.message || "This Fonepay checkout is no longer active.");
     } catch (requestError) {
       if (!silent && version === operationVersion.current) setError(customerFonepayErrorMessage(requestError, "Could not check the payment yet."));
@@ -101,7 +103,10 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
   useEffect(() => {
     if (!open || !checkout?.prn || checkout.status !== "pending" || confirmCancel) return;
     const timer = window.setInterval(() => { if (document.visibilityState === "visible") void verify(true); }, 5000);
-    return () => window.clearInterval(timer);
+    const resume = () => { if (document.visibilityState === 'visible') void verify(true); };
+    window.addEventListener('focus', resume);
+    document.addEventListener('visibilitychange', resume);
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume); };
   }, [checkout?.prn, checkout?.status, open, verify, confirmCancel]);
 
   const cancelCheckout = async () => {
@@ -131,19 +136,19 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
   const cancelled = checkout?.status === "cancelled";
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center sm:p-6">
       <button type="button" disabled={cancelling} aria-label="Hide Fonepay checkout" className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm" onClick={hide} />
-      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="fonepay-checkout-title" aria-describedby="fonepay-checkout-description" className="relative max-h-[92dvh] w-full max-w-[760px] overflow-y-auto overscroll-contain rounded-2xl border border-stone-200 bg-white shadow-xl">
+      <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="fonepay-checkout-title" aria-describedby="fonepay-checkout-description" className="relative h-[100dvh] max-h-[100dvh] w-full max-w-[860px] overflow-y-auto overscroll-contain bg-white sm:h-auto sm:max-h-[92dvh] sm:rounded-3xl sm:border sm:border-stone-200 sm:shadow-xl">
         <button type="button" disabled={cancelling} onClick={hide} aria-label="Hide Fonepay checkout" className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">
           <X className="h-5 w-5" aria-hidden="true" />
         </button>
-        <header className="border-b border-stone-200 px-5 pb-5 pt-6 pr-16 sm:px-7 sm:pr-16">
+        <header className="sticky top-0 z-[1] border-b border-stone-200 bg-white px-5 pb-5 pt-6 pr-16 sm:static sm:px-7 sm:pr-16">
           <p className="mb-3 flex items-center gap-2 text-xs font-medium text-stone-600">
             <ShieldCheck className="h-4 w-4 text-orange-700" aria-hidden="true" />Fonepay checkout
           </p>
           <h2 id="fonepay-checkout-title" className="font-display text-2xl font-semibold tracking-tight text-stone-950">{cancelled ? "Checkout cancelled" : paid ? "Payment complete" : "Pay your bill"}</h2>
-          <p id="fonepay-checkout-description" className="mt-1 text-sm leading-6 text-stone-600">{cancelled ? "Your food order is unchanged. Start a new checkout when you’re ready to pay." : paid ? "Your bill is paid. You’re all set." : "Scan with your banking app. We’ll confirm your payment here."}</p>
-          {pending && <p className="mt-2 text-xs leading-5 text-stone-600">Closing this window only hides it. Reopen payment to resume, or cancel checkout below.</p>}
+          <p id="fonepay-checkout-description" className="mt-1 text-sm leading-6 text-stone-600">{cancelled ? "Your food order is unchanged. Start a new checkout when you’re ready to pay." : paid ? "Your bill is paid. You’re all set." : "Pay through a supported banking app. Return here for confirmation."}</p>
+          {pending && <p className="mt-2 text-sm leading-6 text-stone-600">Closing this window only hides it. Reopen payment to resume, or cancel checkout below.</p>}
         </header>
 
         {loading ? (
@@ -156,11 +161,18 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
             <button type="button" onClick={onClose} className="customer-primary-button mt-4 w-full">Return to your order</button>
           </div>
         ) : checkout ? (
-          <div className="grid gap-6 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] sm:gap-7 sm:p-7">
+          <div className="grid gap-6 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] sm:gap-7 sm:p-7">
             <div className="flex min-w-0 flex-col items-center text-center">
               <p className="text-xs font-medium text-stone-600">{paid ? "Amount paid" : "Amount due"}</p>
               <p className="mt-1 max-w-full break-words font-display text-3xl font-semibold tracking-tight tabular-nums text-stone-950">{money(checkout.amount)}</p>
 
+              {pending && !confirmCancel && <div className="mt-5 w-full text-left">
+                <div role="group" aria-label="Payment device" className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+                  <button type="button" aria-pressed={device === 'phone'} onClick={() => setDevice('phone')} className={`min-h-11 rounded-lg px-2 text-sm font-semibold ${device === 'phone' ? 'bg-white text-orange-700 shadow-sm' : 'text-stone-600'}`}>This phone</button>
+                  <button type="button" aria-pressed={device === 'other'} onClick={() => setDevice('other')} className={`min-h-11 rounded-lg px-2 text-sm font-semibold ${device === 'other' ? 'bg-white text-orange-700 shadow-sm' : 'text-stone-600'}`}>Another device</button>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-stone-600">{device === 'phone' ? 'Download this QR. If your banking app supports images, select the saved QR from its scanner. Otherwise, scan from another device or ask the restaurant for help.' : 'Open a supported banking app on another device and scan this QR. Check the restaurant and exact amount before paying.'}</p>
+              </div>}
               {qrImage && pending && !confirmCancel ? (
                 <div className="mt-5 w-fit max-w-full rounded-xl border border-stone-200 bg-white p-3">
                   <Image src={qrImage} alt={`Fonepay payment QR for order ${checkout.order_id}`} width={240} height={240} unoptimized className="h-auto w-full max-w-60" />
@@ -176,7 +188,7 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
                   <p className="mt-2 text-sm leading-6 text-stone-600">The restaurant has received your payment.</p>
                 </div>
               ) : pending ? (
-                <p role="status" aria-live="polite" className="mt-4 flex items-center justify-center gap-2 text-xs leading-5 text-stone-600">
+                <p role="status" aria-live="polite" className="mt-4 flex items-center justify-center gap-2 text-sm leading-6 text-stone-600">
                   <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />Waiting for confirmation…
                 </p>
               ) : null}
@@ -195,13 +207,15 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
               {pending && <div className="mt-4 w-full border-t border-stone-200 pt-4">
                 {confirmCancel ? <div aria-live="polite" className="text-left">
                   <h3 className="text-sm font-semibold">Cancel this payment checkout?</h3>
-                  <p className="mt-2 text-xs leading-5 text-stone-600">Your food order stays. Do not pay this QR or a saved copy. If you already paid, keep checkout open and check payment instead. We check the provider before cancelling.</p>
+                  <p className="mt-2 text-sm leading-6 text-stone-600">Your food order stays. Do not pay this QR or a saved copy. If you already paid, keep checkout open and check payment instead. We check the provider before cancelling.</p>
                   <div className="mt-3 flex flex-wrap gap-2"><button ref={keepCheckoutRef} type="button" disabled={cancelling} onClick={() => setConfirmCancel(false)} className="min-h-11 rounded-lg border border-stone-300 px-3 text-sm font-semibold hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-orange-500">Keep checkout</button><button type="button" disabled={cancelling} onClick={() => void cancelCheckout()} className="min-h-11 rounded-lg bg-red-700 px-3 text-sm font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50">{cancelling ? 'Checking and cancelling…' : 'Yes, cancel checkout'}</button></div>
                 </div> : <button type="button" onClick={() => setConfirmCancel(true)} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-red-700 hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-red-500">Cancel payment checkout</button>}
               </div>}
             </div>
 
-            <aside aria-label="Bill details" className="min-w-0 border-t border-stone-200 pt-5 sm:border-l sm:border-t-0 sm:pl-7 sm:pt-0">
+            <aside aria-label="Bill details" className="min-w-0 border-t border-stone-200 pt-5 md:border-l md:border-t-0 md:pl-7 md:pt-0">
+              <button type="button" aria-expanded={detailsOpen} aria-controls="checkout-bill-details" onClick={() => setDetailsOpen(value => !value)} className="mb-4 flex min-h-11 w-full items-center justify-between text-sm font-semibold text-stone-600 md:hidden">Bill details & payment guidance<span aria-hidden="true">{detailsOpen ? "-" : "+"}</span></button>
+              <div id="checkout-bill-details" className={detailsOpen ? "block" : "hidden md:block"}>
               <h3 className="font-display text-base font-semibold text-stone-950">Your bill</h3>
               <p className="mt-1 break-words text-sm text-stone-600">{checkout.restaurant_name}</p>
               {Boolean(checkout.items?.length) && <section className="mt-4" aria-label="Items on this bill">
@@ -210,7 +224,7 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
                   <div className="min-w-0"><p className="break-words text-stone-950"><span className="tabular-nums">{item.quantity}×</span> {item.name}</p>{Boolean(item.modifiers?.length) && <p className="mt-1 break-words text-xs text-stone-600">{item.modifiers.join(', ')}</p>}</div>
                   <span className="shrink-0 font-medium tabular-nums text-stone-950">{money(item.line_total)}</span>
                 </li>)}</ul>
-                <p className="mt-1 text-xs leading-5 text-stone-600">Item amounts are before bill-level taxes, discounts and previous payments. The amount due below is the exact amount to pay.</p>
+                <p className="mt-1 text-sm leading-6 text-stone-600">Item amounts are before bill-level taxes, discounts and previous payments. The amount due below is the exact amount to pay.</p>
               </section>}
               <dl className="mt-4 space-y-3 border-y border-stone-200 py-4 text-sm">
                 <div className="flex items-start justify-between gap-4"><dt className="text-stone-600">Table</dt><dd className="min-w-0 break-words text-right font-medium text-stone-950">{checkout.table_name}</dd></div>
@@ -221,8 +235,8 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
               {pending ? (
                 <div className="mt-5">
                   <h3 className="text-sm font-semibold text-stone-950">Complete in your banking app</h3>
-                  <ol className="mt-3 space-y-3 text-xs leading-5 text-stone-600">
-                    {["Open a Fonepay-supported app and scan this QR.", `Confirm the exact amount: ${money(checkout.amount)}.`, "Pay and return here for confirmation."].map((step, index) => (
+                  <ol className="mt-3 space-y-3 text-sm leading-6 text-stone-600">
+                    {[device === "phone" ? "Save the QR and use your banking app image scanner if supported, or use another device." : "Open a Fonepay-supported app and scan this QR.", `Confirm the exact amount: ${money(checkout.amount)}.`, "Pay and return here for confirmation."].map((step, index) => (
                       <li key={step} className="flex gap-2.5">
                         <span aria-hidden="true" className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-stone-100 text-[11px] font-semibold text-stone-700">{index + 1}</span><span>{step}</span>
                       </li>
@@ -230,8 +244,9 @@ export default function CustomerFonepayCheckout({ open, qrToken, onClose, onPaid
                   </ol>
                 </div>
               ) : null}
-              <p className="mt-5 flex items-start gap-2 border-t border-stone-200 pt-4 text-xs leading-5 text-stone-600"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-orange-700" aria-hidden="true" />Your bill is marked paid only after Fonepay verifies the exact amount.</p>
+              <p className="mt-5 flex items-start gap-2 border-t border-stone-200 pt-4 text-sm leading-6 text-stone-600"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-orange-700" aria-hidden="true" />Your bill is marked paid only after Fonepay verifies the exact amount.</p>
               <p className="mt-3 break-all text-[11px] leading-5 text-stone-500">Reference: {checkout.prn}</p>
+              </div>
             </aside>
           </div>
         ) : null}

@@ -2,70 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: #f5f5f2;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-}
+:root { color-scheme: light; --page: #fafaf9; --surface: #fff; --brand: #ff6929; --action: #c2410c; }
+body { background: var(--page); color: #1c1917; }
+html { scroll-behavior: smooth; scroll-padding-top: 12rem; }
+button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
+button, a, summary { touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+button:disabled { cursor: not-allowed; }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
+  .experience-width { @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 xl:px-8; }
 }
-
 @layer components {
-  .customer-card {
-    @apply rounded-xl border border-stone-200 bg-white;
-  }
-
+  .customer-card { @apply overflow-hidden rounded-2xl border border-stone-200 bg-white; }
   .customer-primary-button {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50;
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-600 focus-visible:ring-offset-2 disabled:opacity-50;
   }
-
+  .customer-secondary-button {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50 disabled:opacity-50;
+  }
+  .customer-icon-button { @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl text-stone-600 hover:bg-stone-100; }
+  .customer-page-title { @apply font-display text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl; }
+  .customer-section-title { @apply font-display text-xl font-semibold tracking-tight text-stone-950; }
   .profile-input {
-    @apply min-h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-base text-stone-950 outline-none placeholder:text-stone-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-100;
+    @apply min-h-12 w-full rounded-xl border border-stone-300 bg-white px-3 text-base text-stone-950 outline-none placeholder:text-stone-500 focus:border-orange-600 focus:ring-2 focus:ring-orange-100;
   }
-
-  [aria-label="Sign-in method"] > button:first-child {
-    order: 2;
+  .customer-action-dock {
+    @apply fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] xl:static xl:rounded-2xl xl:border xl:p-5;
   }
-
-  [aria-label="Sign-in method"] > button:last-child {
-    order: 1;
+  .customer-nav-link {
+    @apply flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-stone-600 transition-colors hover:bg-stone-100;
   }
-
-  .customer-account-workspace > section:first-child > h2 {
-    @apply text-3xl tracking-[-0.03em];
-  }
-
-  .customer-account-workspace > section:first-child > div {
-    @apply max-w-none rounded-3xl shadow-[0_18px_55px_rgba(28,25,23,0.06)];
-  }
-
-  .customer-account-workspace > section:first-child > div > form:first-child {
-    @apply bg-orange-50/60;
-  }
-
-  @media (min-width: 1024px) {
-    .customer-account-workspace > section:first-child > div {
-      @apply grid grid-cols-2;
-    }
-
-    .customer-account-workspace > section:first-child > div > form:first-child {
-      @apply col-span-2;
-    }
-
-    .customer-account-workspace > section:first-child > div > form:last-child {
-      @apply border-l border-t-0 border-stone-200 bg-stone-50/70;
-    }
-  }
+  .customer-nav-link[aria-current='page'] { @apply bg-orange-50 text-orange-700; }
+  .menu-dish { content-visibility: auto; contain-intrinsic-size: auto 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }

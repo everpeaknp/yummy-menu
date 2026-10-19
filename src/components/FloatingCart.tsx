@@ -1,105 +1,98 @@
 "use client";
 
 import { useCart } from '@/context/CartContext';
-import { cartUnitPrice } from '@/lib/cart';
-import { requestOrder } from '@/services/api';
-import { Check, ChevronLeft, Loader2, Minus, Plus, QrCode, Receipt, ScanLine, Send, ShoppingBag } from 'lucide-react';
+import { cartUnitPrice, CartLine } from '@/lib/cart';
+import { requestOrder, getGroupedMenu, getModifierGroups } from '@/services/api';
+import { ArrowLeft, ChevronRight, Clock3, Loader2, Minus, Plus, QrCode, Receipt, ScanLine, Send, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import useSWR, { mutate } from 'swr';
+import { money } from '@/lib/money';
 import ReceiptModal from './ReceiptModal';
 import CustomerFonepayCheckout from './CustomerFonepayCheckout';
 import CustomerBillManager from './CustomerBillManager';
 import OrderedBillItems from './OrderedBillItems';
+import ItemCustomizationDrawer from './ItemCustomizationDrawer';
 
-const money = (amount: number) => new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', maximumFractionDigits: 2 }).format(amount);
-
-export default function FloatingCart({ onBrowse = () => {}, onScan = () => {} }: { onBrowse?: () => void; onScan?: () => void }) {
-  const { cart, totalPrice, updateQuantity, updateNotes, session, clearCart, refreshSession, resetSession } = useCart();
+type Props = { pendingBills?: number; mode?: 'cart' | 'orders'; onBrowse?: () => void; onScan?: () => void; onCart?: () => void; onTable?: () => void; onSubmitted?: () => void };
+export default function FloatingCart({ pendingBills = 0, mode = 'orders', onBrowse = () => {}, onScan = () => {}, onCart = () => {}, onTable = () => {}, onSubmitted = () => {} }: Props) {
+  const { cart, totalPrice, totalItems, updateQuantity, updateConfiguration, removeFromCart, session, clearCart, refreshSession, resetSession } = useCart();
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [panel, setPanel] = useState<'sent' | 'bill'>('sent');
+  const [editing, setEditing] = useState<CartLine | null>(null);
   const paymentConfirmed = useCallback(async () => { await refreshSession(); }, [refreshSession]);
+  const billsChanged = useCallback(async () => { await refreshSession(); if (session?.qrToken) void mutate(['bill-activity', session.qrToken]); }, [refreshSession, session?.qrToken]);
   const refreshBillAccess = useCallback(() => refreshSession(true), [refreshSession]);
+  const cartRestaurantId = session?.restaurantId || cart[0]?.restaurantId;
+  const { data: menuData, error: menuError, mutate: reloadMenu } = useSWR(mode === 'cart' && cartRestaurantId ? `customer-menu-${cartRestaurantId}` : null, async () => {
+    const [categories, modifierGroups] = await Promise.all([getGroupedMenu(String(cartRestaurantId)), getModifierGroups(String(cartRestaurantId))]);
+    return { categories, modifierGroups };
+  });
+  useEffect(() => {
+    const sync = () => { const query = new URLSearchParams(window.location.search); setPanel(query.get('panel') === 'bill' ? 'bill' : 'sent'); setPaymentOpen(query.get('checkout') === '1'); };
+    sync(); window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
+  }, []);
   useEffect(() => {
     if (!session?.qrToken) return;
     void refreshSession();
     const timer = setInterval(() => { if (document.visibilityState === 'visible') void refreshSession(); }, 10000);
     return () => clearInterval(timer);
   }, [session?.qrToken, refreshSession]);
-  const orderedTotal = Number(session?.activeOrderTotal || 0);
+  useEffect(() => { if (!success) return; const timer = setTimeout(() => setSuccess(false), 5000); return () => clearTimeout(timer); }, [success]);
+  const selectPanel = (next: 'sent' | 'bill') => {
+    setPanel(next); const url = new URL(window.location.href); url.searchParams.set('panel', next); window.history.pushState({}, '', url);
+  };
+  const openPayment = () => {
+    const url = new URL(window.location.href); url.searchParams.set('checkout', '1'); window.history.pushState({}, '', url); setPaymentOpen(true);
+  };
+  const hidePayment = () => {
+    setPaymentOpen(false);
+    if (new URLSearchParams(window.location.search).get('checkout') === '1') window.history.back();
+  };
   const canOrder = session?.tableAccess?.access === 'approved';
   const ownBill = session?.tableAccess?.billing;
   const canPay = canOrder && ownBill?.can_pay === true;
-  const canShowPayAction = orderedTotal > 0 && canPay;
+  const ownItems = (session?.orderedItems || []).filter(item => item.is_yours === true);
+  const pending = ownItems.filter(item => item.status === 'requested');
+  const editingItem = editing && (menuData?.categories.flatMap(category => category.items).find(item => item.id === editing.id) || editing);
   const checkout = async () => {
     if (!session || !canOrder || submittingRef.current || !cart.length) return;
     submittingRef.current = true; setSubmitting(true); setError(''); setSuccess(false);
     try {
       const response = await requestOrder(session.restaurantId, session.tableId, session.qrToken, cart.map(item => ({ menu_item_id: item.id, qty: item.quantity, notes: item.notes, modifiers: item.modifiers })));
       if (response.id || response.order?.id || response.restaurant_order_id) {
-        clearCart(); setSuccess(true); await refreshSession();
+        clearCart(); setSuccess(true); setPanel('sent'); await refreshSession(); onSubmitted();
       } else if (response.statusCode === 404 || response.statusCode === 410) {
         resetSession(); setError('This table QR has expired. Scan it again to send your saved draft.');
       } else {
         const detail = typeof response.detail === 'string' ? response.detail : 'Please try again.';
         setError(response.statusCode === 401 ? 'Sign in again to continue. Your draft is saved.' : `Could not send your order. ${detail}`);
       }
-    } catch (requestError: any) {
-      setError(requestError?.message || 'We could not confirm that you are at the restaurant.');
-    } finally { submittingRef.current = false; setSubmitting(false); }
+    } catch (requestError: any) { setError(requestError?.message || 'Could not send your order. Your draft is saved.'); }
+    finally { submittingRef.current = false; setSubmitting(false); }
   };
-  const orderSummary = <>
-    <h3 className="font-semibold">Table summary</h3>
-    <dl className="mt-4 space-y-3 text-sm">
-      {orderedTotal > 0 && <div className="flex justify-between"><dt className="text-stone-500">Table requests</dt><dd className="font-semibold">{money(orderedTotal)}</dd></div>}
-      {cart.length > 0 && <div className="flex justify-between"><dt className="text-stone-500">Your private draft</dt><dd className="font-semibold">{money(totalPrice)}</dd></div>}
-      <div className="flex justify-between border-t border-stone-100 pt-3"><dt className="font-semibold">Estimated total</dt><dd className="font-bold">{money(orderedTotal + totalPrice)}</dd></div>
-    </dl>
-    <p className="mt-3 text-xs leading-5 text-stone-500">Final taxes, discounts and charges are confirmed by the restaurant.</p>
-    {ownBill && <div className="mt-4 rounded-xl border border-stone-200 p-3 text-sm"><h4 className="font-semibold">Your bill</h4><div className="mt-2 flex justify-between gap-3"><span className="text-stone-500">Accepted items</span><span>{money(ownBill.accepted_total)}</span></div>{ownBill.request_total > 0 && <div className="mt-2 flex justify-between gap-3"><span className="text-orange-700">Awaiting approval</span><span>{money(ownBill.request_total)}</span></div>}<p className="mt-2 text-xs leading-5 text-stone-500">The table estimate above includes everyone. Your payment covers only your own bill; the final remaining amount appears at checkout.</p></div>}
-    {orderedTotal > 0 && !canPay && <p className="mt-3 text-xs leading-5 text-stone-600">You can pay your own bill after your requests are accepted. Other guests’ bills are separate; staff can help with combined billing.</p>}
-  </>;
-  const sendOrderButton = (compact = false) => <button type="button" onClick={() => void checkout()} disabled={submitting || !canOrder} className={`${compact ? 'flex min-h-14 flex-1 flex-col gap-0.5' : 'mt-3 flex min-h-12 w-full'} items-center justify-center rounded-xl bg-orange-600 px-2 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-60`}>
-    <span className="flex items-center justify-center gap-1.5">{submitting ? <Loader2 aria-hidden="true" size={18} className="animate-spin motion-reduce:animate-none" /> : <Send aria-hidden="true" size={17} />}{submitting ? 'Sending…' : canOrder ? compact ? 'Send order' : 'Send order request' : 'Waiting for approval'}</span>
-    {compact && <span className="text-[11px] font-medium text-white/85">{money(totalPrice)}</span>}
-  </button>;
-  const payBillButton = (compact = false) => <button type="button" onClick={() => setPaymentOpen(true)} className={`${compact ? 'flex min-h-14 flex-1 flex-col gap-0.5' : 'mt-5 flex min-h-12 w-full'} items-center justify-center gap-1.5 rounded-xl ${compact ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-stone-950 text-white hover:bg-orange-700'} px-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500`}>
-    <span className="flex items-center justify-center gap-1.5"><QrCode size={18} aria-hidden="true" />{compact ? 'Pay bill' : 'Pay your bill with Fonepay'}</span>
-    {compact && <span className="text-[11px] font-medium opacity-75">{money(ownBill?.accepted_total ?? orderedTotal)}</span>}
-  </button>;
-  return <div className="mx-auto max-w-4xl px-4 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:py-8 lg:pb-8">
-    <div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-bold">Your order</h2><button type="button" onClick={onBrowse} className="flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-600"><ChevronLeft size={16} />Add dishes</button></div>
-    {canOrder && session?.qrToken && <CustomerBillManager key={session.qrToken} qrToken={session.qrToken} onChanged={refreshSession} onRefreshAccess={refreshBillAccess} onResumePayment={() => setPaymentOpen(true)} />}
-    {success && <div role="status" className="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-900"><Check size={20} className="mt-0.5 shrink-0" /><div><p className="font-semibold">Request sent to the restaurant</p><p className="mt-1 text-sm">The team will review and accept your order before preparation starts.</p></div></div>}
-    {error && <p role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
-      <div className="space-y-5">
-        {cart.length > 0 && <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5"><h3 className="mb-1 text-sm font-bold">Not sent yet</h3><div className="divide-y divide-stone-100">{cart.map(item => <article key={item.lineId} className="py-4"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><h4 className="break-words text-sm font-semibold">{item.name}</h4>{Boolean(item.modifiers?.length) && <p className="mt-1 text-xs leading-5 text-stone-500">{item.modifiers?.map(modifier => modifier.modifier_name_snapshot).join(' · ')}</p>}<p className="mt-2 text-sm font-semibold">{money(cartUnitPrice(item) * item.quantity)}</p></div><div className="flex shrink-0 items-center rounded-xl border border-stone-200"><button type="button" disabled={submitting} onClick={() => updateQuantity(item.lineId, -1)} aria-label={`Decrease ${item.name} quantity`} className="grid h-11 w-11 place-items-center"><Minus size={16} /></button><span className="min-w-5 text-center text-sm font-semibold">{item.quantity}</span><button type="button" disabled={submitting} onClick={() => updateQuantity(item.lineId, 1)} aria-label={`Increase ${item.name} quantity`} className="grid h-11 w-11 place-items-center"><Plus size={16} /></button></div></div><label className="mt-3 block"><span className="sr-only">Instructions for {item.name}</span><input defaultValue={item.notes || ''} disabled={submitting} onBlur={event => updateNotes(item.lineId, event.target.value)} placeholder="Any special instructions?" maxLength={500} className="min-h-11 w-full rounded-xl border border-stone-200 bg-stone-50 px-3 text-base sm:text-sm outline-none focus:border-orange-400" /></label></article>)}</div></section>}
-        {Boolean(session?.orderedItems?.length) && <section className="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5"><div className="mb-2 flex items-center justify-between gap-3"><h3 className="text-sm font-bold">Sent to the restaurant</h3><button type="button" onClick={() => setReceiptOpen(true)} className="flex min-h-11 items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"><Receipt size={16} aria-hidden="true" />Table estimate</button></div><OrderedBillItems items={session?.orderedItems || []} /></section>}
-        {!cart.length && !session?.orderedItems?.length && <div className="rounded-2xl border border-stone-200 bg-white px-5 py-14 text-center"><ShoppingBag className="mx-auto h-9 w-9 text-stone-300" /><h3 className="mt-4 font-semibold">Your order is empty</h3><p className="mt-2 text-sm text-stone-500">Choose something from the menu to get started.</p><button type="button" onClick={onBrowse} className="mt-5 min-h-12 rounded-xl bg-orange-600 px-6 text-sm font-semibold text-white">Browse menu</button></div>}
-      </div>
-      {(cart.length > 0 || orderedTotal > 0) && <>
-        <details className="rounded-2xl border border-stone-200 bg-white p-4 lg:hidden">
-          <summary className="flex min-h-9 cursor-pointer list-none items-center justify-between gap-3 font-semibold marker:hidden"><span>Order summary</span><span className="text-sm tabular-nums">{money(orderedTotal + totalPrice)}</span></summary>
-          <div className="mt-3 border-t border-stone-100 pt-3">{orderSummary}</div>
-        </details>
-        <aside className="hidden lg:block"><div className="rounded-2xl border border-stone-200 bg-white p-4 lg:sticky lg:top-24">
-          {orderSummary}
-          {orderedTotal > 0 && canPay && <>{payBillButton()}{cart.length > 0 && <p className="mt-2 text-xs leading-5 text-stone-500">Your unsent draft is not included in this payment.</p>}</>}
-          {cart.length > 0 && (session ? sendOrderButton() : <button type="button" onClick={onScan} className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 text-sm font-semibold text-white"><ScanLine size={18} />Scan table QR to order</button>)}
-        </div></aside>
-      </>}
-    </div>
-    {(cart.length > 0 || canShowPayAction) && <div data-mobile-order-actions role="group" aria-label="Order actions" className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-stone-200 bg-white/95 p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur lg:hidden">
-      <div className="mx-auto flex max-w-lg gap-2">
-        {cart.length > 0 ? session ? sendOrderButton(true) : <button type="button" onClick={onScan} className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-orange-600 px-3 text-sm font-semibold text-white"><ScanLine size={18} />Scan table QR to order</button> : null}
-        {canShowPayAction && payBillButton(true)}
-      </div>
-      {cart.length > 0 && !canOrder && session && <p className="mt-1 text-center text-[11px] text-stone-500">Send unlocks when your table is approved.</p>}
-      {cart.length > 0 && canShowPayAction && <p className="mt-1 text-center text-[11px] text-stone-500">Your draft isn’t included in payment.</p>}
-    </div>}
-    <ReceiptModal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} session={session} /><CustomerFonepayCheckout open={paymentOpen} qrToken={session?.qrToken || ''} onClose={() => setPaymentOpen(false)} onPaid={paymentConfirmed} />
+  const sendOrderButton = <button type="button" onClick={() => void checkout()} disabled={submitting || !canOrder} className="customer-primary-button w-full"><span>{submitting ? <Loader2 size={18} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Send size={17} aria-hidden="true" />}</span>{submitting ? 'Sending…' : 'Send order request'}</button>;
+  const payBillButton = <button type="button" onClick={openPayment} className="customer-primary-button w-full"><QrCode size={18} aria-hidden="true" />Review Fonepay payment<ChevronRight size={18} aria-hidden="true" /></button>;
+  const paymentSummary = <section className="customer-card p-5 sm:p-6"><p className="text-sm font-medium text-stone-600">Your accepted bill</p><p className="mt-2 break-words font-display text-3xl font-semibold tabular-nums">{ownBill ? money(ownBill.accepted_total) : 'Not available yet'}</p><p className="mt-3 text-sm leading-6 text-stone-600">Your items only. The exact remaining amount, including charges, discounts and previous payments, is confirmed at checkout.</p>{Boolean(ownBill?.request_total) && <div className="mt-4 flex justify-between gap-3 border-t border-stone-200 pt-4 text-sm text-orange-800"><span>Awaiting restaurant approval</span><span className="shrink-0 font-semibold">{money(ownBill!.request_total)}</span></div>}{canPay ? <div className="mt-5 hidden xl:block">{payBillButton}</div> : <p className="mt-5 rounded-xl bg-stone-50 p-3 text-sm leading-6 text-stone-600">{pending.length ? 'The restaurant must accept your food requests before you can pay.' : 'Online payment unlocks for an eligible accepted bill. Pending bill requests or multiple bills may need your attention below or help from staff.'}</p>}{cart.length > 0 && <p className="mt-3 text-xs leading-5 text-stone-600">Your unsent cart is not included in payment.</p>}<button type="button" onClick={onTable} className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-700">Table & service help<ChevronRight size={16} /></button></section>;
+  return <div className={`experience-width py-5 sm:py-8 ${mode === 'cart' ? 'pb-48 xl:pb-10' : panel === 'bill' && canPay ? 'pb-36 xl:pb-10' : ''}`}>
+    <div className="mb-6 flex items-center justify-between gap-4"><div>{mode === 'cart' && <button type="button" disabled={submitting} onClick={onBrowse} className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-600"><ArrowLeft size={17} />Back to menu</button>}<h2 className="customer-page-title">{mode === 'cart' ? 'Review your cart' : 'Your orders'}</h2><p className="mt-2 text-sm text-stone-600">{session ? `Table ${session.tableName}` : 'Connect to a table when you are ready.'}{mode === 'cart' ? ' · Not sent yet' : ' · This visit'}</p></div>{mode !== 'cart' && <button type="button" onClick={onBrowse} className="customer-secondary-button">Add food<Plus size={17} /></button>}</div>
+    {success && <p role="status" className="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">Request sent to the restaurant. Waiting for acceptance.</p>}
+    {error && <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+    {mode === 'cart' ? <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <section className="customer-card"><div className="flex items-center justify-between border-b border-stone-200 p-5"><h3 className="font-semibold">Your food</h3><span className="text-sm text-stone-600">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span></div>{cart.length ? <ul className="divide-y divide-stone-200">{cart.map(item => <li key={item.lineId} className="p-5"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><h4 className="break-words font-semibold">{item.name}</h4>{Boolean(item.modifiers?.length) && <p className="mt-1 text-sm leading-6 text-stone-600">{item.modifiers?.map(modifier => modifier.modifier_name_snapshot).join(', ')}</p>}{item.notes && <p className="mt-1 break-words text-sm leading-6 text-stone-600">Note: {item.notes}</p>}<p className="mt-3 text-sm font-semibold tabular-nums">{money(cartUnitPrice(item) * item.quantity)}</p></div><button type="button" disabled={submitting} onClick={() => removeFromCart(item.lineId)} aria-label={`Remove ${item.name}`} className="customer-icon-button text-stone-500"><Trash2 size={17} /></button></div><div className="mt-3 flex flex-wrap items-center justify-between gap-3"><button type="button" disabled={submitting || !menuData} onClick={() => setEditing(item)} className="min-h-11 text-sm font-semibold text-orange-700 disabled:opacity-50">Edit choices & note</button><div className="flex items-center rounded-xl border border-stone-300"><button type="button" disabled={submitting} onClick={() => updateQuantity(item.lineId, -1)} aria-label={`Decrease ${item.name} quantity`} className="customer-icon-button"><Minus size={16} /></button><span className="min-w-7 text-center text-sm font-semibold">{item.quantity}</span><button type="button" disabled={submitting} onClick={() => updateQuantity(item.lineId, 1)} aria-label={`Increase ${item.name} quantity`} className="customer-icon-button"><Plus size={16} /></button></div></div></li>)}</ul> : <div className="p-8 text-center"><ShoppingBag size={30} className="mx-auto text-stone-300" /><h3 className="mt-4 font-semibold">Your cart is empty</h3><p className="mt-2 text-sm text-stone-600">Find something good on the menu.</p><button type="button" onClick={onBrowse} className="customer-primary-button mt-5">Browse menu</button></div>}{menuError && <div role="alert" className="border-t border-stone-200 p-5 text-sm text-red-700">Could not load current choices. <button type="button" onClick={() => void reloadMenu()} className="min-h-11 font-semibold underline">Retry</button></div>}</section>
+      {cart.length > 0 && <aside className="xl:sticky xl:top-24"><section className="customer-card mb-5 p-5"><h3 className="font-semibold">Before you send</h3><p className="mt-3 text-sm leading-6 text-stone-600">This cart is private. The restaurant reviews your request before preparation starts.</p>{!canOrder && session && <div className="mt-4 rounded-xl bg-orange-50 p-3 text-sm leading-6 text-orange-900">Your table must be approved before you can send food requests.<button type="button" onClick={onTable} className="mt-2 flex min-h-11 items-center gap-1 font-semibold">Check table access<ChevronRight size={16} /></button></div>}</section><div data-mobile-order-actions role="group" aria-label="Order actions" className="customer-action-dock"><div className="mx-auto max-w-xl"><div className="mb-3 flex justify-between text-sm font-semibold"><span>Cart estimate</span><span className="tabular-nums">{money(totalPrice)}</span></div>{session ? sendOrderButton : <button type="button" onClick={onScan} className="customer-primary-button w-full"><ScanLine size={18} />Scan table QR to order</button>}<p className="mt-3 text-xs leading-5 text-stone-600">Final taxes, discounts and charges are confirmed by the restaurant.</p></div></div></aside>}
+      {editing && <ItemCustomizationDrawer isOpen onClose={() => setEditing(null)} item={editingItem} modifierGroups={menuData?.modifierGroups || []} initialNotes={editing.notes} initialModifiers={editing.modifiers} editing onAddToCart={(item, notes, modifiers) => updateConfiguration(editing.lineId, item, notes, modifiers)} />}
+    </div> : <>
+      {cart.length > 0 && <button type="button" onClick={onCart} className="customer-card mb-5 flex w-full items-center gap-3 p-4 text-left hover:border-orange-300"><ShoppingBag size={20} className="text-orange-600" aria-hidden="true" /><span className="flex-1"><span className="block text-sm font-semibold">{totalItems} items not sent</span><span className="mt-1 block text-sm text-stone-600">Review your cart before sending another round.</span></span><ChevronRight size={20} aria-hidden="true" /></button>}
+      <nav aria-label="Order views" className="mb-6 flex gap-1 border-b border-stone-200">{([{ id: 'sent', label: 'Sent' }, { id: 'bill', label: 'Your bill' }] as const).map(tab => <a key={tab.id} href={`?view=order&panel=${tab.id}`} aria-current={panel === tab.id ? 'page' : undefined} onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault(); selectPanel(tab.id); }} className={`min-h-12 border-b-2 px-5 py-3 text-sm font-semibold ${panel === tab.id ? 'border-orange-600 text-orange-700' : 'border-transparent text-stone-600'}`}>{tab.label}{tab.id === 'bill' && pendingBills > 0 ? ` (${pendingBills})` : ''}</a>)}</nav>
+      {panel === 'sent' ? <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"><section className="customer-card p-5 sm:p-6"><div className="mb-5 flex items-center gap-2"><Clock3 size={19} className="text-orange-600" aria-hidden="true" /><h3 className="customer-section-title">Sent to the restaurant</h3></div>{ownItems.length ? <OrderedBillItems items={ownItems} /> : <div className="py-8"><h4 className="font-semibold">No items on your bill yet</h4><p className="mt-2 text-sm leading-6 text-stone-600">Your submitted items appear here. Food assigned or combined with someone else&apos;s bill can be found under Table.</p><button type="button" onClick={onBrowse} className="customer-primary-button mt-5">Browse menu</button></div>}</section><aside className="customer-card p-5"><h3 className="font-semibold">Your bill stays yours</h3><p className="mt-3 text-sm leading-6 text-stone-600">See your accepted items, review cost-sharing requests, and pay when your bill is ready.</p><button type="button" onClick={() => selectPanel('bill')} className="customer-secondary-button mt-5 w-full">View your bill<ChevronRight size={17} /></button><button type="button" onClick={onTable} className="mt-3 min-h-11 text-sm font-semibold text-orange-700">See the table order</button></aside></div> : <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]"><div className="min-w-0 space-y-5"><section className="customer-card p-5 sm:p-6"><h3 className="customer-section-title">Items on your bill</h3><div className="mt-5"><OrderedBillItems items={ownItems} /></div></section>{canOrder && session?.qrToken && <CustomerBillManager key={session.qrToken} qrToken={session.qrToken} onChanged={billsChanged} onRefreshAccess={refreshBillAccess} onResumePayment={openPayment} />}<button type="button" onClick={() => setReceiptOpen(true)} disabled={!session?.orderedItems?.length} className="customer-secondary-button"><Receipt size={17} aria-hidden="true" />View table estimate</button></div><aside className="xl:sticky xl:top-36">{paymentSummary}</aside>{canPay && <div data-mobile-payment-action className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 border-t border-stone-200 bg-white p-3 xl:hidden"><div className="mx-auto max-w-xl">{payBillButton}</div></div>}</div>}
+    </>}
+    <ReceiptModal isOpen={receiptOpen} onClose={() => setReceiptOpen(false)} session={session} />
+    <CustomerFonepayCheckout open={paymentOpen} qrToken={session?.qrToken || ''} onClose={hidePayment} onPaid={paymentConfirmed} />
   </div>;
 }
