@@ -106,9 +106,9 @@ export default function CustomerBillManager({ qrToken, onChanged, onRefreshAcces
       </article>)}
     </div>;
 
-  return <section aria-label="Manage your bill" className="mb-5 rounded-2xl border border-stone-200 bg-white p-4 sm:p-5">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="flex items-center gap-2 font-semibold"><Receipt size={18} aria-hidden="true" />Your bill, your choice</h3><p className="mt-1 text-sm leading-6 text-stone-600">Pay separately, combine with the host, or move items to a friend.</p></div>
-      <button type="button" className={button} disabled={busy || !data} onClick={() => setOpen(true)}>Manage bill{incoming.length > 0 ? ` (${incoming.length})` : ''}</button></div>
+  return <section aria-label="Manage your bill" className="mt-4 border-t border-stone-200 pt-4">
+    <div className="flex items-center justify-between gap-3"><div className="min-w-0"><h3 className="flex items-center gap-2 text-sm font-semibold"><Receipt size={17} className="shrink-0" aria-hidden="true" />Share your bill</h3><p className="mt-1 text-xs leading-5 text-stone-600">Combine with the host or move items.</p></div>
+      <button type="button" className={`${button} shrink-0`} disabled={busy || !data} onClick={() => setOpen(true)}>Manage bill{incoming.length > 0 ? ` (${incoming.length})` : ''}</button></div>
     {notice && <p role="status" className="mt-3 text-sm text-green-800">{notice}</p>}
     {!data && !error && <p role="status" className="mt-3 text-xs text-stone-500">Loading bill options…</p>}
     {mergedIntoHost && <p className="mt-3 text-sm leading-6 text-stone-600">Your previous bill is combined with the host’s bill. The host pays that combined bill; new orders you place will have their own bill.</p>}

@@ -24,6 +24,7 @@ function render(mode,panel='sent',overrides={}) {
   if(name==='@/services/api')return {};
   if(name==='swr')return {default:()=>({data:{categories:[],modifierGroups:[]}})};
   if(name==='./OrderedBillItems')return {default:({items})=>React.createElement('div',{'data-rendered-items':items.map(item=>item.id).join(',')})};
+  if(name==='./CustomerBillManager')return {default:()=>React.createElement('button',null,'Manage bill')};
   if(name.startsWith('./'))return {default:()=>null};
   return require(name);
  }});
@@ -51,6 +52,13 @@ test('personal bill uses owned accepted amount and never presents table plus dra
  assert.match(html,/NPR 380/);
  assert.match(html,/Review Fonepay payment/);
  assert.doesNotMatch(html,/NPR 1280|NPR 1780|Send order request/);
+});
+
+test('bill tools stay with their related content without a separate estimate button',()=>{
+ const html=render('orders','bill');
+ assert.match(html,/data-rendered-items="8"[\s\S]*Manage bill/);
+ assert.match(html,/Your accepted bill[\s\S]*Table estimate/);
+ assert.doesNotMatch(html,/View table estimate/);
 });
 
 test('pending table access prevents food submission but keeps the draft visible',()=>{
