@@ -51,30 +51,37 @@ test('item assignment offers friends and bounded quantities in an accessible dia
   assert.match(html, /Other friend/);
   assert.match(html, /Assign quantity of Coke/);
   assert.match(html, /min="0" max="2"/);
-  assert.match(html, /Request item assignment/);
+  assert.match(html, /Ask to move selected items/);
+  assert.match(html, /Move one more Coke/);
+});
+test('a table without joined friends shows a next step instead of item controls', () => {
+  const html = render({ ...data, friends: [] }, { 1: true });
+  assert.match(html, /Invite them from the Table tab/);
+  assert.ok(!html.includes('Assign quantity of Coke'));
+  assert.ok(!html.includes('Ask to move selected items'));
 });
 test('whole-bill merge offers only the host and explicitly retains their billing ownership', () => {
   const html = render(data, { 1: true, 2: 'merge' });
   assert.ok(!html.includes('Other friend'));
-  assert.match(html, /Send to the host/);
+  assert.match(html, /Host who will pay/);
   assert.match(html, /host becomes the billing customer/);
-  assert.match(html, /Only the host can pay/);
+  assert.match(html, /only the host can pay/);
 });
 test('outgoing pending request offers cancel and blocks another proposal', () => {
   const html = render({ ...data, requests: [{ ...request, incoming: false }] }, { 1: true, 3: 1, 4: { 8: '1' } });
   assert.match(html, /already have a pending request/);
   assert.match(html, /Cancel request/);
-  assert.match(html, /disabled=""[^>]*>Request item assignment/);
+  assert.match(html, /disabled=""[^>]*>Ask to move selected items/);
 });
 test('people without an accepted bill can receive charges but cannot create a proposal', () => {
   const html = render({ ...data, own_bill: null }, { 1: true });
   assert.match(html, /do not have an accepted bill yet/);
-  assert.ok(!html.includes('Request item assignment'));
+  assert.ok(!html.includes('Ask to move selected items'));
 });
 test('a blocked bill shows the backend reason and does not permit another proposal', () => {
   const html = render({ ...data, blocked_reason: 'Checkout already open' }, { 1: true, 3: 1, 4: { 8: '1' } });
   assert.match(html, /Checkout already open/);
-  assert.match(html, /disabled=""[^>]*>Request item assignment/);
+  assert.match(html, /disabled=""[^>]*>Ask to move selected items/);
 });
 test('bill loading failures distinguish an unreachable API from an HTTP response', () => {
   const exports = loadComponentExports();
@@ -105,7 +112,7 @@ test('bill access refresh callback stays stable so a 410 cannot restart the poll
 test('invalid fractional or negative quantities cannot be submitted', () => {
   for (const qty of ['-1','0.5','3']) {
     const html = render(data, { 1: true, 3: 1, 4: { 8: qty } });
-    assert.match(html, /disabled=""[^>]*>Request item assignment/);
+    assert.match(html, /disabled=""[^>]*>Ask to move selected items/);
   }
 });
 test('a sender sees who pays after an accepted host merge', () => {
