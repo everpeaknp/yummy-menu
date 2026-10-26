@@ -42,12 +42,10 @@ apiClient.interceptors.request.use(config => {
 export const getImageUrl = (path?: string) => {
     if (!path) return undefined;
     if (path.startsWith('http')) return path;
-    if (path.startsWith('asset:')) {
-        const navPath = path.replace('asset:', '');
-        const cleanPath = navPath.startsWith('/') ? navPath : `/${navPath}`;
-        return cleanPath;
-    }
-    if (path.startsWith('/logos/') || path.startsWith('/images/')) return path;
+    if (path.startsWith('asset:menu_gallery/')) return `/${path.slice('asset:'.length)}`;
+    if (path.startsWith('assets/menu_gallery/')) return `/${path.slice('assets/'.length)}`;
+    if (path.startsWith('asset:')) return `/${path.slice('asset:'.length).replace(/^\//, '')}`;
+    if (path.startsWith('/menu_gallery/') || path.startsWith('/logos/') || path.startsWith('/images/')) return path;
     const apiOrigin = (process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001').replace(/\/$/, '');
     return new URL(path.startsWith('/') ? path : `/${path}`, apiOrigin).toString();
 }

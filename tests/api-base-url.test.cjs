@@ -47,3 +47,13 @@ test('saved local POS API URL remains usable when no API environment is configur
 
   assert.equal(client.defaults.baseURL, 'http://192.168.1.20:8001');
 });
+
+test('gallery image references stay on yummy-menu after repeated resolution', () => {
+  const { api } = loadApi({ envUrl: 'https://api.example.com' });
+  for (const image of ['asset:menu_gallery/fry momo.webp', 'assets/menu_gallery/fry momo.webp']) {
+    const url = api.getImageUrl(image);
+    assert.equal(url, '/menu_gallery/fry momo.webp');
+    assert.equal(api.getImageUrl(url), url);
+  }
+  assert.equal(api.getImageUrl('/uploads/photo.webp'), 'https://api.example.com/uploads/photo.webp');
+});
