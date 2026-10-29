@@ -16,7 +16,7 @@ function tokenFromScan(value: string) {
   }
 }
 
-export default function TableQrScanner({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function TableQrScanner({ open, onClose, returnTo = "menu" }: { open: boolean; onClose: () => void; returnTo?: "menu" | "rewards" }) {
   const dialogRef = useDialog(open, onClose, 'scanner');
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
   const handlingRef = useRef(false);
@@ -56,7 +56,7 @@ export default function TableQrScanner({ open, onClose }: { open: boolean; onClo
             localStorage.setItem("yummy_qr_session", JSON.stringify({ restaurantId: context.restaurant_id, restaurantName: context.restaurant_name, tableId: context.table_id, tableName: context.table_name, qrToken: context.token, tableAccess: context.table_access, orderedItems: context.ordered_items, activeOrderTotal, activeOrderIds: (context.active_orders || []).map((order) => order.id), startTime: Date.now() }));
             window.dispatchEvent(new Event("yummy_qr_session_updated"));
             await scanner.stop(); scanner.clear(); scannerRef.current = null;
-            window.location.assign(`/${context.restaurant_id}/${slugify(context.restaurant_name || "restaurant")}?view=menu`);
+            window.location.assign(`/${context.restaurant_id}/${slugify(context.restaurant_name || "restaurant")}${returnTo === "rewards" ? "?view=profile&section=rewards" : "?view=menu"}`);
           } catch (scanError) {
             handlingRef.current = false; setStatus("scanning"); setError(scanError instanceof Error ? scanError.message : "Could not connect to this table.");
           }
@@ -73,7 +73,7 @@ export default function TableQrScanner({ open, onClose }: { open: boolean; onClo
 
     void start();
     return () => { cancelled = true; const scanner = scannerRef.current; scannerRef.current = null; if (scanner) void scanner.stop().catch(() => undefined).finally(() => scanner.clear()); };
-  }, [cameraRequested, open]);
+  }, [cameraRequested, open, returnTo]);
 
   useEffect(() => {
     if (!open) {

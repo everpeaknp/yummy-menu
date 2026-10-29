@@ -8,9 +8,9 @@ import {
 } from "lucide-react";
 import {
   CustomerAccount, CustomerReceivableSummary, CustomerEmailPreference, CustomerMarketingPreferences, CustomerRestaurantInvitation,
-  CustomerOffer, CustomerOrder, CustomerRestaurantMembership, applyCustomerOffer,
+  CustomerOffer, CustomerOfferGoal, CustomerProgram, CustomerClaimedProgram, CustomerOrder, CustomerRestaurantMembership, applyCustomerOffer, claimCustomerProgram, releaseCustomerProgram,
   clearStoredCustomerToken, getCustomerAccount, getCustomerEmailPreference, getCustomerMarketingPreferences,
-  acceptCustomerRestaurantInvitation, getCustomerReceivables, getCustomerOffers, getCustomerOrders, getCustomerRestaurantInvitation, joinCustomerRestaurant, loginCustomerWithPassword, logoutCustomer,
+  acceptCustomerRestaurantInvitation, getCustomerReceivables, getCustomerOffers, getCustomerOfferGoals, getCustomerOrderOffers, getCustomerClaimedProgram, getCustomerOrders, getCustomerRestaurantInvitation, joinCustomerRestaurant, loginCustomerWithPassword, logoutCustomer,
   getStoredCustomerToken, refreshCustomerSession, requestCustomerCode,
   requestCustomerContactCode, setCustomerMarketingPreferences, setCustomerPassword, updateCustomerAccount, verifyCustomerCode, verifyCustomerContactCode, verifyCustomerGoogleToken,
   storeCustomerToken,
@@ -48,6 +48,10 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [receivables, setReceivables] = useState<CustomerReceivableSummary | null>(null);
   const [offers, setOffers] = useState<CustomerOffer[]>([]);
+  const [goals, setGoals] = useState<CustomerOfferGoal[]>([]);
+  const [orderOffers, setOrderOffers] = useState<CustomerProgram[]>([]);
+  const [hasTableSession, setHasTableSession] = useState(false);
+  const [claimedProgram, setClaimedProgram] = useState<CustomerClaimedProgram | null>(null);
   const [preference, setPreference] = useState<CustomerEmailPreference | null>(null);
   const [marketing, setMarketing] = useState<CustomerMarketingPreferences | null>(null);
   const [unavailablePanels, setUnavailablePanels] = useState<Partial<Record<RestaurantPanel, boolean>>>({});
@@ -79,26 +83,36 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
 
   const loadRestaurant = useCallback(async (id: number, requireDecision: boolean) => {
     setError("");
-    const [ordersResult, creditResult, offersResult, preferenceResult, marketingResult] = await Promise.allSettled([
-      getCustomerOrders(id), getCustomerReceivables(id), getCustomerOffers(id), getCustomerEmailPreference(id), getCustomerMarketingPreferences(id),
+    const rawSession = localStorage.getItem("yummy_qr_session");
+    const qrSession = rawSession ? JSON.parse(rawSession) : null;
+    const qrToken = Number(qrSession?.restaurantId) === id ? qrSession?.qrToken : null;
+    setHasTableSession(Boolean(qrToken));
+    const [ordersResult, creditResult, offersResult, goalsResult, orderOffersResult, claimedResult, preferenceResult, marketingResult] = await Promise.allSettled([
+      getCustomerOrders(id), getCustomerReceivables(id), getCustomerOffers(id), getCustomerOfferGoals(id),
+      qrToken ? getCustomerOrderOffers(id, qrToken) : Promise.resolve([]),
+      qrToken ? getCustomerClaimedProgram(id, qrToken) : Promise.resolve(null),
+      getCustomerEmailPreference(id), getCustomerMarketingPreferences(id),
     ]);
     const nextUnavailable: Partial<Record<RestaurantPanel, boolean>> = {
       orders: ordersResult.status === "rejected",
       credit: creditResult.status === "rejected",
-      rewards: offersResult.status === "rejected",
+      rewards: offersResult.status === "rejected" || goalsResult.status === "rejected" || orderOffersResult.status === "rejected" || claimedResult.status === "rejected",
       communication: preferenceResult.status === "rejected" || marketingResult.status === "rejected",
     };
     setUnavailablePanels(nextUnavailable);
     setOrders(ordersResult.status === "fulfilled" ? ordersResult.value : []);
     setReceivables(creditResult.status === "fulfilled" ? creditResult.value : null);
     setOffers(offersResult.status === "fulfilled" ? offersResult.value : []);
+    setGoals(goalsResult.status === "fulfilled" ? goalsResult.value : []);
+    setOrderOffers(orderOffersResult.status === "fulfilled" ? orderOffersResult.value : []);
+    setClaimedProgram(claimedResult.status === "fulfilled" ? claimedResult.value : null);
     setPreference(preferenceResult.status === "fulfilled" ? preferenceResult.value : null);
     const nextMarketing = marketingResult.status === "fulfilled" ? marketingResult.value : null;
     setMarketing(nextMarketing);
     setEmailChoice(nextMarketing?.email_decision_required ? null : nextMarketing?.email_opted_in ?? null);
     setSmsChoice(nextMarketing?.sms_decision_required ? null : nextMarketing?.sms_opted_in ?? null);
     if (Object.values(nextUnavailable).some(Boolean)) {
-      console.warn("Some customer profile panels could not be loaded.", { ordersResult, creditResult, offersResult, preferenceResult, marketingResult });
+      console.warn("Some customer profile panels could not be loaded.", { ordersResult, creditResult, offersResult, goalsResult, orderOffersResult, claimedResult, preferenceResult, marketingResult });
     }
     setStep(requireDecision && nextMarketing?.decision_required ? "preferences" : "account");
   }, []);
@@ -348,6 +362,38 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     finally { setBusy(false); }
   };
 
+  const claimProgram = async (program: CustomerProgram) => {
+    if (!activeRestaurantId) return;
+    const raw = localStorage.getItem("yummy_qr_session");
+    const session = raw ? JSON.parse(raw) : null;
+    if (!session?.qrToken || Number(session.restaurantId) !== activeRestaurantId) {
+      setError("Scan this restaurant's table QR and start an order before claiming the reward."); return;
+    }
+    setBusy(true); setError("");
+    try {
+      await claimCustomerProgram(activeRestaurantId, program.id, session.qrToken);
+      await refreshSession();
+      setNotice(`${program.name} claimed for your current order.`);
+      await loadRestaurant(activeRestaurantId, false);
+    } catch (requestError: any) { setError(apiErrorMessage(requestError, "This reward could not be claimed.")); }
+    finally { setBusy(false); }
+  };
+
+  const removeProgram = async () => {
+    if (!activeRestaurantId) return;
+    const raw = localStorage.getItem("yummy_qr_session");
+    const session = raw ? JSON.parse(raw) : null;
+    if (!session?.qrToken || Number(session.restaurantId) !== activeRestaurantId) return;
+    setBusy(true); setError("");
+    try {
+      await releaseCustomerProgram(activeRestaurantId, session.qrToken);
+      await refreshSession();
+      setNotice("Grow reward removed from your current order. You can choose another eligible reward.");
+      await loadRestaurant(activeRestaurantId, false);
+    } catch (requestError: any) { setError(apiErrorMessage(requestError, "This reward could not be removed.")); }
+    finally { setBusy(false); }
+  };
+
   if (step === "loading") return <ProfileSkeleton />;
   if (step === "expired" && invitation) return <ExpiredInvitation invitation={invitation} onContinue={() => setStep("identifier")} />;
   if (step === "profile-error") return <ProfileLoadError error={error} busy={busy} onRetry={retrySignedInAccount} onSignOut={signOut} />;
@@ -380,14 +426,14 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
         {unavailablePanels[section as RestaurantPanel] && activeRestaurantId && <button type="button" disabled={busy} className="customer-secondary-button mb-5" onClick={() => { setBusy(true); void loadRestaurant(activeRestaurantId, false).finally(() => setBusy(false)); }}>Retry this restaurant</button>}
         {busy ? <ProfileSkeleton compact /> : <>
           {section === 'orders' && <OrderHistory orders={orders} unavailable={Boolean(unavailablePanels.orders)} onOpen={setSelectedOrder} />}
-          {section === 'rewards' && <Rewards membership={membership} offers={offers} offersUnavailable={Boolean(unavailablePanels.rewards)} busy={busy} onApply={applyOffer} />}
+          {section === 'rewards' && <Rewards membership={membership} offers={offers} goals={goals} orderOffers={orderOffers} claimedProgram={claimedProgram} hasTableSession={hasTableSession} offersUnavailable={Boolean(unavailablePanels.rewards)} busy={busy} onScan={() => setScannerOpen(true)} onApply={applyOffer} onClaimProgram={claimProgram} onRemoveProgram={removeProgram} />}
           {section === 'credit' && <Receivables summary={receivables} />}
           {section === 'communication' && <CommunicationPreferences restaurantName={membership?.restaurant_name || 'this restaurant'} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account.phone} busy={busy} onEmailChoice={setEmailChoice} onSmsChoice={setSmsChoice} onAccount={() => openSection('account')} onSave={saveMarketingChoices} />}
         </>}
       </>}
     </div></div>}
     {selectedOrder && <OrderReceipt order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-    <TableQrScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
+    <TableQrScanner open={scannerOpen} onClose={() => setScannerOpen(false)} returnTo="rewards" />
   </div>;
 }
 
@@ -528,7 +574,13 @@ function PreferenceSwitch({ label, icon, enabled, available, busy, onChange }: {
   return <div className="flex items-center gap-3 px-4 py-3"><span className="shrink-0 text-stone-600" aria-hidden="true">{icon}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{label}</p><p className="mt-1 text-xs text-stone-600">{!available ? enabled ? "You can turn off existing consent" : "Not offered by this restaurant" : enabled ? "On" : "Off"}</p></div><button type="button" role="switch" aria-label={label} aria-checked={enabled} disabled={busy || (!available && !enabled)} onClick={() => onChange(!enabled)} className="grid h-11 w-12 shrink-0 place-items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-40"><span className={`flex h-6 w-10 items-center rounded-full p-0.5 ${enabled ? "bg-orange-600" : "bg-stone-300"}`}><span className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform motion-reduce:transition-none ${enabled ? "translate-x-4" : ""}`} /></span></button></div>;
 }
 
-function Rewards({ membership, offers, offersUnavailable, busy, onApply }: { membership: CustomerRestaurantMembership | null; offers: CustomerOffer[]; offersUnavailable: boolean; busy: boolean; onApply: (offer: CustomerOffer) => void }) {
+function programReward(program: CustomerProgram): string {
+  if (program.reward_kind === "free_item") return `${program.reward_quantity} × ${program.reward_item_name || "menu item"} free`;
+  if (program.reward_kind === "fixed") return `${currency.format(program.reward_value || 0)} off`;
+  return `${program.reward_value}% off, up to ${currency.format(program.percentage_cap || 0)}`;
+}
+
+function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTableSession, offersUnavailable, busy, onScan, onApply, onClaimProgram, onRemoveProgram }: { membership: CustomerRestaurantMembership | null; offers: CustomerOffer[]; goals: CustomerOfferGoal[]; orderOffers: CustomerProgram[]; claimedProgram: CustomerClaimedProgram | null; hasTableSession: boolean; offersUnavailable: boolean; busy: boolean; onScan: () => void; onApply: (offer: CustomerOffer) => void; onClaimProgram: (program: CustomerProgram) => void; onRemoveProgram: () => void }) {
   const spendRemaining = membership?.next_level_spend_remaining ?? 0;
   const visitsRemaining = membership?.next_level_visits_remaining ?? 0;
   const nextLevelRequirements = [
@@ -552,11 +604,25 @@ function Rewards({ membership, offers, offersUnavailable, busy, onApply }: { mem
       {membership?.next_level_name && <div className="relative mt-5 border-t border-white/15 pt-4"><p className="break-words text-sm font-semibold text-orange-200">Next level: {membership.next_level_name}</p><p className="mt-1 text-xs leading-5 text-white/70">{nextLevelRequirements || "Requirements reached. Your level updates after the next completed order."}</p></div>}
     </div>
 
+    {claimedProgram && <section aria-label="Reward on your current order" className="rounded-2xl border border-orange-200 bg-orange-50 p-5"><h2 className="font-display text-lg font-semibold text-stone-950">Applied to your current order</h2><p className="mt-1 text-sm text-stone-700">{claimedProgram.program.name} · {programReward(claimedProgram.program)}</p>{claimedProgram.status === "reserved" && <button type="button" disabled={busy} onClick={onRemoveProgram} className="mt-3 min-h-11 rounded-xl border border-orange-300 bg-white px-4 text-sm font-semibold text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Remove to choose another reward</button>}</section>}
+
+    {goals.length > 0 && <section aria-labelledby="offer-goals-heading"><h2 id="offer-goals-heading" className="mb-3 font-display text-xl font-semibold tracking-tight text-stone-950">Your offer goals</h2><div className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">{goals.map(({ program, completed, required, available_claims }) => {
+      const progress = completed % required;
+      const ready = available_claims > 0;
+      const claimable = orderOffers.some((offer) => offer.id === program.id);
+      return <article key={program.id} className="p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-stone-950">{program.name}</h3><p className="mt-1 text-sm text-stone-600">{program.goal_kind === "total_item_qty" ? `Buy ${required} × ${program.goal_item_name || "qualifying item"} across visits` : program.goal_kind === "item_orders" ? `Order ${program.goal_item_name || "qualifying item"} on ${required} separate visits` : `Complete ${required} orders above ${currency.format(program.goal_min_spend || 0)}`}</p><p className="mt-1 text-sm text-stone-700">Reward: {programReward(program)}</p></div><span className="text-sm font-semibold tabular-nums text-orange-700">{ready ? `${available_claims} ready` : `${progress} of ${required}`}</span></div><progress className="mt-4 h-2 w-full accent-orange-600" value={ready ? required : progress} max={required} aria-label={`${program.name} progress`} /><p className="mt-2 text-xs text-stone-600">{ready ? "Use this reward on a future order here." : `${Math.max(0, required - progress)} more to unlock. Completed orders count.`} Expires {shortDate.format(new Date(program.ends_at))}.</p>{ready && claimable && <button type="button" disabled={busy} onClick={() => onClaimProgram(program)} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Claim on current order</button>}</article>;
+    })}</div></section>}
+
+    {goals.some((goal) => goal.available_claims > 0) && !claimedProgram && !offersUnavailable && !orderOffers.some((offer) => goals.some((goal) => goal.program.id === offer.id)) && <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5"><p className="font-semibold text-stone-950">Your reward is ready</p><p className="mt-1 text-sm text-stone-700">{hasTableSession ? "Place an order here, or ask staff to add you to your table's order. Then claim your reward." : "Scan the QR code on your table to use your reward."}</p>{!hasTableSession && <button type="button" onClick={onScan} className="mt-3 min-h-11 rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2">Scan table QR</button>}</div>}
+
+    {orderOffers.some((offer) => offer.scope === "every_order" && offer.reward_kind === "free_item") && <section aria-labelledby="order-offers-heading"><h2 id="order-offers-heading" className="mb-3 font-display text-xl font-semibold tracking-tight text-stone-950">Ready on this order</h2><div className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">{orderOffers.filter((offer) => offer.scope === "every_order" && offer.reward_kind === "free_item").map((program) => <article key={program.id} className="flex flex-wrap items-center justify-between gap-3 p-5"><div><h3 className="font-semibold">{program.name}</h3><p className="mt-1 text-sm text-stone-600">{programReward(program)}</p></div><button type="button" disabled={busy} onClick={() => onClaimProgram(program)} className="min-h-11 rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Claim reward</button></article>)}</div></section>}
+
     <div>
       <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">Available offers</h2><span className="text-sm tabular-nums text-stone-600">{offers.length}</span></div>
       {offers.length ? <div className="grid items-start gap-4 sm:grid-cols-2">{offers.map(offer => <article key={offer.recipient_id} className="min-w-0 overflow-hidden rounded-2xl border border-stone-200 border-t-[3px] border-t-orange-500 bg-white p-5 sm:p-6">
         <h3 className="break-words font-display text-lg font-semibold leading-6 text-stone-950">{offer.name}</h3>
-        <p className="mt-4 break-words font-display text-3xl font-semibold tracking-tight tabular-nums text-orange-700">{offer.discount_type === "percentage" ? `${offer.value}%` : currency.format(offer.value)} <span className="text-lg font-medium text-stone-600">off</span></p>
+        <p className="mt-4 break-words font-display text-3xl font-semibold tracking-tight tabular-nums text-orange-700">{offer.reward_scope === "one_favourite_item" ? "One free item" : <>{offer.discount_type === "percentage" ? `${offer.value}%` : currency.format(offer.value)} <span className="text-lg font-medium text-stone-600">off</span></>}</p>
+        {offer.reward_scope !== "order" && offer.favourite_item_name && <p className="mt-2 text-sm text-stone-700">Order {offer.favourite_item_name} to use this offer.</p>}
         <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-stone-100 py-4 text-sm"><div className="min-w-0"><dt className="text-xs text-stone-600">Minimum order</dt><dd className="mt-1 break-words font-semibold tabular-nums text-stone-950">{currency.format(offer.minimum_order_value || 0)}</dd></div><div className="min-w-0"><dt className="text-xs text-stone-600">Expires</dt><dd className="mt-1 font-semibold text-stone-950">{shortDate.format(new Date(offer.valid_until))}</dd></div>{offer.discount_type === "percentage" && offer.percentage_cap ? <div className="col-span-2"><dt className="text-xs text-stone-600">Maximum discount</dt><dd className="mt-1 font-semibold tabular-nums text-stone-950">{currency.format(offer.percentage_cap)}</dd></div> : null}</dl>
         {offer.offer_code ? <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-50 px-3 py-2.5"><span className="text-xs text-stone-600">Offer code</span><code className="select-all break-all text-sm font-bold tracking-wide text-stone-950">{offer.offer_code}</code></div> : <p className="mt-4 text-xs leading-5 text-stone-600">Eligibility is checked against your current order.</p>}
         <button type="button" disabled={busy} onClick={() => onApply(offer)} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Use on current order <ArrowRight size={16} aria-hidden="true" /></button>

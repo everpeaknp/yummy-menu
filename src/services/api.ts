@@ -399,10 +399,44 @@ export interface CustomerOffer {
   offer_code: string | null;
   name: string;
   discount_type: "fixed" | "percentage";
+  reward_scope?: "order" | "favourite_item" | "one_favourite_item";
+  favourite_item_name?: string | null;
   value: number;
   minimum_order_value: number;
   percentage_cap?: number;
   valid_until: string;
+}
+
+export interface CustomerProgram {
+  id: number;
+  name: string;
+  scope: "every_order" | "customer";
+  goal_kind: "order_spend" | "order_item_qty" | "total_item_qty" | "item_orders" | "qualifying_orders";
+  goal_item_id: number | null;
+  goal_item_name: string | null;
+  goal_quantity: number | null;
+  goal_min_spend: number | null;
+  reward_kind: "fixed" | "percentage" | "free_item";
+  reward_value: number | null;
+  reward_item_id: number | null;
+  reward_item_name: string | null;
+  reward_quantity: number | null;
+  percentage_cap: number | null;
+  ends_at: string;
+}
+
+export interface CustomerOfferGoal {
+  program: CustomerProgram;
+  completed: number;
+  required: number;
+  available_claims: number;
+}
+
+export interface CustomerClaimedProgram {
+  program: CustomerProgram;
+  status: "reserved" | "redeemed";
+  reward_amount: number;
+  order_id: number;
 }
 
 export interface TableServiceRequest {
@@ -683,6 +717,41 @@ export const getCustomerOffers = async (restaurantId: number) => {
     params: { restaurant_id: restaurantId }, headers: customerHeaders(),
   });
   return unwrap<CustomerOffer[]>(response);
+};
+
+export const getCustomerOfferGoals = async (restaurantId: number) => {
+  const response = await apiClient.get("/public/customer/me/offer-goals", {
+    params: { restaurant_id: restaurantId }, headers: customerHeaders(),
+  });
+  return unwrap<CustomerOfferGoal[]>(response);
+};
+
+export const getCustomerOrderOffers = async (restaurantId: number, qrToken: string) => {
+  const response = await apiClient.get("/public/customer/me/order-offers", {
+    params: { restaurant_id: restaurantId, qr_token: qrToken }, headers: customerHeaders(),
+  });
+  return unwrap<CustomerProgram[]>(response);
+};
+
+export const getCustomerClaimedProgram = async (restaurantId: number, qrToken: string) => {
+  const response = await apiClient.get("/public/customer/me/order-offers/claimed", {
+    params: { restaurant_id: restaurantId, qr_token: qrToken }, headers: customerHeaders(),
+  });
+  return unwrap<CustomerClaimedProgram | null>(response);
+};
+
+export const releaseCustomerProgram = async (restaurantId: number, qrToken: string) => {
+  const response = await apiClient.delete("/public/customer/me/order-offers/claimed", {
+    params: { restaurant_id: restaurantId, qr_token: qrToken }, headers: customerHeaders(),
+  });
+  return unwrap<{ order_id: number; grand_total: number }>(response);
+};
+
+export const claimCustomerProgram = async (restaurantId: number, programId: number, qrToken: string) => {
+  const response = await apiClient.post(`/public/customer/me/order-offers/${programId}/claim`, null, {
+    params: { restaurant_id: restaurantId, qr_token: qrToken }, headers: customerHeaders(),
+  });
+  return unwrap<{ order_id: number; reward_kind: string; discount_amount: number; grand_total: number }>(response);
 };
 
 export const applyCustomerOffer = async (restaurantId: number, recipientId: number, qrToken: string) => {
