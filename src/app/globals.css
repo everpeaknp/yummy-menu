@@ -4,6 +4,7 @@
 
 :root { color-scheme: light; --page: #f9fafb; --surface: #fff; --brand: #f24e1e; --action: #d64119; }
 body { background: var(--page); color: #111827; }
+main:has([data-customer-profile]) { background: #fff9f4; }
 html { scroll-behavior: smooth; scroll-padding-top: 12rem; }
 button, a, input, select, textarea, summary { -webkit-tap-highlight-color: transparent; }
 button, a, summary { touch-action: manipulation; }

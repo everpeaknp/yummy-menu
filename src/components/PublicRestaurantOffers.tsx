@@ -2,8 +2,9 @@
 
 import useSWR from "swr";
 import { useId } from "react";
+import Image from "next/image";
 import { Gift } from "lucide-react";
-import { getPublicRestaurantOffers, type CustomerProgram } from "@/services/api";
+import { getGroupedMenu, getModifierGroups, getPublicRestaurantOffers, type CustomerProgram } from "@/services/api";
 import { useCart } from "@/context/CartContext";
 import { money } from "@/lib/money";
 
@@ -26,6 +27,11 @@ export default function PublicRestaurantOffers({ restaurantId, excludeIds = [], 
     () => getPublicRestaurantOffers(restaurantId),
     { revalidateOnFocus: true },
   );
+  const { data: menuData } = useSWR(offers?.some(offer => offer.reward_item_id || offer.goal_item_id) ? `customer-menu-${restaurantId}` : null, async () => {
+    const [categories, modifierGroups] = await Promise.all([getGroupedMenu(String(restaurantId)), getModifierGroups(String(restaurantId))]);
+    return { categories, modifierGroups };
+  }, { revalidateOnFocus: false });
+  const menuItems = menuData?.categories.flatMap(category => category.items) || [];
   const visibleOffers = offers?.filter(offer => !excludeIds.includes(offer.id));
   if (!showEmpty && !visibleOffers?.length && !error) return null;
   return <section aria-labelledby={titleId}>
@@ -36,8 +42,9 @@ export default function PublicRestaurantOffers({ restaurantId, excludeIds = [], 
           ? cart.filter(line => line.id === offer.goal_item_id).reduce((sum, line) => sum + line.quantity, 0)
           : totalPrice;
         const needed = offer.goal_kind === "order_item_qty" ? offer.goal_quantity || 0 : offer.goal_min_spend || 0;
+        const itemImage = menuItems.find(item => item.id === offer.reward_item_id)?.image || menuItems.find(item => item.id === offer.goal_item_id)?.image;
         return <article key={offer.id} className="flex items-start gap-3 rounded-[1.25rem] border border-[#eee5de] bg-white p-4 sm:p-5">
-          <span aria-hidden="true" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#fff0e5] text-[#9c2b0c]"><Gift size={20} /></span>
+          <span aria-hidden="true" className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#fff0e5] text-[#9c2b0c]">{itemImage ? <Image src={itemImage} alt="" fill unoptimized sizes="44px" className="object-cover" /> : <Gift size={20} />}</span>
           <div className="min-w-0 flex-1"><h3 className="break-words font-semibold leading-6 text-[#20242b]">{offer.name}</h3><p className="mt-1 break-words text-sm leading-5 text-[#505761]">{condition(offer)}</p><p className="mt-2 break-words text-sm font-semibold text-[#9c2b0c]">Get {reward(offer)}</p>{cart.length > 0 && <p className="mt-2 text-xs font-medium text-[#505761]">{current >= needed ? "Condition met in cart" : offer.goal_kind === "order_item_qty" ? `Add ${needed - current} more` : `${money(needed - current)} more`}</p>}</div>
         </article>;
       })}</div>}
