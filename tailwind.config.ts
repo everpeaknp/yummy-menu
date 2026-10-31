@@ -9,11 +9,20 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["var(--font-display)", "sans-serif"],
+        display: ["var(--font-body)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],
       },
       colors: {
-        orange: { 500: '#EA580C', 600: '#C2410C', 700: '#9A3412' },
+        orange: {
+          50: '#FFF1E7', 100: '#FFE3D6', 200: '#FFC9B4', 300: '#FFA585',
+          400: '#FA7A51', 500: '#F24E1E', 600: '#D64119', 700: '#AD3213',
+          800: '#86290F', 900: '#65220F', 950: '#3D170D',
+        },
+        stone: {
+          50: '#F9FAFB', 100: '#F3F4F6', 200: '#E5E7EB', 300: '#D1D5DB',
+          400: '#9CA3AF', 500: '#6B7280', 600: '#4B5563', 700: '#374151',
+          800: '#1F2937', 900: '#111827', 950: '#0B1220',
+        },
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {

@@ -41,7 +41,7 @@ test('private cart offers submission without a competing payment action or table
 
 test('sent orders show personal items and preserve an unsent second round separately',()=>{
  const html=render('orders');
- assert.match(html,/2 items not sent/);
+ assert.match(html,/2 items in your cart/);
  assert.match(html,/data-rendered-items="8"/);
  assert.doesNotMatch(html,/data-rendered-items="8,9"|Send order request/);
 });
