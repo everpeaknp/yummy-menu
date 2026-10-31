@@ -5,7 +5,7 @@ import { CartProvider } from "@/context/CartContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 
-export const viewport: Viewport = { themeColor: "#F9FAFB" };
+export const viewport: Viewport = { themeColor: "#FFFAF6" };
 
 // SEO Metadata
 export const metadata: Metadata = {

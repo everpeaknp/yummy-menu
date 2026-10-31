@@ -22,7 +22,7 @@ export default function ProfileLoadError({
         <h2 id="profile-load-error-title" className="font-display text-2xl font-semibold text-stone-950">Couldn’t open your profile</h2>
         <p className="mt-2 text-sm leading-6 text-stone-600">{error || "Try again in a moment. If the problem continues, sign out and sign in again."}</p>
         <div className="mt-6 flex flex-col gap-3">
-          <button type="button" onClick={onRetry} disabled={busy} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 font-semibold text-white hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">
+          <button type="button" onClick={onRetry} disabled={busy} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">
             {busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Trying again" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
             Try again
           </button>
