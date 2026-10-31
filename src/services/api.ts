@@ -425,6 +425,11 @@ export interface CustomerProgram {
   ends_at: string;
 }
 
+export const getPublicRestaurantOffers = async (restaurantId: number) => {
+  const response = await apiClient.get(`/public/customer/restaurants/${restaurantId}/offers`);
+  return unwrap<CustomerProgram[]>(response);
+};
+
 export interface CustomerOfferGoal {
   program: CustomerProgram;
   completed: number;

@@ -19,6 +19,7 @@ import { getGoogleIdToken } from "@/lib/firebase";
 import TableQrScanner from "@/components/TableQrScanner";
 import { useCart } from "@/context/CartContext";
 import ProfileLoadError from "@/components/ProfileLoadError";
+import PublicRestaurantOffers from "@/components/PublicRestaurantOffers";
 
 const currency = new Intl.NumberFormat("en-NP", { style: "currency", currency: "NPR", minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const shortDate = new Intl.DateTimeFormat("en-NP", { dateStyle: "medium" });
@@ -604,6 +605,8 @@ function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTa
       {membership?.next_level_name && <div className="relative mt-5 border-t border-white/15 pt-4"><p className="break-words text-sm font-semibold text-orange-200">Next level: {membership.next_level_name}</p><p className="mt-1 text-xs leading-5 text-white/70">{nextLevelRequirements || "Requirements reached. Your level updates after the next completed order."}</p></div>}
     </div>
 
+    {membership && <PublicRestaurantOffers restaurantId={membership.restaurant_id} />}
+
     {claimedProgram && <section aria-label="Reward on your current order" className="rounded-2xl border border-orange-200 bg-orange-50 p-5"><h2 className="font-display text-lg font-semibold text-stone-950">Applied to your current order</h2><p className="mt-1 text-sm text-stone-700">{claimedProgram.program.name} · {programReward(claimedProgram.program)}</p>{claimedProgram.status === "reserved" && <button type="button" disabled={busy} onClick={onRemoveProgram} className="mt-3 min-h-11 rounded-xl border border-orange-300 bg-white px-4 text-sm font-semibold text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Remove to choose another reward</button>}</section>}
 
     {goals.length > 0 && <section aria-labelledby="offer-goals-heading"><h2 id="offer-goals-heading" className="mb-3 font-display text-xl font-semibold tracking-tight text-stone-950">Your offer goals</h2><div className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">{goals.map(({ program, completed, required, available_claims }) => {
@@ -618,7 +621,7 @@ function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTa
     {orderOffers.some((offer) => offer.scope === "every_order" && offer.reward_kind === "free_item") && <section aria-labelledby="order-offers-heading"><h2 id="order-offers-heading" className="mb-3 font-display text-xl font-semibold tracking-tight text-stone-950">Ready on this order</h2><div className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">{orderOffers.filter((offer) => offer.scope === "every_order" && offer.reward_kind === "free_item").map((program) => <article key={program.id} className="flex flex-wrap items-center justify-between gap-3 p-5"><div><h3 className="font-semibold">{program.name}</h3><p className="mt-1 text-sm text-stone-600">{programReward(program)}</p></div><button type="button" disabled={busy} onClick={() => onClaimProgram(program)} className="min-h-11 rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Claim reward</button></article>)}</div></section>}
 
     <div>
-      <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">Available offers</h2><span className="text-sm tabular-nums text-stone-600">{offers.length}</span></div>
+      <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">Offers for you</h2><span className="text-sm tabular-nums text-stone-600">{offers.length}</span></div>
       {offers.length ? <div className="grid items-start gap-4 sm:grid-cols-2">{offers.map(offer => <article key={offer.recipient_id} className="min-w-0 overflow-hidden rounded-2xl border border-stone-200 border-t-[3px] border-t-orange-500 bg-white p-5 sm:p-6">
         <h3 className="break-words font-display text-lg font-semibold leading-6 text-stone-950">{offer.name}</h3>
         <p className="mt-4 break-words font-display text-3xl font-semibold tracking-tight tabular-nums text-orange-700">{offer.reward_scope === "one_favourite_item" ? "One free item" : <>{offer.discount_type === "percentage" ? `${offer.value}%` : currency.format(offer.value)} <span className="text-lg font-medium text-stone-600">off</span></>}</p>
@@ -626,7 +629,7 @@ function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTa
         <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-stone-100 py-4 text-sm"><div className="min-w-0"><dt className="text-xs text-stone-600">Minimum order</dt><dd className="mt-1 break-words font-semibold tabular-nums text-stone-950">{currency.format(offer.minimum_order_value || 0)}</dd></div><div className="min-w-0"><dt className="text-xs text-stone-600">Expires</dt><dd className="mt-1 font-semibold text-stone-950">{shortDate.format(new Date(offer.valid_until))}</dd></div>{offer.discount_type === "percentage" && offer.percentage_cap ? <div className="col-span-2"><dt className="text-xs text-stone-600">Maximum discount</dt><dd className="mt-1 font-semibold tabular-nums text-stone-950">{currency.format(offer.percentage_cap)}</dd></div> : null}</dl>
         {offer.offer_code ? <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-stone-50 px-3 py-2.5"><span className="text-xs text-stone-600">Offer code</span><code className="select-all break-all text-sm font-bold tracking-wide text-stone-950">{offer.offer_code}</code></div> : <p className="mt-4 text-xs leading-5 text-stone-600">Eligibility is checked against your current order.</p>}
         <button type="button" disabled={busy} onClick={() => onApply(offer)} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Use on current order <ArrowRight size={16} aria-hidden="true" /></button>
-      </article>)}</div> : <Empty icon={<Tag size={20} />} title={offersUnavailable ? "Offers unavailable" : "No offers right now"} text={offersUnavailable ? "Your rewards are still available. Refresh to try loading offers again." : "New restaurant offers will appear here."} />}
+      </article>)}</div> : <Empty icon={<Tag size={20} />} title={offersUnavailable ? "Personal offers unavailable" : "No personal offers right now"} text={offersUnavailable ? "Refresh to try loading your offers again." : "Offers sent to you will appear here."} />}
     </div>
   </section>;
 }
