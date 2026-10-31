@@ -50,6 +50,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [receivables, setReceivables] = useState<CustomerReceivableSummary | null>(null);
   const [offers, setOffers] = useState<CustomerOffer[]>([]);
+  const [personalOffersUnavailable, setPersonalOffersUnavailable] = useState(false);
   const [goals, setGoals] = useState<CustomerOfferGoal[]>([]);
   const [orderOffers, setOrderOffers] = useState<CustomerProgram[]>([]);
   const [hasTableSession, setHasTableSession] = useState(false);
@@ -62,6 +63,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
   const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [applyingOfferId, setApplyingOfferId] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [invitation, setInvitation] = useState<CustomerRestaurantInvitation | null>(null);
@@ -105,6 +107,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     setOrders(ordersResult.status === "fulfilled" ? ordersResult.value : []);
     setReceivables(creditResult.status === "fulfilled" ? creditResult.value : null);
     setOffers(offersResult.status === "fulfilled" ? offersResult.value : []);
+    setPersonalOffersUnavailable(offersResult.status === "rejected");
     setGoals(goalsResult.status === "fulfilled" ? goalsResult.value : []);
     setOrderOffers(orderOffersResult.status === "fulfilled" ? orderOffersResult.value : []);
     setClaimedProgram(claimedResult.status === "fulfilled" ? claimedResult.value : null);
@@ -307,7 +310,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     openSection(nextSection);
     const url = new URL(window.location.href); url.searchParams.set('restaurant', String(id));
     window.history.replaceState({}, '', url);
-    setBusy(true); setActiveRestaurantId(id); setOrders([]); setOffers([]); setPreference(null); setMarketing(null); setUnavailablePanels({});
+    setBusy(true); setActiveRestaurantId(id); setOrders([]); setOffers([]); setPersonalOffersUnavailable(false); setPreference(null); setMarketing(null); setUnavailablePanels({});
     try { await loadRestaurant(id, false); }
     catch (requestError: any) { setError(requestError.response?.data?.detail || "We could not load this restaurant."); }
     finally { setBusy(false); }
@@ -353,15 +356,15 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     const raw = localStorage.getItem("yummy_qr_session");
     const session = raw ? JSON.parse(raw) : null;
     if (!session?.qrToken || Number(session?.restaurantId) !== activeRestaurantId) { setError("Scan this restaurant's table QR and start an order before using the offer."); return; }
-    setBusy(true); setError("");
+    setBusy(true); setApplyingOfferId(offer.recipient_id); setError("");
     try {
       const result = await applyCustomerOffer(activeRestaurantId, offer.recipient_id, session.qrToken);
       if (!result.valid) { setError(result.message); return; }
       await refreshSession();
-      setNotice(`${offer.name} applied. New total: ${currency.format(result.projected_grand_total)}.`);
+      setNotice(`Your offer was applied to this order. New total: ${currency.format(result.projected_grand_total)}.`);
       setOffers((current) => current.filter((item) => item.recipient_id !== offer.recipient_id));
     } catch (requestError: any) { setError(apiErrorMessage(requestError, "This offer could not be applied.")); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setApplyingOfferId(null); }
   };
 
   const claimProgram = async (program: CustomerProgram) => {
@@ -409,9 +412,8 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
     { label: 'Account details', detail: 'Your name and verified contacts', icon: UserRound, action: () => openSection('account') },
     ...(scopedRestaurantId ? [{ label: 'Communication preferences', detail: `Offers from ${membership?.restaurant_name || restaurantName || 'this restaurant'}`, icon: MessageSquareText, action: () => openSection('communication') }] : []),
   ];
-  return <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 sm:py-8 ${section === 'rewards' ? 'py-4' : 'py-6'}`}>
-    {section !== 'overview' && <button type="button" onClick={() => openSection('overview')} className={`${section === 'rewards' ? 'mb-3' : 'mb-4'} inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-600 hover:text-orange-700`}><ArrowLeft size={18} aria-hidden="true" />Back to you</button>}
-    <div className={section === 'rewards' ? 'mb-4' : 'mb-6'}><h2 className="customer-page-title">{detailTitles[section]}</h2>{section !== 'rewards' && <p className="mt-2 text-sm text-stone-600">{scopedRestaurantId ? `At ${membership?.restaurant_name || restaurantName || 'this restaurant'}` : 'Your account. Your restaurants.'}</p>}</div>
+  return <div className={`mx-auto w-full max-w-6xl sm:px-6 sm:py-8 ${section === 'rewards' ? 'bg-[#fff9f4] px-4 pb-8 pt-3 sm:rounded-[1.75rem] sm:px-6' : 'px-4 py-6'}`}>
+    {section === 'rewards' ? <div className="mb-5 flex min-w-0 items-center gap-2"><button type="button" onClick={() => openSection('overview')} aria-label="Back to You" className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-[#20242b] hover:bg-[#fff0e5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c63e13]"><ArrowLeft size={21} aria-hidden="true" /></button><h1 className="min-w-0 font-display text-2xl font-semibold tracking-tight text-[#20242b]">Rewards &amp; offers</h1></div> : <>{section !== 'overview' && <button type="button" onClick={() => openSection('overview')} className="mb-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-stone-600 hover:text-orange-700"><ArrowLeft size={18} aria-hidden="true" />Back to you</button>}<div className="mb-6"><h2 className="customer-page-title">{detailTitles[section]}</h2><p className="mt-2 text-sm text-stone-600">{scopedRestaurantId ? `At ${membership?.restaurant_name || restaurantName || 'this restaurant'}` : 'Your account. Your restaurants.'}</p></div></>}
     {(notice || error) && <p role={error ? 'alert' : 'status'} className={`mb-5 rounded-xl p-4 text-sm ${error ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>{error || notice}</p>}
     {section === 'overview' ? <>
       <section className="customer-card mb-7 flex items-center gap-4 p-5 sm:p-6"><span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-orange-50 font-display text-2xl font-semibold text-orange-700">{account.name?.trim().charAt(0).toUpperCase() || 'Y'}</span><div className="min-w-0 flex-1"><h3 className="break-words text-xl font-semibold">{account.name || 'Your account'}</h3><p className="mt-1 break-all text-sm text-stone-600">{account.email || account.phone}</p></div><button type="button" onClick={() => openSection('account')} aria-label="Edit profile" className="customer-icon-button"><Pencil size={19} aria-hidden="true" /></button></section>
@@ -426,9 +428,9 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
         {!scopedRestaurantId && account.restaurants.length > 1 && <RestaurantPicker restaurants={account.restaurants} selectedId={activeRestaurantId} disabled={busy} onSelect={id => void selectRestaurant(id, section)} />}
         <PanelAvailabilityNotice panels={unavailablePanels} onOpen={openSection} />
         {unavailablePanels[section as RestaurantPanel] && activeRestaurantId && <button type="button" disabled={busy} className="customer-secondary-button mb-5" onClick={() => { setBusy(true); void loadRestaurant(activeRestaurantId, false).finally(() => setBusy(false)); }}>Retry this restaurant</button>}
-        {busy ? <ProfileSkeleton compact /> : <>
+        {busy && applyingOfferId === null ? <ProfileSkeleton compact /> : <>
           {section === 'orders' && <OrderHistory orders={orders} unavailable={Boolean(unavailablePanels.orders)} onOpen={setSelectedOrder} />}
-          {section === 'rewards' && <Rewards membership={membership} offers={offers} goals={goals} orderOffers={orderOffers} claimedProgram={claimedProgram} hasTableSession={hasTableSession} offersUnavailable={Boolean(unavailablePanels.rewards)} busy={busy} onScan={() => setScannerOpen(true)} onApply={applyOffer} onClaimProgram={claimProgram} onRemoveProgram={removeProgram} />}
+          {section === 'rewards' && <Rewards membership={membership} offers={offers} goals={goals} orderOffers={orderOffers} claimedProgram={claimedProgram} hasTableSession={hasTableSession} offersUnavailable={personalOffersUnavailable} busy={busy} applyingOfferId={applyingOfferId} onScan={() => setScannerOpen(true)} onApply={applyOffer} onClaimProgram={claimProgram} onRemoveProgram={removeProgram} />}
           {section === 'credit' && <Receivables summary={receivables} />}
           {section === 'communication' && <CommunicationPreferences restaurantName={membership?.restaurant_name || 'this restaurant'} marketing={marketing} emailChoice={emailChoice} smsChoice={smsChoice} phone={account.phone} busy={busy} onEmailChoice={setEmailChoice} onSmsChoice={setSmsChoice} onAccount={() => openSection('account')} onSave={saveMarketingChoices} />}
         </>}
@@ -613,25 +615,37 @@ function programReward(program: CustomerProgram): string {
   return `${program.reward_value}% off, up to ${currency.format(program.percentage_cap || 0)}`;
 }
 
-function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTableSession, offersUnavailable, busy, onScan, onApply, onClaimProgram, onRemoveProgram }: { membership: CustomerRestaurantMembership | null; offers: CustomerOffer[]; goals: CustomerOfferGoal[]; orderOffers: CustomerProgram[]; claimedProgram: CustomerClaimedProgram | null; hasTableSession: boolean; offersUnavailable: boolean; busy: boolean; onScan: () => void; onApply: (offer: CustomerOffer) => void; onClaimProgram: (program: CustomerProgram) => void; onRemoveProgram: () => void }) {
-  const spendRemaining = membership?.next_level_spend_remaining ?? 0;
-  const visitsRemaining = membership?.next_level_visits_remaining ?? 0;
-  const nextLevelRequirements = [
-    spendRemaining > 0 ? `${currency.format(spendRemaining)} more spend` : null,
-    visitsRemaining > 0 ? `${visitsRemaining} more ${visitsRemaining === 1 ? "visit" : "visits"}` : null,
-  ].filter(Boolean).join(" and ");
+function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTableSession, offersUnavailable, busy, applyingOfferId = null, onScan, onApply, onClaimProgram, onRemoveProgram }: { membership: CustomerRestaurantMembership | null; offers: CustomerOffer[]; goals: CustomerOfferGoal[]; orderOffers: CustomerProgram[]; claimedProgram: CustomerClaimedProgram | null; hasTableSession: boolean; offersUnavailable: boolean; busy: boolean; applyingOfferId?: number | null; onScan: () => void; onApply: (offer: CustomerOffer) => void; onClaimProgram: (program: CustomerProgram) => void; onRemoveProgram: () => void }) {
   const rankedGoals = rankRewardGoals(goals);
+  const now = Date.now();
+  const availableOffers = offers.filter(offer => new Date(offer.valid_until).getTime() >= now);
 
-  return <section aria-label="Rewards and offers" className="space-y-7">
-    {membership && <section aria-label="Your membership" className="overflow-hidden rounded-[1.5rem] border border-orange-200 bg-[#fff7f1]">
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-orange-600 px-5 py-3.5 text-white sm:px-6"><p className="min-w-0 break-words font-display text-base font-semibold">{membership.restaurant_name}</p><span className="max-w-full break-words rounded-full border border-white/50 px-3 py-1 text-xs font-semibold">{membership.level_name || "Member"}</span></div>
-      <div className="px-5 pb-5 pt-4 sm:px-6"><div className="flex items-end justify-between gap-3"><div className="min-w-0"><p className="text-xs font-medium text-stone-600">Your points balance</p><p className="mt-1 break-all font-display text-4xl font-semibold tracking-tight tabular-nums text-stone-950 sm:text-5xl">{membership.loyalty_points.toLocaleString("en-NP")}<span className="ml-2 text-base font-medium text-stone-600">points</span></p></div><span aria-hidden="true" className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-orange-200 bg-white text-orange-700"><Gift size={22} /></span></div>
-        {membership.level_benefit && <p className="mt-3 break-words text-sm leading-5 text-stone-700">{membership.level_benefit}</p>}
-        {membership.level_points_multiplier && membership.level_points_multiplier > 1 && <p className="mt-1 text-sm font-medium text-orange-700">Earn {membership.level_points_multiplier}× points on new orders</p>}
-        {membership.next_level_name && <p className="mt-3 break-words text-xs leading-5 text-stone-700"><span className="font-semibold text-stone-950">Next: {membership.next_level_name}</span> · {nextLevelRequirements || "Updates after your next completed order"}</p>}
-        <dl className="mt-4 grid grid-cols-2 gap-4 border-t border-dashed border-orange-200 pt-4 text-sm"><div><dt className="text-xs text-stone-600">Completed visits</dt><dd className="mt-1 font-semibold tabular-nums text-stone-950">{membership.total_orders.toLocaleString("en-NP")}</dd></div><div className="min-w-0"><dt className="text-xs text-stone-600">Lifetime spend</dt><dd className="mt-1 break-words font-semibold tabular-nums text-stone-950">{currency.format(membership.total_spent)}</dd></div></dl>
-      </div>
-    </section>}
+  return <section aria-label="Rewards and offers" className="space-y-6">
+    {membership ? <section aria-label="Your membership" className="relative isolate overflow-hidden rounded-[1.5rem] bg-[linear-gradient(130deg,#d14a19_0%,#c63e13_45%,#a92e0e_100%)] p-5 text-white shadow-[0_14px_28px_-20px_rgba(119,39,11,0.75)] sm:p-6">
+      <span aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 -z-10 h-64 w-64 rounded-full border-[38px] border-white/[0.08]" />
+      <span aria-hidden="true" className="pointer-events-none absolute -bottom-28 -right-8 -z-10 h-52 w-52 rounded-full border-[26px] border-[#f36a1d]/30" />
+      <div className="flex items-start justify-between gap-3"><p className="min-w-0 break-words font-display text-base font-semibold leading-6">{membership.restaurant_name}</p><span className="max-w-[45%] shrink-0 break-words rounded-full border border-white/45 bg-white/10 px-3 py-1 text-center text-xs font-semibold">{membership.level_name || "Member"}</span></div>
+      <p className="mt-7 text-sm font-medium text-white/90">Your points</p>
+      <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2 font-display"><span className="break-all text-[3.25rem] font-bold leading-none tracking-[-0.04em] tabular-nums">{membership.loyalty_points.toLocaleString("en-NP")}</span><span className="text-base font-medium text-white/90">points</span></p>
+      {membership.level_benefit && <p className="mt-3 break-words text-sm leading-5 text-white/90">{membership.level_benefit}</p>}
+      <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-white/35 pt-4"><div className="min-w-0"><dt className="text-xs text-white/85">Completed visits</dt><dd className="mt-1 text-base font-semibold tabular-nums">{membership.total_orders.toLocaleString("en-NP")}</dd></div><div className="min-w-0 border-l border-white/30 pl-4"><dt className="text-xs text-white/85">Lifetime spend</dt><dd className="mt-1 break-words text-base font-semibold tabular-nums">{currency.format(membership.total_spent)}</dd></div></dl>
+    </section> : <p className="rounded-2xl border border-[#eee5de] bg-white p-4 text-sm text-[#606773]">Your points are unavailable for this restaurant.</p>}
+
+    <section aria-label="Personal offers">
+      <div className="mb-3 flex items-center gap-2"><h2 className="font-display text-xl font-semibold tracking-tight text-[#20242b]">Offers for you</h2>{!offersUnavailable && <span className="rounded-full bg-[#fff0e5] px-2.5 py-0.5 text-xs font-semibold tabular-nums text-[#9c2b0c]" aria-label={`${availableOffers.length} available offers`}>{availableOffers.length}</span>}</div>
+      {offers.length ? <div className="space-y-3">{offers.map(offer => {
+        const expired = new Date(offer.valid_until).getTime() < now;
+        const benefit = offer.reward_scope === "one_favourite_item" ? "1 free item" : `${offer.discount_type === "percentage" ? `${offer.value}%` : currency.format(offer.value)} off`;
+        return <article key={offer.recipient_id} className="overflow-hidden rounded-[1.25rem] border border-[#ead6c9] bg-white shadow-[0_8px_24px_-22px_rgba(88,43,23,0.5)]">
+          <div className="p-5"><div className="flex items-start gap-3"><span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#fff0e5] text-[#a63210]"><Tag size={19} /></span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-[#20242b]">{offer.reward_scope === "order" ? "A treat on your order" : offer.favourite_item_name ? `For your ${offer.favourite_item_name}` : "A treat for you"}</p><p className="mt-1 break-words font-display text-[1.85rem] font-bold leading-tight tracking-tight text-[#a63210]">{benefit}</p></div>{expired && <span className="shrink-0 rounded-full bg-[#f3f4f6] px-2.5 py-1 text-xs font-semibold text-[#4b5563]">Expired</span>}</div>
+            <div className="mt-4 space-y-1 text-sm leading-5 text-[#505761]">{offer.minimum_order_value > 0 && <p>On orders of {currency.format(offer.minimum_order_value)} or more</p>}{offer.reward_scope !== "order" && offer.favourite_item_name && <p>Applies to {offer.favourite_item_name}</p>}{offer.discount_type === "percentage" && offer.percentage_cap && <p>Save up to {currency.format(offer.percentage_cap)}</p>}<p>{expired ? "Expired" : "Expires"} {shortDate.format(new Date(offer.valid_until))}</p></div>
+          </div>
+          <div className="border-t border-dashed border-[#ead6c9] px-5 py-3.5">{offer.offer_code && <p className="mb-3 text-xs text-[#606773]">Code <code className="select-all break-all font-semibold text-[#20242b]">{offer.offer_code}</code></p>}<button type="button" disabled={busy || expired} onClick={() => hasTableSession ? onApply(offer) : onScan()} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#b8320d] px-4 text-center text-sm font-semibold text-white hover:bg-[#94290b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8320d] focus-visible:ring-offset-2 disabled:bg-[#e5e7eb] disabled:text-[#606773]"><span>{expired ? "Offer expired" : applyingOfferId === offer.recipient_id ? "Checking your offer…" : hasTableSession ? "Use on current order" : "Scan table to use"}</span>{!expired && applyingOfferId !== offer.recipient_id && <ArrowRight size={17} aria-hidden="true" />}</button></div>
+        </article>;
+      })}</div> : <Empty icon={<Tag size={20} />} title={offersUnavailable ? "Personal offers unavailable" : "No personal offers right now"} text={offersUnavailable ? "Refresh to try loading your offers again." : "Offers sent to you will appear here."} />}
+    </section>
+
+    {membership && <PublicRestaurantOffers restaurantId={membership.restaurant_id} excludeIds={orderOffers.filter(offer => offer.scope === "every_order" && offer.reward_kind === "free_item").map(offer => offer.id)} showEmpty />}
 
     {claimedProgram && <section aria-label="Reward on your current order" className="rounded-2xl border border-orange-200 bg-orange-50 p-5"><h2 className="font-display text-lg font-semibold text-stone-950">Applied to your current order</h2><p className="mt-1 text-sm text-stone-700">{claimedProgram.program.name} · {programReward(claimedProgram.program)}</p>{claimedProgram.status === "reserved" && <button type="button" disabled={busy} onClick={onRemoveProgram} className="mt-3 min-h-11 rounded-xl border border-orange-300 bg-white px-4 text-sm font-semibold text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Remove to choose another reward</button>}</section>}
 
@@ -646,18 +660,6 @@ function Rewards({ membership, offers, goals, orderOffers, claimedProgram, hasTa
 
     {orderOffers.some((offer) => offer.scope === "every_order" && offer.reward_kind === "free_item" && offer.id !== claimedProgram?.program.id) && <section aria-labelledby="order-offers-heading"><h2 id="order-offers-heading" className="mb-3 font-display text-xl font-semibold tracking-tight text-stone-950">Ready on this order</h2><div className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">{orderOffers.filter((offer) => offer.scope === "every_order" && offer.reward_kind === "free_item" && offer.id !== claimedProgram?.program.id).map((program) => <article key={program.id} className="flex flex-wrap items-center justify-between gap-3 p-5"><div><h3 className="font-semibold">{program.name}</h3><p className="mt-1 text-sm text-stone-600">{programReward(program)}</p></div><button type="button" disabled={busy} onClick={() => onClaimProgram(program)} className="min-h-11 rounded-xl bg-orange-600 px-4 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">Claim reward</button></article>)}</div></section>}
 
-    {membership && <PublicRestaurantOffers restaurantId={membership.restaurant_id} excludeIds={orderOffers.filter(offer => offer.scope === "every_order" && offer.reward_kind === "free_item").map(offer => offer.id)} />}
-
-    <section aria-label="Personal offers">
-      <div className="mb-3 flex items-baseline justify-between gap-3"><h2 className="font-display text-xl font-semibold tracking-tight text-stone-950">Offers for you</h2><span className="text-sm tabular-nums text-stone-600">{offers.length}</span></div>
-      {offers.length ? <div className="divide-y divide-stone-200 overflow-hidden rounded-2xl border border-stone-200 bg-white">{offers.map(offer => <article key={offer.recipient_id} className="border-l-[3px] border-orange-500 p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-2"><h3 className="min-w-0 flex-1 break-words font-semibold text-stone-950">{offer.name}</h3><span className="break-words text-sm font-semibold tabular-nums text-orange-700">{offer.reward_scope === "one_favourite_item" ? "1 free item" : `${offer.discount_type === "percentage" ? `${offer.value}%` : currency.format(offer.value)} off`}</span></div>
-        {offer.reward_scope !== "order" && offer.favourite_item_name && <p className="mt-2 break-words text-sm text-stone-700">For {offer.favourite_item_name}</p>}
-        <p className="mt-2 text-xs leading-5 text-stone-600">{offer.minimum_order_value > 0 && `Minimum order ${currency.format(offer.minimum_order_value)} · `}Expires {shortDate.format(new Date(offer.valid_until))}{offer.discount_type === "percentage" && offer.percentage_cap ? ` · Up to ${currency.format(offer.percentage_cap)} off` : ""}</p>
-        {offer.offer_code && <p className="mt-2 text-xs text-stone-600">Code <code className="select-all break-all font-semibold text-stone-950">{offer.offer_code}</code></p>}
-        <button type="button" disabled={busy} onClick={() => onApply(offer)} className="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-orange-700 hover:text-orange-800 focus-visible:rounded focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">Use on current order <ArrowRight size={16} aria-hidden="true" /></button>
-      </article>)}</div> : <Empty icon={<Tag size={20} />} title={offersUnavailable ? "Personal offers unavailable" : "No personal offers right now"} text={offersUnavailable ? "Refresh to try loading your offers again." : "Offers sent to you will appear here."} />}
-    </section>
   </section>;
 }
 
