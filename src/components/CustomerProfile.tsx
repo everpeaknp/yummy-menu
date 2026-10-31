@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, ArrowRight, Banknote, Check, ChevronRight, Gift, History, Loader2, LockKeyhole, LogOut, Mail,
+  ArrowLeft, ArrowRight, Banknote, Check, ChevronDown, ChevronRight, Gift, History, Loader2, LockKeyhole, LogOut, Mail,
   MessageSquareText, Pencil, Phone, ReceiptText, ScanLine, Sparkles, Store, Tag, UserRound, X,
 } from "lucide-react";
 import {
@@ -422,7 +422,7 @@ export default function CustomerProfile({ restaurantId, restaurantName, initialS
       </div>
     </> : <div className="grid items-start gap-6 md:grid-cols-[12rem_minmax(0,1fr)]"><aside className="hidden md:block"><ProfileSections section={section} onSection={openSection} includeAccount /></aside><div className="min-w-0">
       {section === 'account' ? <AccountDetails account={account} busy={busy} onBusy={setBusy} onSaved={setAccount} onNotice={setNotice} onError={setError} /> : <>
-        {!scopedRestaurantId && account.restaurants.length > 1 && <label className="mb-5 block text-sm font-semibold">Restaurant<select value={activeRestaurantId || ''} disabled={busy} onChange={event => void selectRestaurant(Number(event.target.value), section)} className="profile-input mt-2">{account.restaurants.map(item => <option key={item.restaurant_id} value={item.restaurant_id}>{item.restaurant_name}</option>)}</select></label>}
+        {!scopedRestaurantId && account.restaurants.length > 1 && <RestaurantPicker restaurants={account.restaurants} selectedId={activeRestaurantId} disabled={busy} onSelect={id => void selectRestaurant(id, section)} />}
         <PanelAvailabilityNotice panels={unavailablePanels} onOpen={openSection} />
         {unavailablePanels[section as RestaurantPanel] && activeRestaurantId && <button type="button" disabled={busy} className="customer-secondary-button mb-5" onClick={() => { setBusy(true); void loadRestaurant(activeRestaurantId, false).finally(() => setBusy(false)); }}>Retry this restaurant</button>}
         {busy ? <ProfileSkeleton compact /> : <>
@@ -444,6 +444,37 @@ function ExpiredInvitation({ invitation, onContinue }: { invitation: CustomerRes
 
 function EnrollmentPrompt({ restaurantName, invited, busy, error, onEnroll, onSignOut }: { restaurantName: string; invited: boolean; busy: boolean; error: string; onEnroll: () => void; onSignOut: () => void }) {
   return <main className="mx-auto grid max-w-3xl gap-5 px-4 py-6 md:grid-cols-2"><div className="max-w-xl"><Store className="h-10 w-10 text-orange-600" aria-hidden="true" /><p className="mt-7 text-sm font-semibold text-orange-700">{invited ? "Restaurant invitation" : "Discover a restaurant"}</p><h1 className="mt-2 text-balance font-display text-2xl font-semibold tracking-tight text-stone-950 sm:text-3xl">Follow {restaurantName}?</h1><p className="mt-4 max-w-lg leading-7 text-stone-600">{invited ? "Confirm this restaurant relationship to bring your saved visits, points and offers into your Yummy profile." : "Following saves this restaurant to your Yummy profile and lets you choose email and SMS offers."}</p></div><section className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-[0_20px_70px_rgba(28,25,23,0.08)] sm:p-8"><h2 className="font-display text-2xl font-semibold text-stone-950">{invited ? "Confirm your connection" : "Stay connected"}</h2><p className="mt-2 text-sm leading-6 text-stone-600">{invited ? "Yummy will verify that this account owns the email address or mobile number saved by the restaurant. Marketing messages remain off until you choose them." : "Your communication choices remain under your control."}</p>{error && <p className="mt-4 text-sm text-red-700" role="alert">{error}</p>}<button type="button" disabled={busy} onClick={onEnroll} className="mt-6 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 font-semibold text-white hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50">{busy ? <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" aria-label="Following restaurant" /> : <>Follow restaurant <ArrowRight className="h-4 w-4" aria-hidden="true" /></>}</button><button type="button" onClick={onSignOut} className="mt-3 min-h-11 w-full text-sm font-medium text-stone-600 hover:text-stone-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Use another account</button></section></main>;
+}
+
+function RestaurantPicker({ restaurants, selectedId, disabled, onSelect }: {
+  restaurants: { restaurant_id: number; restaurant_name: string }[];
+  selectedId: number | null;
+  disabled: boolean;
+  onSelect: (id: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const container = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!container.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
+  const selected = restaurants.find(item => item.restaurant_id === selectedId);
+  return <div ref={container} className="relative mb-5 min-w-0" onKeyDown={event => {
+    if (event.key === "Escape" && open) { event.preventDefault(); setOpen(false); container.current?.querySelector("button")?.focus(); }
+  }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+    <span className="block text-sm font-semibold" id={`${listId}-label`}>Restaurant</span>
+    <button type="button" disabled={disabled} aria-labelledby={`${listId}-label ${listId}-selected`} aria-expanded={open} aria-controls={open ? listId : undefined} onClick={() => setOpen(value => !value)} className="mt-2 flex min-h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-stone-300 bg-white px-4 text-left font-semibold text-stone-950 hover:border-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 disabled:opacity-50">
+      <span id={`${listId}-selected`} className="min-w-0 truncate">{selected?.restaurant_name || "Choose a restaurant"}</span><ChevronDown size={18} className={`shrink-0 text-stone-600 ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+    </button>
+    {open && <div id={listId} role="group" aria-label="Restaurants" className="absolute inset-x-0 top-full z-50 mt-1 max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-stone-200 bg-white p-1 shadow-lg">
+      {restaurants.map(item => <button key={item.restaurant_id} type="button" aria-current={item.restaurant_id === selectedId ? "true" : undefined} onClick={() => { setOpen(false); onSelect(item.restaurant_id); }} className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${item.restaurant_id === selectedId ? "bg-orange-50 font-semibold text-orange-700" : "text-stone-950"}`}><span className="min-w-0 break-words">{item.restaurant_name}</span>{item.restaurant_id === selectedId && <Check size={17} className="shrink-0" aria-hidden="true" />}</button>)}
+    </div>}
+  </div>;
 }
 
 function ProfileSections({ section, onSection, includeAccount = false }: { section: Section; onSection: (section: Section) => void; includeAccount?: boolean }) {
