@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { useId } from "react";
+import { Gift } from "lucide-react";
 import { getPublicRestaurantOffers, type CustomerProgram } from "@/services/api";
 import { useCart } from "@/context/CartContext";
 import { money } from "@/lib/money";
@@ -35,9 +36,9 @@ export default function PublicRestaurantOffers({ restaurantId, excludeIds = [] }
           ? cart.filter(line => line.id === offer.goal_item_id).reduce((sum, line) => sum + line.quantity, 0)
           : totalPrice;
         const needed = offer.goal_kind === "order_item_qty" ? offer.goal_quantity || 0 : offer.goal_min_spend || 0;
-        return <article key={offer.id} className="flex flex-wrap items-start justify-between gap-x-5 gap-y-2 p-4 sm:p-5">
-          <div className="min-w-0 flex-1"><h3 className="break-words font-semibold text-stone-950">{offer.name}</h3><p className="mt-1 text-sm text-stone-600">{condition(offer)} · {reward(offer)}</p></div>
-          {cart.length > 0 && <span className="text-sm font-medium text-orange-700">{current >= needed ? "Condition met in cart" : offer.goal_kind === "order_item_qty" ? `Add ${needed - current} more` : `${money(needed - current)} more`}</span>}
+        return <article key={offer.id} className="flex items-start gap-3 p-4 sm:p-5">
+          <span aria-hidden="true" className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-orange-700"><Gift size={19} /></span>
+          <div className="min-w-0 flex-1"><h3 className="break-words font-semibold text-stone-950">{offer.name}</h3><p className="mt-1 break-words text-sm text-stone-600">{condition(offer)}</p><div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"><p className="break-words text-sm font-semibold text-orange-700">Get {reward(offer)}</p>{cart.length > 0 && <span className="text-xs font-medium text-stone-600">{current >= needed ? "Condition met in cart" : offer.goal_kind === "order_item_qty" ? `Add ${needed - current} more` : `${money(needed - current)} more`}</span>}</div></div>
         </article>;
       })}</div>}
     <p className="mt-2 text-xs text-stone-600">Offers are checked on the final order. One reward per order.</p>
