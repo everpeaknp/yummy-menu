@@ -17,7 +17,7 @@ function reward(offer: CustomerProgram): string {
   return `${offer.reward_value}% off, up to ${money(offer.percentage_cap || 0)}`;
 }
 
-export default function PublicRestaurantOffers({ restaurantId }: { restaurantId: number }) {
+export default function PublicRestaurantOffers({ restaurantId, excludeIds = [] }: { restaurantId: number; excludeIds?: number[] }) {
   const titleId = useId();
   const { cart, totalPrice } = useCart();
   const { data: offers, error, mutate } = useSWR(
@@ -25,11 +25,12 @@ export default function PublicRestaurantOffers({ restaurantId }: { restaurantId:
     () => getPublicRestaurantOffers(restaurantId),
     { revalidateOnFocus: true },
   );
-  if (!offers?.length && !error) return null;
+  const visibleOffers = offers?.filter(offer => !excludeIds.includes(offer.id));
+  if (!visibleOffers?.length && !error) return null;
   return <section aria-labelledby={titleId} className="mb-7">
     <h2 id={titleId} className="customer-section-title mb-3">Restaurant offers</h2>
     {error ? <div className="customer-card flex flex-wrap items-center justify-between gap-3 p-4 text-sm"><p>Offers could not be loaded.</p><button type="button" onClick={() => void mutate()} className="min-h-11 font-semibold text-orange-700 hover:text-orange-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500">Retry</button></div> :
-      <div className="customer-card divide-y divide-stone-200">{offers?.map(offer => {
+      <div className="customer-card divide-y divide-stone-200">{visibleOffers?.map(offer => {
         const current = offer.goal_kind === "order_item_qty"
           ? cart.filter(line => line.id === offer.goal_item_id).reduce((sum, line) => sum + line.quantity, 0)
           : totalPrice;
