@@ -40,7 +40,7 @@ export default function CustomerGate({ children }: { children: React.ReactNode }
     };
   }, [restore, invalidate]);
   if (loading) return <div className="grid min-h-[60dvh] place-items-center"><div role="status" className="flex items-center gap-3 text-sm text-stone-500"><Loader2 className="h-5 w-5 animate-spin" />Opening Yummy…</div></div>;
-  if (error) return <div className="mx-auto max-w-sm px-5 py-16 text-center"><p role="alert" className="text-sm text-stone-600">{error}</p><button onClick={() => void restore()} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-orange-600 px-5 font-semibold text-white"><RefreshCw size={18} />Try again</button></div>;
+  if (error) return <div className="mx-auto max-w-sm px-5 py-16 text-center"><p role="alert" className="text-sm text-stone-600">{error}</p><button onClick={() => void restore()} className="mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-orange-400 px-5 font-semibold text-stone-950 hover:bg-orange-500 focus-visible:ring-2 focus-visible:ring-orange-700"><RefreshCw size={18} />Try again</button></div>;
   if (!account) return <CustomerProfile authenticationOnly onAuthenticated={setAccount} />;
   return <>{children}</>;
 }

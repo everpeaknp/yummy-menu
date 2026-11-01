@@ -8,7 +8,7 @@ import type { CustomerBillOverview, CustomerBillRequest } from '@/services/api';
 
 const money = (amount: number) => new Intl.NumberFormat('en-NP', { style: 'currency', currency: 'NPR', maximumFractionDigits: 2 }).format(amount);
 const button = 'inline-flex min-h-11 touch-manipulation items-center justify-center gap-2 rounded-xl border border-stone-200 px-4 py-2 text-sm font-semibold hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-const primary = `${button} border-orange-600 bg-orange-600 text-white hover:bg-orange-700`;
+const primary = `${button} border-orange-400 bg-orange-400 text-stone-950 hover:bg-orange-500`;
 export const customerBillErrorText = (error: any) => {
   const detail = error?.response?.data?.detail;
   if (typeof detail === 'string' && detail.trim()) return detail;

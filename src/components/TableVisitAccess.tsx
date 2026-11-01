@@ -9,7 +9,7 @@ import { createTableInvite, manageTableGuest, requestTableAccess, revokeTableInv
 
 const control = 'inline-flex min-h-11 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 disabled:opacity-50';
 const button = `${control} border-stone-200 hover:bg-stone-50`;
-const primary = `${control} border-orange-600 bg-orange-600 text-white hover:bg-orange-700`;
+const primary = `${control} border-orange-400 bg-orange-400 text-stone-950 hover:bg-orange-500`;
 const initials = (name: string) => name.trim().split(/\s+/).slice(0, 2).map(word => word[0]).join('').toUpperCase() || '?';
 export const tableAccessErrorText = (error: any) => {
   const detail = error?.response?.data?.detail;
