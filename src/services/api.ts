@@ -200,6 +200,7 @@ export interface TableAccess {
   visit_id: number | null;
   access: 'unverified' | 'pending' | 'approved' | 'rejected' | 'removed' | 'occupied' | 'expired';
   is_host: boolean;
+  can_auto_join?: boolean;
   billing?: { can_pay: boolean; accepted_total: number; request_total: number };
   members: { account_id: number; name: string; status: string; is_host: boolean; is_you?: boolean }[];
 }
@@ -238,7 +239,19 @@ export interface QRTableContext {
 export const verifyQRToken = async (token: string): Promise<QRTableContext | null> => {
   try {
     const response = await apiClient.get(`/qr/verify/${token}`, { headers: customerHeaders() });
-    const data = response.data;
+    let data = response.data;
+    if (data.table_access?.can_auto_join && getStoredCustomerToken()) {
+      try {
+        const recognition = await apiClient.post('/qr/customer/table-access/recognize',
+          { qr_token: token }, { headers: customerHeaders() });
+        if (recognition.data?.recognized) {
+          data = (await apiClient.get(`/qr/verify/${token}`, { headers: customerHeaders() })).data;
+        }
+      } catch (error) {
+        // The table can still be opened and staff can resolve a conflicting visit.
+        console.error('Could not link this customer to the table order', error);
+      }
+    }
     
     // Map image URLs for ordered items
     if (data.ordered_items && Array.isArray(data.ordered_items)) {
