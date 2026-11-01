@@ -118,18 +118,7 @@ export const getRestaurant = async (id: string): Promise<Restaurant | null> => {
 
 export const getAllRestaurants = async (strict = false): Promise<Restaurant[]> => {
     try {
-        let response;
-        try {
-            response = await apiClient.get('/restaurants/directory');
-        } catch (error: any) {
-            // Existing test/production servers may not have the directory route yet.
-            const routeMissing = error.response?.status === 404 ||
-                (error.response?.status === 422 && error.response?.data?.errors?.some(
-                    (item: any) => item.field === 'restaurant_id' && item.error?.includes('valid integer')
-                ));
-            if (!routeMissing) throw error;
-            response = await apiClient.get('/restaurants/');
-        }
+        const response = await apiClient.get('/restaurants/directory');
         const data = response.data.data || response.data;
         if (!Array.isArray(data)) return [];
         
